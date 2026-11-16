@@ -1,0 +1,36 @@
+<mat-sidenav-container class="shell">
+  <mat-sidenav class="rail" mode="side" disableClose [opened]="hasNav() && !handset()">
+    <nav class="rail-items">
+      @for (item of navItems(); track item.path) {
+        <a
+          class="rail-item"
+          [routerLink]="item.path"
+          routerLinkActive="active"
+          ariaCurrentWhenActive="page"
+        >
+          <span class="indicator"
+            ><mat-icon aria-hidden="true">{{ item.icon }}</mat-icon></span
+          >
+          <span class="label">{{ item.label | t }}</span>
+        </a>
+      }
+    </nav>
+  </mat-sidenav>
+  <mat-sidenav-content class="main">
+    <mat-toolbar class="top-bar">
+      @if (backLink(); as link) {
+        <a mat-icon-button [routerLink]="link" [attr.aria-label]="'nav.back' | t">
+          <mat-icon aria-hidden="true">arrow_back</mat-icon>
+        </a>
+      }
+      <h1 class="title">{{ title() }}</h1>
+      <ng-content select="[shellActions]" />
+    </mat-toolbar>
+    <main class="content">
+      <ng-content />
+    </main>
+    @if (hasNav() && handset()) {
+      <lib-bottom-nav [items]="navItems()" />
+    }
+  </mat-sidenav-content>
+</mat-sidenav-container>

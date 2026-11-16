@@ -11,6 +11,11 @@ node_modules/
 /frontend/dist/
 /frontend/.angular/
 
+# Local TLS (mkcert CA private key + server cert)
+/docker/certs/
+*.pem
+*.key
+
 # Docker volumes / backups
 /docker/data/
 /backups/

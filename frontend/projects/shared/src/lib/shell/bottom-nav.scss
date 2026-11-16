@@ -1,0 +1,13 @@
+@use 'nav-item';
+
+.bar {
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--mat-sys-surface-container);
+}
+
+.tab {
+  @include nav-item.nav-item;
+}

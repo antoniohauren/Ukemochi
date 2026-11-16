@@ -1,0 +1,36 @@
+.login {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100dvh;
+  box-sizing: border-box;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+}
+
+.lang {
+  align-self: flex-end;
+}
+
+.brand {
+  margin: 15dvh 0 32px;
+  color: var(--mat-sys-primary);
+  font: var(--mat-sys-headline-medium);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.error {
+  margin: 0 0 8px;
+  color: var(--mat-sys-error);
+  font: var(--mat-sys-body-medium);
+}
+
+button {
+  min-height: 48px;
+}
