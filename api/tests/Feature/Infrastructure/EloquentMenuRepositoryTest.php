@@ -66,3 +66,22 @@ it('enforces add-on target and price rules in the schema', function (array $row)
     'no target' => [['price_cents' => 0, 'category_id' => null]],
     'negative price' => [['price_cents' => -1]],
 ])->throws(QueryException::class);
+
+it('lists ids to reorder and writes only the sort column', function (): void {
+    [$repo, $item] = menuRepoWithItem();
+    $other = $repo->saveCategory(new Category(0, 'Uramaki', 5, true));
+    $a = $repo->saveVariant(new Variant(0, $item->id, 'Lata', 600, true, 0));
+    $b = $repo->saveVariant(new Variant(0, $item->id, 'Garrafa', 900, true, 1));
+    $gone = $repo->saveVariant(new Variant(0, $item->id, 'Velha', 100, true, 2));
+    $repo->deleteVariant($gone->id);
+
+    expect($repo->lockCategoryIds())->toBe([$item->categoryId, $other->id])
+        ->and($repo->variantIds($item->id))->toBe([$a->id, $b->id]);
+
+    $repo->setCategorySorts([$other->id => 0, $item->categoryId => 1]);
+    $repo->setVariantSorts([$b->id => 0, $a->id => 1]);
+
+    expect($repo->findCategory($other->id))->toEqual(new Category($other->id, 'Uramaki', 0, true))
+        ->and($repo->findVariant($a->id))->toEqual(new Variant($a->id, $item->id, 'Lata', 600, true, 1))
+        ->and($repo->findVariant($b->id)?->sort)->toBe(0);
+});

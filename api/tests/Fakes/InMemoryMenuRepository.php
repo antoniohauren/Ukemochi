@@ -120,4 +120,30 @@ final class InMemoryMenuRepository implements MenuRepository
     {
         return count(array_filter($this->menu()->variants, fn (Variant $v) => $v->itemId === $itemId));
     }
+
+    public function lockCategoryIds(): array
+    {
+        return array_keys($this->categories);
+    }
+
+    public function variantIds(int $itemId): array
+    {
+        return array_values(array_map(fn (Variant $v) => $v->id, array_filter($this->menu()->variants, fn (Variant $v) => $v->itemId === $itemId)));
+    }
+
+    public function setCategorySorts(array $sorts): void
+    {
+        foreach ($sorts as $id => $sort) {
+            $c = $this->categories[$id];
+            $this->categories[$id] = new Category($id, $c->name, $sort, $c->active);
+        }
+    }
+
+    public function setVariantSorts(array $sorts): void
+    {
+        foreach ($sorts as $id => $sort) {
+            $v = $this->variants[$id];
+            $this->variants[$id] = new Variant($id, $v->itemId, $v->name, $v->priceCents, $v->available, $sort);
+        }
+    }
 }

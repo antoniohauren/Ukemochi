@@ -28,7 +28,6 @@ export interface MenuForm {
   name: string;
   note: string;
   price_cents: number;
-  sort: number;
   flag: boolean;
 }
 
@@ -46,11 +45,10 @@ export interface MenuFormData {
 }
 
 /** API field name (FormRequest key) to form control. */
-const API_FIELDS: Partial<Record<string, 'name' | 'note' | 'price' | 'sort'>> = {
+const API_FIELDS: Partial<Record<string, 'name' | 'note' | 'price'>> = {
   name: 'name',
   note: 'note',
   price_cents: 'price',
-  sort: 'sort',
 };
 
 /** Create/edit form for categories, items, variants and add-ons. Rules mirror the API FormRequests. */
@@ -96,13 +94,6 @@ const API_FIELDS: Partial<Record<string, 'name' | 'note' | 'price' | 'sort'>> = 
             <mat-error>{{ 'menu.price.invalid' | t }}</mat-error>
           </mat-form-field>
         }
-        @if (has('sort')) {
-          <mat-form-field>
-            <mat-label>{{ 'menu.sort' | t }}</mat-label>
-            <input matInput formControlName="sort" type="number" inputmode="numeric" min="0" />
-            <mat-error>{{ 'menu.sort.invalid' | t }}</mat-error>
-          </mat-form-field>
-        }
         @if (has('flag') && data.flagLabel) {
           <mat-slide-toggle formControlName="flag">{{ data.flagLabel | t }}</mat-slide-toggle>
         }
@@ -146,12 +137,6 @@ export class MenuFormDialog {
     }),
     note: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(1000)] }),
     price: new FormControl('', { nonNullable: true, validators: [moneyValidator] }),
-    sort: new FormControl<number | null>(0, [
-      Validators.required,
-      Validators.min(0),
-      Validators.max(100000),
-      Validators.pattern(/^\d+$/),
-    ]),
     flag: new FormControl(true, { nonNullable: true }),
   });
   protected readonly busy = signal(false);
@@ -165,9 +150,6 @@ export class MenuFormDialog {
     });
     if (!this.has('price_cents')) {
       this.form.controls.price.disable();
-    }
-    if (!this.has('sort')) {
-      this.form.controls.sort.disable();
     }
   }
 
@@ -185,12 +167,11 @@ export class MenuFormDialog {
     }
     this.busy.set(true);
     this.error.set(null);
-    const { name, note, price, sort, flag } = this.form.getRawValue();
+    const { name, note, price, flag } = this.form.getRawValue();
     const error = await this.data.save({
       name: name.trim(),
       note: note.trim(),
       price_cents: parseMoney(price) ?? 0,
-      sort: sort ?? 0,
       flag,
     });
     this.busy.set(false);

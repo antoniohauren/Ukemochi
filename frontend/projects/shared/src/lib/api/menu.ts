@@ -60,3 +60,8 @@ export type NewVariantInput = VariantInput & { available: boolean };
 
 /** Body of `POST /api/addons` and `PUT /api/addons/{id}`. */
 export type AddonInput = Omit<Addon, 'id'>;
+
+/** Body of `PUT /api/categories/order` and `PUT /api/items/{id}/variants/order`: every id, in the new order. */
+export interface ReorderInput {
+  ids: number[];
+}

@@ -38,15 +38,22 @@ describe('MenuPage', () => {
   const setVariantAvailable = vi.fn();
   const setItemActive = vi.fn();
   const deleteVariant = vi.fn(() => of(null));
+  const reorderCategories = vi.fn(() => of(null));
 
-  async function visit(url: string) {
+  async function visit(url: string, menu: Menu = MENU) {
     localStorage.clear();
     TestBed.configureTestingModule({
       providers: [
         provideRouter([{ path: 'menu', component: MenuPage }]),
         {
           provide: MenuApi,
-          useValue: { menu: () => of(MENU), setVariantAvailable, setItemActive, deleteVariant },
+          useValue: {
+            menu: () => of(menu),
+            setVariantAvailable,
+            setItemActive,
+            deleteVariant,
+            reorderCategories,
+          },
         },
       ],
     });
@@ -96,6 +103,22 @@ describe('MenuPage', () => {
     const missingCategory = await visit('/menu?category=99');
     expect(missingCategory.el.querySelector('.panes')?.classList).toContain('depth-0');
     expect(missingCategory.el.textContent).toContain('Escolha uma categoria.');
+  });
+
+  it('moves a category with the arrow keys on its handle and keeps focus there', async () => {
+    const drinks = { id: 2, name: 'Bebidas', sort: 1, active: true, addons: [], items: [] };
+    const { el, harness } = await visit('/menu', { categories: [...MENU.categories, drinks] });
+    const handle = el.querySelector<HTMLButtonElement>(
+      '.categories .drag-handle[aria-label="Mover com as setas: Bebidas"]',
+    );
+    handle?.focus();
+    handle?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', cancelable: true }));
+    await harness.fixture.whenStable();
+    expect(reorderCategories).toHaveBeenCalledWith({ ids: [2, 1] });
+    expect(
+      [...el.querySelectorAll('.categories [matListItemTitle]')].map((t) => t.textContent),
+    ).toEqual(['Bebidas', 'Pastéis']);
+    expect(document.activeElement).toBe(handle);
   });
 
   it('removes a variant only after confirming', async () => {

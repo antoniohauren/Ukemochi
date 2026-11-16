@@ -105,6 +105,8 @@ it('forbids waitresses from changing the menu', function (string $method, string
     ['DELETE', '/api/variants/{v}'],
     ['POST', '/api/addons'],
     ['PUT', '/api/addons/1'],
+    ['PUT', '/api/categories/order'],
+    ['PUT', '/api/items/{i}/variants/order'],
 ]);
 
 it('ignores availability on edits so a kitchen toggle sticks', function (): void {
@@ -126,6 +128,60 @@ it('answers 404 for ids too large for the database', function (string $method, s
     ['PUT', '/api/variants/99999999999999999999'],
     ['PUT', '/api/items/99999999999999999999/active'],
     ['POST', '/api/items/99999999999999999999/variants'],
+    ['PUT', '/api/items/99999999999999999999/variants/order'],
+]);
+
+it('reorders categories, audits once and keeps sort on later edits', function (): void {
+    ['category' => $a] = seedMenu();
+    $b = createdId(postJson('/api/categories', ['name' => 'Bebidas', 'sort' => 2, 'active' => true]));
+    $audits = DB::table('audit_log')->count();
+
+    putJson('/api/categories/order', ['ids' => [$b, $a]])->assertNoContent();
+
+    expect(getJson('/api/menu')->json('categories.*.id'))->toBe([$b, $a])
+        ->and(DB::table('categories')->orderBy('id')->pluck('sort', 'id')->all())->toBe([$a => 1, $b => 0])
+        ->and(DB::table('audit_log')->count())->toBe($audits + 1)
+        ->and(lastAudit())->toMatchArray(['entity' => 'category', 'entity_id' => 'all', 'action' => 'reorder', 'summary' => ['ids' => [$b, $a]]]);
+});
+
+it('reorders an item variants, leaving deleted ones out', function (): void {
+    ['item' => $i, 'variant' => $v] = seedMenu();
+    $half = createdId(postJson("/api/items/{$i}/variants", ['name' => 'Meio', 'price_cents' => 1700, 'available' => true, 'sort' => 1]));
+    $gone = createdId(postJson("/api/items/{$i}/variants", ['name' => 'Velho', 'price_cents' => 100, 'available' => true, 'sort' => 2]));
+    deleteJson("/api/variants/{$gone}")->assertNoContent();
+
+    putJson("/api/items/{$i}/variants/order", ['ids' => [$half, $v]])->assertNoContent();
+
+    expect(getJson('/api/menu')->json('categories.0.items.0.variants.*.id'))->toBe([$half, $v])
+        ->and(lastAudit())->toMatchArray(['entity' => 'item', 'entity_id' => (string) $i, 'action' => 'reorder', 'summary' => ['ids' => [$half, $v]]]);
+    putJson("/api/items/{$i}/variants/order", ['ids' => [$half, $v, $gone]])->assertStatus(422)
+        ->assertExactJson(['code' => 'menu.invalid_order', 'message' => 'The order must list every row exactly once.']);
+});
+
+it('refuses an order that is not the full set of categories and changes nothing', function (): void {
+    ['category' => $a] = seedMenu();
+    $b = createdId(postJson('/api/categories', ['name' => 'Bebidas', 'sort' => 2, 'active' => true]));
+    $audits = DB::table('audit_log')->count();
+
+    foreach ([[$a], [$a, $b, 999]] as $ids) {
+        putJson('/api/categories/order', ['ids' => $ids])->assertStatus(422)
+            ->assertExactJson(['code' => 'menu.invalid_order', 'message' => 'The order must list every row exactly once.']);
+    }
+
+    expect(DB::table('categories')->orderBy('id')->pluck('sort')->all())->toBe([1, 2])
+        ->and(DB::table('audit_log')->count())->toBe($audits);
+});
+
+it('validates the order body', function (mixed $ids): void {
+    seedMenu();
+
+    putJson('/api/categories/order', ['ids' => $ids])->assertUnprocessable()->assertJsonPath('code', 'validation');
+})->with([
+    'not a list' => [['x' => 1]],
+    'not integers' => [['a']],
+    'a duplicate' => [[1, 1]],
+    'zero' => [[0]],
+    'missing' => [null],
 ]);
 
 it('soft deletes a variant with an audit note and keeps the last one', function (): void {

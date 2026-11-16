@@ -1,3 +1,4 @@
+import { moveItemInArray } from '@angular/cdk/drag-drop';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { firstValueFrom, type Observable } from 'rxjs';
@@ -9,6 +10,7 @@ import {
   type Menu,
   MenuApi,
   type TranslationKey,
+  type Variant,
 } from 'shared';
 import type { MenuForm } from './menu-form-dialog';
 
@@ -53,7 +55,8 @@ export class MenuStore {
   }
 
   saveCategory(id: number | null, v: MenuForm): Promise<ApiError | null> {
-    const body = { name: v.name, sort: v.sort, active: v.flag };
+    const sort = id === null ? nextSort(this.categories()) : this.sortOf(this.categories(), id);
+    const body = { name: v.name, sort, active: v.flag };
     return this.write(
       id === null ? this.api.createCategory(body) : this.api.updateCategory(id, body),
     );
@@ -69,7 +72,9 @@ export class MenuStore {
   }
 
   saveVariant(itemId: number, id: number | null, v: MenuForm): Promise<ApiError | null> {
-    const body = { name: v.name, price_cents: v.price_cents, sort: v.sort };
+    const variants = this.variantsOf(itemId);
+    const sort = id === null ? nextSort(variants) : this.sortOf(variants, id);
+    const body = { name: v.name, price_cents: v.price_cents, sort };
     return this.write(
       id === null
         ? this.api.createVariant(itemId, { ...body, available: v.flag })
@@ -98,6 +103,62 @@ export class MenuStore {
 
   deleteVariant(id: number): Promise<boolean> {
     return this.act(this.api.deleteVariant(id), 'menu.variant.deleted');
+  }
+
+  /** Optimistic: shows the new order at once; reverts, reports and reloads if the API refuses. */
+  moveCategory(from: number, to: number): Promise<boolean> {
+    const categories = this.categories();
+    const ids = moved(categories, from, to);
+    if (!ids) {
+      return Promise.resolve(true);
+    }
+    return this.reorder(
+      { categories: resorted(categories, ids) },
+      this.api.reorderCategories({ ids }),
+    );
+  }
+
+  moveVariant(itemId: number, from: number, to: number): Promise<boolean> {
+    const ids = moved(this.variantsOf(itemId), from, to);
+    if (!ids) {
+      return Promise.resolve(true);
+    }
+    const categories = this.categories().map((c) => ({
+      ...c,
+      items: c.items.map((i) =>
+        i.id === itemId ? { ...i, variants: resorted(i.variants, ids) } : i,
+      ),
+    }));
+    return this.reorder({ categories }, this.api.reorderVariants(itemId, { ids }));
+  }
+
+  private async reorder(next: Menu, call: Observable<unknown>): Promise<boolean> {
+    const previous = this.menu();
+    this.menu.set(next);
+    try {
+      await firstValueFrom(call);
+      return true;
+    } catch (e) {
+      this.menu.set(previous);
+      this.notify(errorKey(e as ApiError));
+      void this.load();
+      return false;
+    }
+  }
+
+  private variantsOf(itemId: number): readonly Variant[] {
+    for (const c of this.categories()) {
+      const item = c.items.find((i) => i.id === itemId);
+      if (item) {
+        return item.variants;
+      }
+    }
+    return [];
+  }
+
+  /** Edits keep the stored sort; only reordering changes it. */
+  private sortOf(rows: readonly { id: number; sort: number }[], id: number): number {
+    return rows.find((r) => r.id === id)?.sort ?? 0;
   }
 
   /** Returns the error on failure (nothing reloaded), so a dialog can show it and stay open. */
@@ -140,4 +201,27 @@ export class MenuStore {
   private notify(key: TranslationKey): void {
     this.snackBar.open(this.language.t(key), undefined, { duration: 3000 });
   }
+}
+
+/** New rows go last. */
+function nextSort(rows: readonly { sort: number }[]): number {
+  return Math.max(-1, ...rows.map((r) => r.sort)) + 1;
+}
+
+/** Ids in the order after moving `from` to `to`, or null when nothing moves. */
+function moved(rows: readonly { id: number }[], from: number, to: number): number[] | null {
+  const ids = rows.map((r) => r.id);
+  const target = Math.max(0, Math.min(to, ids.length - 1));
+  if (from === target || from < 0 || from >= ids.length) {
+    return null;
+  }
+  moveItemInArray(ids, from, target);
+  return ids;
+}
+
+/** Rows in `ids` order with `sort` = position, as the API stores them. */
+function resorted<T extends { id: number; sort: number }>(rows: readonly T[], ids: number[]): T[] {
+  return [...rows]
+    .sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id))
+    .map((r, sort) => ({ ...r, sort }));
 }

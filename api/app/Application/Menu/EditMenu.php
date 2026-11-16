@@ -12,6 +12,7 @@ use App\Domain\Menu\Category;
 use App\Domain\Menu\Item;
 use App\Domain\Menu\LastVariant;
 use App\Domain\Menu\MenuNotFound;
+use App\Domain\Menu\MenuOrder;
 use App\Domain\Menu\Variant;
 
 /** Menu mutations. Each one writes the record and its audit row in one transaction. */
@@ -113,6 +114,31 @@ final readonly class EditMenu
         });
     }
 
+    /** @param  list<int>  $ids  every category, in the new order */
+    public function reorderCategories(array $ids): void
+    {
+        $this->transaction->run(function () use ($ids): void {
+            $this->menu->setCategorySorts(MenuOrder::sorts($ids, $this->menu->lockCategoryIds()));
+            $this->record('category', 'all', 'reorder', ['ids' => $ids], null);
+        });
+    }
+
+    /**
+     * Audited on the item, since the order belongs to its variant list.
+     *
+     * @param  list<int>  $ids  every non-deleted variant of the item, in the new order
+     */
+    public function reorderVariants(int $itemId, array $ids): void
+    {
+        $this->item($itemId);
+        $this->transaction->run(function () use ($itemId, $ids): void {
+            // Same lock as deleteVariant, so the set cannot change under us.
+            $this->menu->lockItem($itemId);
+            $this->menu->setVariantSorts(MenuOrder::sorts($ids, $this->menu->variantIds($itemId)));
+            $this->record('item', $itemId, 'reorder', ['ids' => $ids], null);
+        });
+    }
+
     public function createAddon(?int $itemId, ?int $categoryId, string $name, int $priceCents, bool $active): Addon
     {
         $addon = $this->targeted(new Addon(0, $itemId, $categoryId, $name, $priceCents, $active));
@@ -179,7 +205,7 @@ final readonly class EditMenu
     }
 
     /** @param  array<string, mixed>  $summary */
-    private function record(string $entity, int $id, string $action, array $summary, ?string $note): void
+    private function record(string $entity, string|int $id, string $action, array $summary, ?string $note): void
     {
         $this->audit->record($this->session->userId(), $entity, $id, $action, $summary, $note);
     }

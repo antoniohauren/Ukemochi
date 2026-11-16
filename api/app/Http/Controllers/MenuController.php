@@ -10,6 +10,7 @@ use App\Http\Requests\AddonRequest;
 use App\Http\Requests\AuditNoteRequest;
 use App\Http\Requests\CategoryRequest;
 use App\Http\Requests\ItemRequest;
+use App\Http\Requests\ReorderRequest;
 use App\Http\Requests\SetItemActiveRequest;
 use App\Http\Requests\SetVariantAvailableRequest;
 use App\Http\Requests\VariantRequest;
@@ -42,6 +43,13 @@ final readonly class MenuController
         return new CategoryResource($this->edit->updateCategory($id, self::str($r, 'name'), $r->integer('sort'), $r->boolean('active')));
     }
 
+    public function reorderCategories(ReorderRequest $r): Response
+    {
+        $this->edit->reorderCategories($r->ids());
+
+        return response()->noContent();
+    }
+
     public function storeItem(ItemRequest $r): JsonResponse
     {
         return self::created(new ItemResource($this->edit->createItem(
@@ -66,6 +74,13 @@ final readonly class MenuController
         return self::created(new VariantResource($this->edit->createVariant(
             $itemId, self::nullableStr($r, 'name') ?? '', $r->integer('price_cents'), $r->boolean('available'), $r->integer('sort'),
         )));
+    }
+
+    public function reorderVariants(ReorderRequest $r, int $itemId): Response
+    {
+        $this->edit->reorderVariants($itemId, $r->ids());
+
+        return response()->noContent();
     }
 
     public function updateVariant(VariantRequest $r, int $id): VariantResource

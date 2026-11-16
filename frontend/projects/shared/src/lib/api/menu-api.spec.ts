@@ -31,6 +31,16 @@ describe('MenuApi', () => {
     req.flush({});
   });
 
+  it('sends the new order of categories and of the variants of an item', () => {
+    menu.reorderCategories({ ids: [2, 1] }).subscribe();
+    expect(http.expectOne({ method: 'PUT', url: '/api/categories/order' }).request.body).toEqual({
+      ids: [2, 1],
+    });
+    menu.reorderVariants(10, { ids: [101, 100] }).subscribe();
+    const req = http.expectOne({ method: 'PUT', url: '/api/items/10/variants/order' });
+    expect(req.request.body).toEqual({ ids: [101, 100] });
+  });
+
   it('sends the delete note as a query param', () => {
     menu.deleteVariant(5, 'saiu').subscribe();
     http.expectOne({ method: 'DELETE', url: '/api/variants/5?note=saiu' }).flush(null);

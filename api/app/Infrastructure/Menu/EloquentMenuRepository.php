@@ -117,4 +117,28 @@ final class EloquentMenuRepository implements MenuRepository
     {
         return EloquentVariant::query()->where('item_id', $itemId)->count();
     }
+
+    public function lockCategoryIds(): array
+    {
+        return array_values(EloquentCategory::query()->orderBy('id')->lockForUpdate()->get(['id'])->map(fn (EloquentCategory $c): int => $c->id)->all());
+    }
+
+    public function variantIds(int $itemId): array
+    {
+        return array_values(EloquentVariant::query()->where('item_id', $itemId)->orderBy('id')->get(['id'])->map(fn (EloquentVariant $v): int => $v->id)->all());
+    }
+
+    public function setCategorySorts(array $sorts): void
+    {
+        foreach ($sorts as $id => $sort) {
+            EloquentCategory::query()->whereKey($id)->update(['sort' => $sort]);
+        }
+    }
+
+    public function setVariantSorts(array $sorts): void
+    {
+        foreach ($sorts as $id => $sort) {
+            EloquentVariant::query()->whereKey($id)->update(['sort' => $sort]);
+        }
+    }
 }

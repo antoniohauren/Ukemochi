@@ -31,10 +31,12 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     Route::middleware('role:admin')->group(function (): void {
         Route::post('/categories', [MenuController::class, 'storeCategory']);
+        Route::put('/categories/order', [MenuController::class, 'reorderCategories']);
         Route::put('/categories/{id}', [MenuController::class, 'updateCategory']);
         Route::post('/items', [MenuController::class, 'storeItem']);
         Route::put('/items/{id}', [MenuController::class, 'updateItem']);
         Route::post('/items/{itemId}/variants', [MenuController::class, 'storeVariant']);
+        Route::put('/items/{itemId}/variants/order', [MenuController::class, 'reorderVariants']);
         Route::put('/variants/{id}', [MenuController::class, 'updateVariant']);
         Route::delete('/variants/{id}', [MenuController::class, 'destroyVariant']);
         Route::post('/addons', [MenuController::class, 'storeAddon']);

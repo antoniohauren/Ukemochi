@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Application\Menu\EditMenu;
 use App\Domain\Menu\InvalidAddonTarget;
+use App\Domain\Menu\InvalidOrder;
 use App\Domain\Menu\InvalidPrice;
 use App\Domain\Menu\LastVariant;
 use App\Domain\Menu\MenuNotFound;
@@ -123,6 +124,57 @@ it('soft deletes a variant but keeps the last one', function (): void {
 
     $edit->deleteVariant((int) array_key_first($repo->variants), null);
 })->throws(LastVariant::class);
+
+it('reorders categories and audits the new order once', function (): void {
+    [$edit, $repo, $audit] = editMenu();
+    $a = $edit->createCategory('Uramaki', 0, true);
+    $b = $edit->createCategory('Bebidas', 1, true);
+
+    $edit->reorderCategories([$b->id, $a->id]);
+
+    expect(array_map(fn ($c) => $c->sort, $repo->categories))->toBe([$a->id => 1, $b->id => 0])
+        ->and(end($audit->entries))->toBe([
+            'userId' => 7, 'entity' => 'category', 'entityId' => 'all', 'action' => 'reorder',
+            'summary' => ['ids' => [$b->id, $a->id]], 'note' => null,
+        ]);
+});
+
+it('reorders the item variants under the item lock, ignoring deleted ones', function (): void {
+    [$edit, $repo, $audit] = editMenu();
+    $item = $edit->createItem($edit->createCategory('Uramaki', 0, true)->id, 'Salmão', null, true, 3000);
+    $default = (int) array_key_first($repo->variants);
+    $half = $edit->createVariant($item->id, 'Meio', 1600, true, 1);
+    $gone = $edit->createVariant($item->id, 'Combo', 5000, true, 2);
+    $edit->deleteVariant($gone->id, null);
+    $repo->lockedItems = [];
+
+    $edit->reorderVariants($item->id, [$half->id, $default]);
+
+    expect($repo->variants[$half->id]->sort)->toBe(0)
+        ->and($repo->variants[$default]->sort)->toBe(1)
+        ->and($repo->lockedItems)->toBe([$item->id])
+        ->and(end($audit->entries))->toMatchArray([
+            'entity' => 'item', 'entityId' => $item->id, 'action' => 'reorder', 'summary' => ['ids' => [$half->id, $default]],
+        ]);
+});
+
+it('refuses a variant order that is not the full set and audits nothing', function (): void {
+    [$edit, $repo, $audit] = editMenu();
+    $item = $edit->createItem($edit->createCategory('Uramaki', 0, true)->id, 'Salmão', null, true, 3000);
+    $edit->createVariant($item->id, 'Meio', 1600, true, 1);
+    $before = count($audit->entries);
+
+    try {
+        $edit->reorderVariants($item->id, [(int) array_key_first($repo->variants)]);
+    } finally {
+        expect($audit->entries)->toHaveCount($before);
+    }
+})->throws(InvalidOrder::class);
+
+it('refuses to reorder the variants of a missing item', function (): void {
+    [$edit] = editMenu();
+    $edit->reorderVariants(99, []);
+})->throws(MenuNotFound::class);
 
 it('refuses to edit a deleted variant', function (): void {
     [$edit, $repo, $audit] = editMenu();

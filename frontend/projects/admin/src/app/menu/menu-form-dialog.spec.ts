@@ -39,7 +39,6 @@ describe('MenuFormDialog', () => {
       name: 'Carne',
       note: '',
       price_cents: 1250,
-      sort: 0,
       flag: true,
     });
     expect(close).toHaveBeenCalledWith(true);
@@ -81,16 +80,6 @@ describe('MenuFormDialog', () => {
     expect(el.querySelector('[role=alert]')?.textContent).toContain(
       'O preço não pode ser negativo.',
     );
-  });
-
-  it.each(['', '1.5', '-1', '100001'])('refuses sort %j without saving', async (sort) => {
-    const { inputs, submit, fixture, el } = await setup({ fields: ['name', 'sort'] });
-    await inputs[0].setValue('Carne');
-    await inputs[1].setValue(sort);
-    await submit.click();
-    await fixture.whenStable();
-    expect(save).not.toHaveBeenCalled();
-    expect(el.textContent).toContain('Use um número inteiro de 0 a 100000.');
   });
 
   it('puts per-field API errors on their fields', async () => {

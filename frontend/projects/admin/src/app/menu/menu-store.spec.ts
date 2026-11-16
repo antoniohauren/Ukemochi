@@ -30,7 +30,27 @@ const MENU: Menu = {
   ],
 };
 
-const FORM: MenuForm = { name: 'Queijo', note: '', price_cents: 900, sort: 2, flag: false };
+const CARNE = MENU.categories[0].items[0];
+/** Two categories; item 10 has two variants. */
+const TWO: Menu = {
+  categories: [
+    {
+      ...MENU.categories[0],
+      items: [
+        {
+          ...CARNE,
+          variants: [
+            ...CARNE.variants,
+            { id: 101, item_id: 10, name: 'G', price_cents: 1500, available: true, sort: 1 },
+          ],
+        },
+      ],
+    },
+    { id: 2, name: 'Bebidas', sort: 1, active: true, addons: [], items: [] },
+  ],
+};
+
+const FORM: MenuForm = { name: 'Queijo', note: '', price_cents: 900, flag: false };
 
 describe('MenuStore', () => {
   let api: Record<string, ReturnType<typeof vi.fn>>;
@@ -101,19 +121,20 @@ describe('MenuStore', () => {
     });
   });
 
-  it('creates a variant with availability and updates one without it', async () => {
+  it('creates a variant last with availability and updates one keeping its sort', async () => {
+    await store.load();
     await store.saveVariant(10, null, FORM);
     expect(api['createVariant']).toHaveBeenCalledWith(10, {
       name: 'Queijo',
       price_cents: 900,
-      sort: 2,
+      sort: 1,
       available: false,
     });
     await store.saveVariant(10, 100, FORM);
     expect(api['updateVariant']).toHaveBeenCalledWith(100, {
       name: 'Queijo',
       price_cents: 900,
-      sort: 2,
+      sort: 0,
     });
   });
 
@@ -152,13 +173,57 @@ describe('MenuStore', () => {
     expect(await store.setItemActive(10, false)).toBe(false);
   });
 
-  it('sends name, sort and active for a category', async () => {
+  it('creates a category last and updates one keeping its sort', async () => {
+    await store.load();
+    await store.saveCategory(null, FORM);
+    expect(api['createCategory']).toHaveBeenCalledWith({ name: 'Queijo', sort: 1, active: false });
     await store.saveCategory(1, FORM);
     expect(api['updateCategory']).toHaveBeenCalledWith(1, {
       name: 'Queijo',
-      sort: 2,
+      sort: 0,
       active: false,
     });
+  });
+
+  it('shows a category move at once and sends the new order', async () => {
+    api['menu'] = vi.fn(() => of(TWO));
+    await store.load();
+    const reply = new Subject<null>();
+    api['reorderCategories'] = vi.fn(() => reply);
+    const done = store.moveCategory(1, 0);
+    expect(store.categories().map((c) => [c.id, c.sort])).toEqual([
+      [2, 0],
+      [1, 1],
+    ]);
+    expect(api['reorderCategories']).toHaveBeenCalledWith({ ids: [2, 1] });
+    reply.next(null);
+    reply.complete();
+    expect(await done).toBe(true);
+    expect(snack).not.toHaveBeenCalled();
+  });
+
+  it('reverts a refused variant move, reports it and reloads', async () => {
+    api['menu'] = vi.fn(() => of(TWO));
+    await store.load();
+    api['reorderVariants'] = fail('menu.invalid_order');
+    api['menu'] = vi.fn(() => new Subject<Menu>());
+    expect(await store.moveVariant(10, 0, 1)).toBe(false);
+    expect(api['reorderVariants']).toHaveBeenCalledWith(10, { ids: [101, 100] });
+    expect(store.menu()).toEqual(TWO);
+    expect(snack).toHaveBeenCalledWith('A ordem mudou. Tente de novo.', undefined, {
+      duration: 3000,
+    });
+    expect(api['menu']).toHaveBeenCalled();
+  });
+
+  it('does not call the API for a move that changes nothing', async () => {
+    api['menu'] = vi.fn(() => of(TWO));
+    await store.load();
+    api['reorderCategories'] = vi.fn();
+    expect(await store.moveCategory(0, 0)).toBe(true);
+    expect(await store.moveCategory(0, -1)).toBe(true);
+    expect(await store.moveCategory(1, 5)).toBe(true);
+    expect(api['reorderCategories']).not.toHaveBeenCalled();
   });
 
   it('keeps the latest menu when an older reload answers last', async () => {

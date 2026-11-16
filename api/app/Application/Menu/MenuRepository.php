@@ -48,4 +48,24 @@ interface MenuRepository
 
     /** Variants of the item that are not soft-deleted. */
     public function countVariants(int $itemId): int;
+
+    /**
+     * Every category id, row-locked until the transaction ends.
+     *
+     * @return list<int>
+     */
+    public function lockCategoryIds(): array;
+
+    /**
+     * Ids of the item's variants that are not soft-deleted.
+     *
+     * @return list<int>
+     */
+    public function variantIds(int $itemId): array;
+
+    /** @param  array<int, int>  $sorts  category id => sort */
+    public function setCategorySorts(array $sorts): void;
+
+    /** @param  array<int, int>  $sorts  variant id => sort */
+    public function setVariantSorts(array $sorts): void;
 }

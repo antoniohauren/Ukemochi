@@ -14,20 +14,39 @@
 } @else {
   <div [class]="'panes depth-' + depth()">
     <section class="pane categories">
-      <h2 class="pane-title">{{ 'menu.categories' | t }}</h2>
-      <mat-nav-list>
-        @for (c of store.categories(); track c.id) {
-          <a
-            mat-list-item
-            [routerLink]="[]"
-            [queryParams]="{ category: c.id }"
-            [activated]="c.id === store.category()?.id"
-          >
-            <span matListItemTitle>{{ c.name }}</span>
-            @if (!c.active) {
-              <span matListItemLine>{{ 'menu.inactive' | t }}</span>
-            }
-          </a>
+      <header class="pane-head">
+        <h2 class="pane-title">{{ 'menu.categories' | t }}</h2>
+      </header>
+      <mat-nav-list
+        cdkDropList
+        cdkDropListLockAxis="y"
+        (cdkDropListDropped)="store.moveCategory($event.previousIndex, $event.currentIndex)"
+      >
+        @for (c of store.categories(); track c.id; let index = $index) {
+          <div class="drag-row" cdkDrag>
+            <button
+              mat-icon-button
+              cdkDragHandle
+              class="drag-handle"
+              type="button"
+              [attr.aria-label]="('menu.reorder' | t) + ': ' + c.name"
+              (keydown.arrowup)="moveCategory($event, index, -1)"
+              (keydown.arrowdown)="moveCategory($event, index, 1)"
+            >
+              <mat-icon aria-hidden="true">drag_indicator</mat-icon>
+            </button>
+            <a
+              mat-list-item
+              [routerLink]="[]"
+              [queryParams]="{ category: c.id }"
+              [activated]="c.id === store.category()?.id"
+            >
+              <span matListItemTitle>{{ c.name }}</span>
+              @if (!c.active) {
+                <span matListItemLine>{{ 'menu.inactive' | t }}</span>
+              }
+            </a>
+          </div>
         } @empty {
           <p class="hint">{{ 'menu.empty' | t }}</p>
         }
@@ -152,33 +171,50 @@
           <p class="muted">{{ i.note }}</p>
         }
         <h3 class="label">{{ 'menu.variants' | t }}</h3>
-        @for (v of i.variants; track v.id) {
-          <div class="row">
-            <button
-              class="row-main"
-              type="button"
-              (click)="editVariant(i.id, v, i.variants.length)"
-            >
-              {{ v.name || ('menu.variant.default' | t) }}
-            </button>
-            <span class="price">{{ money(v.price_cents) }}</span>
-            <mat-slide-toggle
-              [checked]="v.available"
-              [disabled]="store.pending().has('variant:' + v.id)"
-              (change)="setVariantAvailable(v, $event)"
-              aria-label="{{ 'menu.available' | t }}: {{ v.name || ('menu.variant.default' | t) }}"
-            />
-            <button
-              mat-icon-button
-              type="button"
-              [matMenuTriggerFor]="variantMenu"
-              [matMenuTriggerData]="{ $implicit: v }"
-              [attr.aria-label]="'nav.options' | t"
-            >
-              <mat-icon aria-hidden="true">more_vert</mat-icon>
-            </button>
-          </div>
-        }
+        <div
+          cdkDropList
+          cdkDropListLockAxis="y"
+          (cdkDropListDropped)="store.moveVariant(i.id, $event.previousIndex, $event.currentIndex)"
+        >
+          @for (v of i.variants; track v.id; let index = $index) {
+            <div class="row" cdkDrag>
+              <button
+                mat-icon-button
+                cdkDragHandle
+                class="drag-handle"
+                type="button"
+                [attr.aria-label]="
+                  ('menu.reorder' | t) + ': ' + (v.name || ('menu.variant.default' | t))
+                "
+                (keydown.arrowup)="moveVariant($event, i.id, index, -1)"
+                (keydown.arrowdown)="moveVariant($event, i.id, index, 1)"
+              >
+                <mat-icon aria-hidden="true">drag_indicator</mat-icon>
+              </button>
+              <button class="row-main" type="button" (click)="editVariant(i.id, v)">
+                {{ v.name || ('menu.variant.default' | t) }}
+              </button>
+              <span class="price">{{ money(v.price_cents) }}</span>
+              <mat-slide-toggle
+                [checked]="v.available"
+                [disabled]="store.pending().has('variant:' + v.id)"
+                (change)="setVariantAvailable(v, $event)"
+                aria-label="{{ 'menu.available' | t }}: {{
+                  v.name || ('menu.variant.default' | t)
+                }}"
+              />
+              <button
+                mat-icon-button
+                type="button"
+                [matMenuTriggerFor]="variantMenu"
+                [matMenuTriggerData]="{ $implicit: v }"
+                [attr.aria-label]="'nav.options' | t"
+              >
+                <mat-icon aria-hidden="true">more_vert</mat-icon>
+              </button>
+            </div>
+          }
+        </div>
         <mat-menu #variantMenu="matMenu">
           <ng-template matMenuContent let-v>
             <button mat-menu-item type="button" (click)="deleteVariant(v)">
@@ -201,11 +237,7 @@
           }
         }
         <div class="pane-action">
-          <button
-            matButton="tonal"
-            type="button"
-            (click)="editVariant(i.id, null, i.variants.length)"
-          >
+          <button matButton="tonal" type="button" (click)="editVariant(i.id, null)">
             <mat-icon aria-hidden="true">add</mat-icon>
             {{ 'menu.variant.new' | t }}
           </button>

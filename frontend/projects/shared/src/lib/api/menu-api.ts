@@ -11,6 +11,7 @@ import type {
   Menu,
   NewItemInput,
   NewVariantInput,
+  ReorderInput,
   Variant,
   VariantInput,
 } from './menu';
@@ -32,6 +33,11 @@ export class MenuApi {
     return this.api.put<Category>(`/categories/${id}`, body);
   }
 
+  /** Sets every category's sort to its position; fails with `menu.invalid_order` unless `ids` is the full set. */
+  reorderCategories(body: ReorderInput): Observable<null> {
+    return this.api.put<null>('/categories/order', body);
+  }
+
   createItem(body: NewItemInput): Observable<Item> {
     return this.api.post<Item>('/items', body);
   }
@@ -51,6 +57,11 @@ export class MenuApi {
 
   updateVariant(id: number, body: VariantInput): Observable<Variant> {
     return this.api.put<Variant>(`/variants/${id}`, body);
+  }
+
+  /** Same as `reorderCategories`, for the item's (non-deleted) variants. */
+  reorderVariants(itemId: number, body: ReorderInput): Observable<null> {
+    return this.api.put<null>(`/items/${itemId}/variants/order`, body);
   }
 
   setVariantAvailable(id: number, available: boolean, note?: string): Observable<Variant> {

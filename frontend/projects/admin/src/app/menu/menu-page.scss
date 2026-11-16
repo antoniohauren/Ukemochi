@@ -44,6 +44,37 @@
   min-height: 48px;
 }
 
+// Category rows: handle beside the nav link.
+.drag-row {
+  display: flex;
+  align-items: center;
+
+  > a {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.drag-handle {
+  cursor: grab;
+}
+
+// Preview and placeholder are clones of the row, so these scoped rules reach them.
+.cdk-drag-preview {
+  background: var(--mat-sys-surface-container-high);
+  border-radius: var(--mat-sys-corner-small);
+  box-shadow: var(--mat-sys-level3);
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.4;
+}
+
+.cdk-drop-list-dragging .cdk-drag:not(.cdk-drag-placeholder),
+.cdk-drag-animating {
+  transition: transform 200ms ease;
+}
+
 // Full-width tap target that reads as a list row, not a button.
 .row-main {
   flex: 1;
