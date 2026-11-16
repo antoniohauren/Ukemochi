@@ -1,5 +1,8 @@
 export type OrderType = 'dine_in' | 'pickup' | 'delivery';
 
+/** How a payment is made; pix is recorded only. */
+export type PaymentMethod = 'cash' | 'credit' | 'debit' | 'pix';
+
 export type OrderStatus = 'open' | 'ready' | 'out_for_delivery' | 'closed' | 'cancelled';
 
 /** `LineAddonResource`: add-on snapshot taken when the line was sent. */
@@ -13,6 +16,7 @@ export interface LineAddon {
 export interface OrderLine {
   id: number;
   variant_id: number;
+  category_name: string;
   item_name: string;
   variant_name: string;
   unit_price_cents: number;
@@ -35,6 +39,9 @@ export interface Order {
   address_text: string | null;
   delivery_fee_cents: number;
   pay_on_delivery: boolean;
+  /** Set only with `pay_on_delivery`. */
+  pay_method: PaymentMethod | null;
+  /** Only for cash. */
   change_for_cents: number | null;
   note: string | null;
   lines: OrderLine[];
@@ -66,6 +73,7 @@ export interface LineInput {
 
 /**
  * Body of `POST /api/orders`. `address_text` is required for delivery; `delivery_fee_cents` only on delivery.
+ * `pay_method` is required with `pay_on_delivery` and only then; `change_for_cents` only for cash.
  * Cents are integers 0–100000000; at most 200 lines.
  */
 export interface OrderInput {
@@ -74,6 +82,7 @@ export interface OrderInput {
   address_text?: string | null;
   delivery_fee_cents?: number;
   pay_on_delivery?: boolean;
+  pay_method?: PaymentMethod | null;
   change_for_cents?: number | null;
   note?: string | null;
   lines: LineInput[];

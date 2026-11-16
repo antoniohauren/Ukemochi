@@ -4,6 +4,7 @@ import { feeCents, orderBody, orderForm, orderFormValue } from './order-form';
 const LINE: DraftLine = {
   id: 9,
   variant_id: 100,
+  category_name: 'Uramaki',
   item_name: 'Philadelphia',
   variant_name: 'Inteiro',
   unit_price_cents: 3200,
@@ -18,6 +19,7 @@ const PICKUP = {
   address_text: null,
   delivery_fee_cents: 0,
   pay_on_delivery: false,
+  pay_method: null,
   change_for_cents: null,
   note: null,
 } as Order;
@@ -83,6 +85,7 @@ describe('order form', () => {
       address_text: ' Rua A, 10 ',
       delivery_fee: '7,00',
       pay_on_delivery: true,
+      pay_method: 'cash',
       change_for: '100',
       note: '',
     });
@@ -92,9 +95,30 @@ describe('order form', () => {
       address_text: 'Rua A, 10',
       delivery_fee_cents: 700,
       pay_on_delivery: true,
+      pay_method: 'cash',
       change_for_cents: 10000,
       note: null,
       lines: [{ id: 9, variant_id: 100, qty: 2, note: null, addon_ids: [30] }],
+    });
+  });
+
+  it('sends no change when paying on delivery by card', () => {
+    const form = orderForm();
+    form.setValue({
+      type: 'delivery',
+      customer_name: 'Ana',
+      address_text: 'Rua A',
+      delivery_fee: '0',
+      pay_on_delivery: true,
+      pay_method: 'credit',
+      change_for: 'abc',
+      note: '',
+    });
+    expect(form.valid).toBe(true);
+    expect(orderBody(form.getRawValue(), [])).toMatchObject({
+      pay_on_delivery: true,
+      pay_method: 'credit',
+      change_for_cents: null,
     });
   });
 
@@ -106,6 +130,7 @@ describe('order form', () => {
       address_text: 'Rua A',
       delivery_fee: '7,00',
       pay_on_delivery: true,
+      pay_method: 'cash',
       change_for: '100',
       note: ' mesa da janela ',
     });
@@ -115,6 +140,7 @@ describe('order form', () => {
       address_text: null,
       delivery_fee_cents: 0,
       pay_on_delivery: false,
+      pay_method: null,
       change_for_cents: null,
       note: 'mesa da janela',
     });

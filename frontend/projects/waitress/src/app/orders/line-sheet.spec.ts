@@ -10,6 +10,7 @@ import { LineSheet, type LineSheetData } from './line-sheet';
 const LINE: DraftLine = {
   id: null,
   variant_id: 100,
+  category_name: 'Uramaki',
   item_name: 'Philadelphia',
   variant_name: 'Inteiro',
   unit_price_cents: 3200,

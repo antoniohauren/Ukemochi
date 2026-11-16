@@ -47,7 +47,7 @@ final class EloquentOrderRepository implements OrderRepository
             'id' => $order->id, 'type' => $d->type->value, 'status' => $order->status->value,
             'customer_id' => $d->customerId, 'customer_name' => $d->customerName, 'address_text' => $d->addressText,
             'delivery_fee_cents' => $d->deliveryFeeCents, 'pay_on_delivery' => $d->payOnDelivery,
-            'change_for_cents' => $d->changeForCents, 'note' => $d->note, 'created_by' => $order->createdBy,
+            'change_for_cents' => $d->changeForCents, 'pay_method' => $d->payMethod?->value, 'note' => $d->note, 'created_by' => $order->createdBy,
             'created_at' => $order->createdAt, 'closed_at' => $order->closedAt, 'cancel_reason' => $order->cancelReason,
             'version' => $order->version,
         ])->save();
@@ -58,7 +58,7 @@ final class EloquentOrderRepository implements OrderRepository
         foreach ($order->lines as $line) {
             $lineModel = $line->id === 0 ? new EloquentOrderLine : EloquentOrderLine::query()->where('order_id', $order->id)->findOrFail($line->id);
             $lineModel->forceFill([
-                'order_id' => $order->id, 'variant_id' => $line->variantId, 'item_name' => $line->itemName,
+                'order_id' => $order->id, 'variant_id' => $line->variantId, 'category_name' => $line->categoryName, 'item_name' => $line->itemName,
                 'variant_name' => $line->variantName, 'unit_price_cents' => $line->unitPriceCents, 'qty' => $line->qty, 'note' => $line->note,
             ])->save();
 

@@ -73,17 +73,17 @@ it('creates an order and answers it in the exact shape with domain totals', func
 
     $response = postJson('/api/orders', [
         'type' => 'delivery', 'customer_name' => 'Amanda', 'address_text' => 'Rua A, 1', 'delivery_fee_cents' => 700,
-        'pay_on_delivery' => true, 'change_for_cents' => 10000, 'note' => 'portão azul',
+        'pay_on_delivery' => true, 'pay_method' => 'cash', 'change_for_cents' => 10000, 'note' => 'portão azul',
         'lines' => [['variant_id' => $v, 'qty' => 2, 'note' => 'sem cebolinha', 'addon_ids' => [$a]]],
     ])->assertCreated();
 
     $response->assertExactJson([
         'id' => 1, 'type' => 'delivery', 'status' => 'open', 'customer_id' => null, 'customer_name' => 'Amanda',
         'address_text' => 'Rua A, 1', 'delivery_fee_cents' => 700, 'pay_on_delivery' => true, 'change_for_cents' => 10000,
-        'note' => 'portão azul',
+        'pay_method' => 'cash', 'note' => 'portão azul',
         'lines' => [[
-            'id' => lineId($response), 'variant_id' => $v, 'item_name' => 'Philadelphia', 'variant_name' => 'Inteiro',
-            'unit_price_cents' => 3200, 'qty' => 2, 'note' => 'sem cebolinha',
+            'id' => lineId($response), 'variant_id' => $v, 'category_name' => 'Uramaki', 'item_name' => 'Philadelphia',
+            'variant_name' => 'Inteiro', 'unit_price_cents' => 3200, 'qty' => 2, 'note' => 'sem cebolinha',
             'addons' => [['addon_id' => $a, 'name' => 'Cream cheese', 'price_cents' => 300]], 'total_cents' => 7000,
         ]],
         'subtotal_cents' => 7000, 'total_cents' => 7700,
@@ -243,6 +243,7 @@ it('validates the order body', function (array $body, string $field): void {
     'fractional fee' => [['delivery_fee_cents' => 1.5], 'delivery_fee_cents'],
     'huge change' => [['change_for_cents' => 100000001], 'change_for_cents'],
     'pay on delivery not bool' => [['pay_on_delivery' => 'maybe'], 'pay_on_delivery'],
+    'unknown pay method' => [['pay_on_delivery' => true, 'pay_method' => 'cheque'], 'pay_method'],
     'no lines' => [['lines' => 'x'], 'lines'],
     'zero qty' => [['lines' => [['qty' => 0]]], 'lines.0.qty'],
     'huge qty' => [['lines' => [['qty' => 1000]]], 'lines.0.qty'],
@@ -272,6 +273,8 @@ it('answers domain rule violations with their code', function (array $body, int 
 })->with([
     'delivery without address' => [['type' => 'delivery'], 422, 'order.address_required'],
     'fee on dine-in' => [['delivery_fee_cents' => 500], 422, 'order.invalid_delivery_fee'],
+    'pay on delivery without method' => [['pay_on_delivery' => true], 422, 'order.invalid_pay_method'],
+    'change for on card' => [['pay_on_delivery' => true, 'pay_method' => 'credit', 'change_for_cents' => 5000], 422, 'order.invalid_pay_method'],
     'missing variant' => [['lines' => [['variant_id' => 999999, 'qty' => 1]]], 404, 'menu.not_found'],
 ]);
 

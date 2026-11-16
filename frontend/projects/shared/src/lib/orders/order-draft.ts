@@ -5,6 +5,7 @@ import type { LineAddon, LineInput, Order, OrderLine } from '../api/order';
 export interface DraftLine {
   id: number | null;
   variant_id: number;
+  category_name: string;
   item_name: string;
   variant_name: string;
   unit_price_cents: number;
@@ -16,7 +17,7 @@ export interface DraftLine {
 /** What a line list shows: a saved `OrderLine` or a draft with its preview total. */
 export type LineView = Pick<
   OrderLine,
-  'item_name' | 'variant_name' | 'qty' | 'note' | 'addons' | 'total_cents'
+  'category_name' | 'item_name' | 'variant_name' | 'qty' | 'note' | 'addons' | 'total_cents'
 >;
 
 export interface MenuEntry {
@@ -39,10 +40,11 @@ export function findVariant(menu: Menu, variantId: number): MenuEntry | null {
 }
 
 /** A fresh line for a picked variant, with the menu's names and price. */
-export function newLine({ item, variant }: MenuEntry): DraftLine {
+export function newLine({ category, item, variant }: MenuEntry): DraftLine {
   return {
     id: null,
     variant_id: variant.id,
+    category_name: category.name,
     item_name: item.name,
     variant_name: variant.name,
     unit_price_cents: variant.price_cents,
@@ -57,6 +59,7 @@ export function draftLines(order: Order): DraftLine[] {
   return order.lines.map((l) => ({
     id: l.id,
     variant_id: l.variant_id,
+    category_name: l.category_name,
     item_name: l.item_name,
     variant_name: l.variant_name,
     unit_price_cents: l.unit_price_cents,
@@ -103,6 +106,14 @@ export function lineTotal(line: Pick<DraftLine, 'qty' | 'unit_price_cents' | 'ad
 /** Preview of the order total: lines + delivery fee. */
 export function draftTotal(lines: readonly DraftLine[], deliveryFeeCents: number): number {
   return lines.reduce((sum, line) => sum + lineTotal(line), deliveryFeeCents);
+}
+
+/** "Temaki Dinamite · Meio": the category tells apart items with the same name. */
+export function lineName(
+  line: Pick<DraftLine, 'category_name' | 'item_name' | 'variant_name'>,
+): string {
+  const item = [line.category_name, line.item_name].filter(Boolean).join(' ');
+  return line.variant_name ? `${item} · ${line.variant_name}` : item;
 }
 
 export function lineView(line: DraftLine): LineView {

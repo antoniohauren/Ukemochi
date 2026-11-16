@@ -7,6 +7,7 @@ use App\Domain\Order\CancelReasonRequired;
 use App\Domain\Order\CustomerNameRequired;
 use App\Domain\Order\InvalidAmount;
 use App\Domain\Order\InvalidDeliveryFee;
+use App\Domain\Order\InvalidPayMethod;
 use App\Domain\Order\InvalidQty;
 use App\Domain\Order\InvalidTransition;
 use App\Domain\Order\LineAddon;
@@ -17,6 +18,7 @@ use App\Domain\Order\OrderDetails;
 use App\Domain\Order\OrderLine;
 use App\Domain\Order\OrderStatus;
 use App\Domain\Order\OrderType;
+use App\Domain\Payment\PaymentMethod;
 
 function aLine(int $unit = 3200, int $qty = 1, int ...$addons): OrderLine
 {
@@ -75,7 +77,17 @@ it('validates order details', function (Closure $details, string $error): void {
     'fee on pickup' => [fn () => new OrderDetails(OrderType::Pickup, 'Ana', deliveryFeeCents: 500), InvalidDeliveryFee::class],
     'negative fee' => [fn () => new OrderDetails(OrderType::Delivery, 'Ana', addressText: 'Rua A', deliveryFeeCents: -1), InvalidDeliveryFee::class],
     'negative change for' => [fn () => new OrderDetails(OrderType::Delivery, 'Ana', addressText: 'Rua A', changeForCents: -1), InvalidAmount::class],
+    'pay on delivery without method' => [fn () => new OrderDetails(OrderType::Delivery, 'Ana', addressText: 'Rua A', payOnDelivery: true), InvalidPayMethod::class],
+    'method without pay on delivery' => [fn () => new OrderDetails(OrderType::Delivery, 'Ana', addressText: 'Rua A', payMethod: PaymentMethod::Pix), InvalidPayMethod::class],
+    'change for on card' => [fn () => new OrderDetails(OrderType::Delivery, 'Ana', addressText: 'Rua A', payOnDelivery: true, changeForCents: 5000, payMethod: PaymentMethod::Debit), InvalidPayMethod::class],
 ]);
+
+it('records the pay on delivery method, with change only for cash', function (): void {
+    $cash = new OrderDetails(OrderType::Delivery, 'Ana', addressText: 'Rua A', payOnDelivery: true, changeForCents: 10000, payMethod: PaymentMethod::Cash);
+    $card = new OrderDetails(OrderType::Delivery, 'Ana', addressText: 'Rua A', payOnDelivery: true, payMethod: PaymentMethod::Credit);
+
+    expect($cash->changeForCents)->toBe(10000)->and($card->payMethod)->toBe(PaymentMethod::Credit);
+});
 
 it('moves a delivery order open, ready, out for delivery, closed', function (): void {
     $order = anOrder(OrderType::Delivery, 700);

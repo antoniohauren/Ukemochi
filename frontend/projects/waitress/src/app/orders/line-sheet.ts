@@ -6,7 +6,14 @@ import { MatCheckbox } from '@angular/material/checkbox';
 import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
-import { type DraftLine, formatMoney, LanguageService, type LineAddon, TPipe } from 'shared';
+import {
+  type DraftLine,
+  formatMoney,
+  LanguageService,
+  type LineAddon,
+  lineName,
+  TPipe,
+} from 'shared';
 
 export interface LineSheetData {
   line: DraftLine;
@@ -140,9 +147,7 @@ export class LineSheet {
   protected readonly ref = inject<MatBottomSheetRef<LineSheet, LineSheetResult>>(MatBottomSheetRef);
   private readonly lang = inject(LanguageService).lang;
 
-  protected readonly title = this.data.line.variant_name
-    ? `${this.data.line.item_name} · ${this.data.line.variant_name}`
-    : this.data.line.item_name;
+  protected readonly title = lineName(this.data.line);
 
   private readonly selected = new Set(this.data.line.addons.map((a) => a.addon_id));
   protected readonly form = new FormGroup({

@@ -72,7 +72,7 @@ it('creates an order with the next number, snapshotting names and prices', funct
         ->and($order->createdAt)->toEqual(new DateTimeImmutable('2026-11-16 12:00:00+00:00'))
         ->and($order->lines)->toEqual([new OrderLine(1, 100, 'Philadelphia', 'Inteiro', 3200, 2, 'sem cebolinha', [
             new LineAddon(1000, 'Cream cheese', 300), new LineAddon(1001, 'Gergelim', 150),
-        ])])
+        ], 'Uramaki')])
         ->and($order->totalCents())->toBe(7300)
         ->and($orders->orders)->toHaveKey(42)
         ->and($audit->entries)->toBe([[
@@ -81,7 +81,7 @@ it('creates an order with the next number, snapshotting names and prices', funct
                 'type' => 'dine_in', 'status' => 'open', 'customer_name' => 'Amanda', 'address_text' => null,
                 'delivery_fee_cents' => 0, 'note' => null, 'version' => 1, 'total_cents' => 7300,
                 'lines' => [[
-                    'item_name' => 'Philadelphia', 'variant_name' => 'Inteiro', 'qty' => 2, 'unit_price_cents' => 3200,
+                    'category_name' => 'Uramaki', 'item_name' => 'Philadelphia', 'variant_name' => 'Inteiro', 'qty' => 2, 'unit_price_cents' => 3200,
                     'note' => 'sem cebolinha', 'addons' => ['Cream cheese', 'Gergelim'],
                 ]],
             ],
@@ -123,8 +123,8 @@ it('keeps the price snapshot of kept lines when the menu price changed', functio
     expect($edited->lines)->toEqual([
         new OrderLine(1, 100, 'Philadelphia', 'Inteiro', 3200, 3, 'bem passado', [
             new LineAddon(1000, 'Cream cheese', 300), new LineAddon(1001, 'Gergelim', 200),
-        ]),
-        new OrderLine(3, 100, 'Philadelphia', 'Inteiro 8un', 3500, 1, null),
+        ], 'Uramaki'),
+        new OrderLine(3, 100, 'Philadelphia', 'Inteiro 8un', 3500, 1, null, [], 'Uramaki'),
     ])
         ->and($edited->version)->toBe(2)
         ->and($edited->details->note)->toBe('mesa da janela')
@@ -139,7 +139,7 @@ it('re-snapshots a kept line whose variant changed', function (): void {
 
     $edited = $manage->edit($order->id, dineIn(), [new LineInput(101, 2, lineId: 1)], null);
 
-    expect($edited->lines)->toEqual([new OrderLine(1, 101, 'Philadelphia', 'Meio', 1700, 2, null)]);
+    expect($edited->lines)->toEqual([new OrderLine(1, 101, 'Philadelphia', 'Meio', 1700, 2, null, [], 'Uramaki')]);
 });
 
 it('refuses an edit naming a line of another order or the same line twice', function (array $lines): void {

@@ -14,6 +14,7 @@ use App\Domain\Order\OrderDetails;
 use App\Domain\Order\OrderLine;
 use App\Domain\Order\OrderStatus;
 use App\Domain\Order\OrderType;
+use App\Domain\Payment\PaymentMethod;
 use App\Infrastructure\Auth\EloquentUser;
 use Illuminate\Support\Facades\DB;
 
@@ -29,8 +30,8 @@ function orderRepoWithDraft(): array
     $repo = app(OrderRepository::class);
 
     $order = Order::place($repo->nextNumber(), new OrderDetails(
-        OrderType::Delivery, 'Amanda', null, 'Rua A, 1', 700, true, 10000, 'portão azul',
-    ), [new OrderLine(0, $variant->id, 'Philadelphia', 'Inteiro', 3200, 2, 'sem cebolinha', [new LineAddon($addon->id, 'Cream cheese', 300)])],
+        OrderType::Delivery, 'Amanda', null, 'Rua A, 1', 700, true, 10000, 'portão azul', PaymentMethod::Cash,
+    ), [new OrderLine(0, $variant->id, 'Philadelphia', 'Inteiro', 3200, 2, 'sem cebolinha', [new LineAddon($addon->id, 'Cream cheese', 300)], 'Uramaki')],
         $user->id, new DateTimeImmutable('2026-11-16 12:00:00+00:00'));
 
     return [$repo, $order];
@@ -67,7 +68,7 @@ it('stores and reads back an order with lines and add-on snapshots', function ()
         ->and($line->id)->toBeGreaterThan(0)
         ->and($order)->toEqual(new Order(
             $draft->id, $draft->details, OrderStatus::Open,
-            [new OrderLine($line->id, $line->variantId, 'Philadelphia', 'Inteiro', 3200, 2, 'sem cebolinha', $draft->lines[0]->addons)],
+            [new OrderLine($line->id, $line->variantId, 'Philadelphia', 'Inteiro', 3200, 2, 'sem cebolinha', $draft->lines[0]->addons, 'Uramaki')],
             $draft->createdBy, new DateTimeImmutable('2026-11-16 12:00:00+00:00'),
         ))
         ->and($repo->find($order->id))->toEqual($order)

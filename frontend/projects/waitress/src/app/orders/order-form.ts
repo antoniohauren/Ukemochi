@@ -17,6 +17,7 @@ import {
   type OrderInput,
   type OrderType,
   parseMoney,
+  type PaymentMethod,
 } from 'shared';
 
 // OrderRequest: cents max:100000000, text max:1000, customer_name max:255.
@@ -28,10 +29,13 @@ function onDelivery(validator: ValidatorFn): ValidatorFn {
     control.parent?.get('type')?.value === 'delivery' ? validator(control) : null;
 }
 
-/** Applies `validator` only while change is asked for (delivery + pay on delivery), when the field shows. */
-function onPayOnDelivery(validator: ValidatorFn): ValidatorFn {
+/** Applies `validator` only while change is asked for (delivery + pay on delivery in cash), when the field shows. */
+function onCashOnDelivery(validator: ValidatorFn): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null =>
-    control.parent?.get('pay_on_delivery')?.value === true ? onDelivery(validator)(control) : null;
+    control.parent?.get('pay_on_delivery')?.value === true &&
+    control.parent.get('pay_method')?.value === 'cash'
+      ? onDelivery(validator)(control)
+      : null;
 }
 
 /** Empty means "no change needed"; otherwise a valid amount. */
@@ -56,7 +60,8 @@ export function orderForm(defaultFee: () => string = () => '') {
     ]),
     delivery_fee: text([onDelivery(moneyValidator), onDelivery(maxMoney(MAX_CENTS))]),
     pay_on_delivery: new FormControl(false, { nonNullable: true }),
-    change_for: text([onPayOnDelivery(optionalMoney), onPayOnDelivery(maxMoney(MAX_CENTS))]),
+    pay_method: new FormControl<PaymentMethod>('cash', { nonNullable: true }),
+    change_for: text([onCashOnDelivery(optionalMoney), onCashOnDelivery(maxMoney(MAX_CENTS))]),
     note: text([Validators.maxLength(1000)]),
   });
   // Delivery-only rules depend on the type: re-check them when it changes.
@@ -69,9 +74,9 @@ export function orderForm(defaultFee: () => string = () => '') {
       form.controls[name].updateValueAndValidity({ emitEvent: false });
     }
   });
-  form.controls.pay_on_delivery.valueChanges.subscribe(() =>
-    form.controls.change_for.updateValueAndValidity({ emitEvent: false }),
-  );
+  const recheckChange = () => form.controls.change_for.updateValueAndValidity({ emitEvent: false });
+  form.controls.pay_on_delivery.valueChanges.subscribe(recheckChange);
+  form.controls.pay_method.valueChanges.subscribe(recheckChange);
   return form;
 }
 
@@ -86,6 +91,7 @@ export function orderFormValue(order: Order, lang: Lang): OrderFormValue {
     address_text: order.address_text ?? '',
     delivery_fee: formatMoney(order.delivery_fee_cents, lang),
     pay_on_delivery: order.pay_on_delivery,
+    pay_method: order.pay_method ?? 'cash',
     change_for: order.change_for_cents === null ? '' : formatMoney(order.change_for_cents, lang),
     note: order.note ?? '',
   };
@@ -100,13 +106,15 @@ export function feeCents(v: OrderFormValue): number {
 export function orderBody(v: OrderFormValue, lines: readonly DraftLine[]): OrderInput {
   const delivery = v.type === 'delivery';
   const payOnDelivery = delivery && v.pay_on_delivery;
+  const cash = payOnDelivery && v.pay_method === 'cash';
   return {
     type: v.type,
     customer_name: v.customer_name.trim(),
     address_text: delivery ? v.address_text.trim() : null,
     delivery_fee_cents: feeCents(v),
     pay_on_delivery: payOnDelivery,
-    change_for_cents: payOnDelivery && v.change_for.trim() ? parseMoney(v.change_for) : null,
+    pay_method: payOnDelivery ? v.pay_method : null,
+    change_for_cents: cash && v.change_for.trim() ? parseMoney(v.change_for) : null,
     note: v.note.trim() || null,
     lines: lines.map(lineInput),
   };

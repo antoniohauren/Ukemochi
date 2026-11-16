@@ -73,6 +73,7 @@ describe('order draft', () => {
     expect(newLine(findVariant(MENU, 100)!)).toEqual({
       id: null,
       variant_id: 100,
+      category_name: 'Uramaki',
       item_name: 'Philadelphia',
       variant_name: 'Inteiro',
       unit_price_cents: 3200,
@@ -119,6 +120,7 @@ describe('order draft', () => {
         {
           id: 5,
           variant_id: 100,
+          category_name: 'Uramaki',
           item_name: 'P',
           variant_name: 'I',
           unit_price_cents: 3200,
@@ -133,6 +135,7 @@ describe('order draft', () => {
       {
         id: 5,
         variant_id: 100,
+        category_name: 'Uramaki',
         item_name: 'P',
         variant_name: 'I',
         unit_price_cents: 3200,

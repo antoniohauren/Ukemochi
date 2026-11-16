@@ -155,7 +155,7 @@ final readonly class ManageOrders
             }
             $addons = array_map(fn (int $addonId) => $kept[$addonId] ?? $this->addon($addonId, $this->item($old->variantId)), $addonIds);
 
-            return new OrderLine($old->id, $old->variantId, $old->itemName, $old->variantName, $old->unitPriceCents, $input->qty, $input->note, $addons);
+            return new OrderLine($old->id, $old->variantId, $old->itemName, $old->variantName, $old->unitPriceCents, $input->qty, $input->note, $addons, $old->categoryName);
         }
 
         $variant = $this->menu->findVariant($input->variantId) ?? throw new MenuNotFound('variant', $input->variantId);
@@ -164,6 +164,7 @@ final readonly class ManageOrders
         return new OrderLine(
             $old->id ?? 0, $variant->id, $item->name, $variant->name, $variant->priceCents, $input->qty, $input->note,
             array_map(fn (int $addonId) => $this->addon($addonId, $item), $addonIds),
+            ($this->menu->findCategory($item->categoryId) ?? throw new MenuNotFound('category', $item->categoryId))->name,
         );
     }
 
@@ -195,7 +196,7 @@ final readonly class ManageOrders
             'address_text' => $d->addressText, 'delivery_fee_cents' => $d->deliveryFeeCents, 'note' => $d->note,
             'version' => $order->version, 'total_cents' => $order->totalCents(),
             'lines' => array_map(fn (OrderLine $line) => [
-                'item_name' => $line->itemName, 'variant_name' => $line->variantName, 'qty' => $line->qty,
+                'category_name' => $line->categoryName, 'item_name' => $line->itemName, 'variant_name' => $line->variantName, 'qty' => $line->qty,
                 'unit_price_cents' => $line->unitPriceCents, 'note' => $line->note,
                 'addons' => array_map(fn (LineAddon $addon) => $addon->name, $line->addons),
             ], $order->lines),

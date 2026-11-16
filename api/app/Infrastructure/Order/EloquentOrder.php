@@ -8,6 +8,7 @@ use App\Domain\Order\Order;
 use App\Domain\Order\OrderDetails;
 use App\Domain\Order\OrderStatus;
 use App\Domain\Order\OrderType;
+use App\Domain\Payment\PaymentMethod;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -23,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $delivery_fee_cents
  * @property bool $pay_on_delivery
  * @property ?int $change_for_cents
+ * @property ?string $pay_method
  * @property ?string $note
  * @property int $created_by
  * @property CarbonImmutable $created_at
@@ -55,6 +57,7 @@ final class EloquentOrder extends Model
             new OrderDetails(
                 OrderType::from($this->type), $this->customer_name, $this->customer_id, $this->address_text,
                 $this->delivery_fee_cents, $this->pay_on_delivery, $this->change_for_cents, $this->note,
+                $this->pay_method === null ? null : PaymentMethod::from($this->pay_method),
             ),
             OrderStatus::from($this->status),
             array_values($this->lines->map(fn (EloquentOrderLine $l) => $l->toDomain())->all()),

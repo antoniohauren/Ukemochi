@@ -28,7 +28,7 @@ final class OrderResource extends JsonResource
             'id' => $o->id, 'type' => $d->type->value, 'status' => $o->status->value,
             'customer_id' => $d->customerId, 'customer_name' => $d->customerName, 'address_text' => $d->addressText,
             'delivery_fee_cents' => $d->deliveryFeeCents, 'pay_on_delivery' => $d->payOnDelivery,
-            'change_for_cents' => $d->changeForCents, 'note' => $d->note,
+            'change_for_cents' => $d->changeForCents, 'pay_method' => $d->payMethod?->value, 'note' => $d->note,
             'lines' => array_map(fn (OrderLine $l) => (new OrderLineResource($l))->toArray($request), $o->lines),
             'subtotal_cents' => $o->subtotalCents(), 'total_cents' => $o->totalCents(),
             'created_by' => $o->createdBy, 'created_at' => $o->createdAt->format(DATE_ATOM),

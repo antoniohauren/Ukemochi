@@ -7,6 +7,7 @@ namespace App\Http\Requests;
 use App\Application\Order\LineInput;
 use App\Domain\Order\OrderDetails;
 use App\Domain\Order\OrderType;
+use App\Domain\Payment\PaymentMethod;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -32,6 +33,7 @@ final class OrderRequest extends FormRequest
             'address_text' => ['nullable', 'string', 'max:1000'],
             'delivery_fee_cents' => ['sometimes', 'integer', 'min:0', self::CENTS],
             'pay_on_delivery' => ['sometimes', 'boolean'],
+            'pay_method' => ['nullable', 'string', Rule::enum(PaymentMethod::class)],
             'change_for_cents' => ['nullable', 'integer', 'min:0', self::CENTS],
             'note' => ['nullable', 'string', 'max:1000'],
             'lines' => ['required', 'list', 'min:1', 'max:200'],
@@ -57,6 +59,7 @@ final class OrderRequest extends FormRequest
             $this->boolean('pay_on_delivery'),
             $this->filled('change_for_cents') ? $this->integer('change_for_cents') : null,
             $this->filled('note') ? $this->string('note')->toString() : null,
+            $this->enum('pay_method', PaymentMethod::class),
         );
     }
 

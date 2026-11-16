@@ -125,6 +125,11 @@ export const ptBR = {
   'order.delivery_fee': 'Taxa de entrega',
   'order.pay_on_delivery': 'Pagar na entrega',
   'order.change_for': 'Troco para',
+  'order.pay_method': 'Forma de pagamento',
+  'payment.method.cash': 'Dinheiro',
+  'payment.method.credit': 'Crédito',
+  'payment.method.debit': 'Débito',
+  'payment.method.pix': 'Pix',
   'order.note': 'Observação do pedido',
   'order.lines': 'Itens',
   'order.add_line': 'Adicionar item',
@@ -162,6 +167,7 @@ export const ptBR = {
   'error.order.invalid_transition': 'Não é possível mudar para esse status.',
   'error.order.cancel_reason_required': 'Informe o motivo.',
   'error.order.invalid_amount': 'Valor inválido.',
+  'error.order.invalid_pay_method': 'Escolha a forma de pagamento; troco só em dinheiro.',
 };
 
 export type TranslationKey = keyof typeof ptBR;

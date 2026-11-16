@@ -16,6 +16,7 @@ const SAVED = {
   address_text: null,
   delivery_fee_cents: 0,
   pay_on_delivery: false,
+  pay_method: null,
   change_for_cents: null,
   note: null,
   lines: [],

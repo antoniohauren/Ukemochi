@@ -126,6 +126,11 @@ export const en: Dictionary = {
   'order.delivery_fee': 'Delivery fee',
   'order.pay_on_delivery': 'Pay on delivery',
   'order.change_for': 'Change for',
+  'order.pay_method': 'Payment method',
+  'payment.method.cash': 'Cash',
+  'payment.method.credit': 'Credit',
+  'payment.method.debit': 'Debit',
+  'payment.method.pix': 'Pix',
   'order.note': 'Order note',
   'order.lines': 'Items',
   'order.add_line': 'Add item',
@@ -163,4 +168,5 @@ export const en: Dictionary = {
   'error.order.invalid_transition': 'Cannot move to that status.',
   'error.order.cancel_reason_required': 'Enter the reason.',
   'error.order.invalid_amount': 'Invalid amount.',
+  'error.order.invalid_pay_method': 'Pick a payment method; change is only for cash.',
 };

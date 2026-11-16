@@ -4,7 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domain\Order;
 
-/** Who the order is for and how it is delivered. `customerId` links a saved customer, if any. */
+use App\Domain\Payment\PaymentMethod;
+
+/**
+ * Who the order is for and how it is delivered. `customerId` links a saved customer, if any.
+ * Pay on delivery records the method; `changeForCents` ("troco para") is only for cash.
+ */
 final readonly class OrderDetails
 {
     public function __construct(
@@ -16,6 +21,7 @@ final readonly class OrderDetails
         public bool $payOnDelivery = false,
         public ?int $changeForCents = null,
         public ?string $note = null,
+        public ?PaymentMethod $payMethod = null,
     ) {
         if (trim($customerName) === '') {
             throw new CustomerNameRequired;
@@ -28,6 +34,9 @@ final readonly class OrderDetails
         }
         if ($changeForCents !== null && $changeForCents < 0) {
             throw new InvalidAmount;
+        }
+        if ($payOnDelivery !== ($payMethod !== null) || ($changeForCents !== null && $payMethod !== PaymentMethod::Cash)) {
+            throw new InvalidPayMethod;
         }
     }
 }

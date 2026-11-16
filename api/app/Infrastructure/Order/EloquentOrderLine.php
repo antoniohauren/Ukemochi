@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $id
  * @property int $order_id
  * @property int $variant_id
+ * @property string $category_name
  * @property string $item_name
  * @property string $variant_name
  * @property int $unit_price_cents
@@ -37,6 +38,7 @@ final class EloquentOrderLine extends Model
         return new OrderLine(
             $this->id, $this->variant_id, $this->item_name, $this->variant_name, $this->unit_price_cents, $this->qty, $this->note,
             array_values($this->addons->map(fn (EloquentLineAddon $a) => $a->toDomain())->all()),
+            $this->category_name,
         );
     }
 }
