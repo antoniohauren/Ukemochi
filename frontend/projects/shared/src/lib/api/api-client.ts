@@ -6,6 +6,8 @@ import { catchError, Observable, throwError } from 'rxjs';
 export interface ApiError {
   code: string;
   message: string;
+  /** Field messages, only when `code` is `validation`. */
+  errors?: Record<string, string[]>;
 }
 
 type Params = HttpParams | Record<string, string | number | boolean | readonly string[]>;
@@ -51,16 +53,20 @@ export function toApiError(error: unknown): ApiError {
   }
   const body: unknown = error.error;
   if (isApiError(body)) {
-    return { code: body.code, message: body.message };
+    const { code, message, errors } = body;
+    return errors === undefined ? { code, message } : { code, message, errors };
   }
   return { code: 'unknown', message: error.message };
 }
 
 function isApiError(value: unknown): value is ApiError {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const { code, message, errors } = value as Record<string, unknown>;
   return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof (value as Record<string, unknown>)['code'] === 'string' &&
-    typeof (value as Record<string, unknown>)['message'] === 'string'
+    typeof code === 'string' &&
+    typeof message === 'string' &&
+    (errors === undefined || (typeof errors === 'object' && errors !== null))
   );
 }

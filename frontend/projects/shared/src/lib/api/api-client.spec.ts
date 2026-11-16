@@ -69,6 +69,24 @@ describe('ApiClient', () => {
     expect(error).toEqual({ code: 'money.invalid', message: 'Bad amount' });
   });
 
+  it('keeps field errors of a validation failure', async () => {
+    const error = await failWith((url) =>
+      http.expectOne(url).flush(
+        {
+          code: 'validation',
+          message: 'The name field is required.',
+          errors: { name: ['The name field is required.'] },
+        },
+        { status: 422, statusText: 'Unprocessable' },
+      ),
+    );
+    expect(error).toEqual({
+      code: 'validation',
+      message: 'The name field is required.',
+      errors: { name: ['The name field is required.'] },
+    });
+  });
+
   it('maps an error without a code to unknown', async () => {
     const error = await failWith((url) =>
       http.expectOne(url).flush('<html>', { status: 500, statusText: 'Server Error' }),

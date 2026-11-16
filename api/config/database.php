@@ -99,6 +99,8 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+            // pdo_pgsql passes this as libpq connect_timeout (seconds); default 30 hangs /api/health.
+            'options' => [PDO::ATTR_TIMEOUT => 2],
         ],
 
         'sqlsrv' => [

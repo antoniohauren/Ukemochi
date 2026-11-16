@@ -15,6 +15,9 @@ down:
 	$(COMPOSE) down
 
 test: api/vendor api/.env frontend/node_modules
+	$(COMPOSE) up -d --wait postgres
+	$(COMPOSE) exec -T postgres psql -U ukemochi -d ukemochi -tAc "SELECT 1 FROM pg_database WHERE datname = 'ukemochi_test'" | grep -q 1 \
+		|| $(COMPOSE) exec -T postgres createdb -U ukemochi ukemochi_test
 	$(PHP) php artisan test
 	$(NODE) npm test
 
