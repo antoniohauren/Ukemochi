@@ -6,7 +6,8 @@ Guide for AI agents and humans working in this repo. Product scope and step list
 - Runtime, package manager, test runner: **Bun** (workspaces). No Node, npm, Jest or Vitest.
 - API: **Hono** on Bun, **SQLite** via `bun:sqlite`, validation with `zod` + `@hono/zod-validator`.
 - Frontends: **React** + **Vite** PWAs (`apps/admin`, `apps/waitress`). No React Native.
-- Shared: `packages/shared` (pure TS: types, schemas, money, i18n, split, tickets), `packages/ui` (React components).
+- UI: **Material UI** (MUI, docs: https://next.mui.com/) for components, layout and styling. No plain CSS files.
+- Shared: `packages/shared` (pure TS: types, schemas, money, i18n, split, tickets), `packages/ui` (React components built on MUI + shared theme).
 - Lint/format: **Biome**. TypeScript `strict: true`, no `any`.
 
 ## Commands
@@ -67,6 +68,8 @@ Rules:
 - Multi-table writes (order + lines + stock + audit) run in one `db.transaction`.
 
 ## React
+- Styling through MUI only: one shared theme in `packages/ui` (`ThemeProvider`), `sx` prop or `styled()` for overrides. No `.css` files, no inline `style`, no other CSS framework.
+- Prefer MUI components (`Button`, `TextField`, `Dialog`, `List`...) over hand-rolled ones; wrap in `packages/ui` only when adding app-specific behavior (NumPad, MoneyInput).
 - Function components + hooks. Server state through a small `useApi` hook around `hc`; no global store unless needed.
 - Forms: controlled inputs, validate with the shared zod schemas.
 - Mobile first for `apps/waitress`: big touch targets, works at 360px width.
