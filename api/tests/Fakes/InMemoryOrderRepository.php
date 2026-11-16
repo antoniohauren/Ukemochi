@@ -31,6 +31,14 @@ final class InMemoryOrderRepository implements OrderRepository
         return isset($this->orders[$id]) ? clone $this->orders[$id] : null;
     }
 
+    public function list(array $statuses, ?int $limit): array
+    {
+        $found = array_filter($this->orders, fn (Order $o) => in_array($o->status, $statuses, true));
+        krsort($found);
+
+        return array_slice(array_map(fn (Order $o) => clone $o, array_values($found)), 0, $limit);
+    }
+
     public function lock(int $id): ?Order
     {
         $this->locked[] = $id;

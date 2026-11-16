@@ -6,6 +6,7 @@ namespace App\Infrastructure\Order;
 
 use App\Application\Order\OrderRepository;
 use App\Domain\Order\Order;
+use App\Domain\Order\OrderStatus;
 use Illuminate\Support\Facades\DB;
 
 final class EloquentOrderRepository implements OrderRepository
@@ -22,6 +23,14 @@ final class EloquentOrderRepository implements OrderRepository
     public function find(int $id): ?Order
     {
         return EloquentOrder::query()->with('lines.addons')->find($id)?->toDomain();
+    }
+
+    public function list(array $statuses, ?int $limit): array
+    {
+        return array_values(EloquentOrder::query()->with('lines.addons')
+            ->whereIn('status', array_map(fn (OrderStatus $s) => $s->value, $statuses))
+            ->orderByDesc('id')->when($limit !== null, fn ($q) => $q->limit((int) $limit))->get()
+            ->map(fn (EloquentOrder $o) => $o->toDomain())->all());
     }
 
     public function lock(int $id): ?Order

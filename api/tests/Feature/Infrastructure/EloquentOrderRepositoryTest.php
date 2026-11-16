@@ -103,3 +103,15 @@ it('stores closed_at as a timestamptz', function (): void {
 
     expect($repo->save($draft)->closedAt?->getTimestamp())->toBe((new DateTimeImmutable('2026-11-16 18:30:00+00:00'))->getTimestamp());
 });
+
+it('lists orders in the given statuses newest first, with lines, up to the limit', function (): void {
+    [$repo, $draft] = orderRepoWithDraft();
+    $first = $repo->save($draft);
+    $closed = Order::place($repo->nextNumber(), $draft->details, $draft->lines, $draft->createdBy, $draft->createdAt);
+    $closed->moveTo(OrderStatus::Closed, $draft->createdAt);
+    $repo->save($closed);
+    $third = $repo->save(Order::place($repo->nextNumber(), $draft->details, $draft->lines, $draft->createdBy, $draft->createdAt));
+
+    expect($repo->list([OrderStatus::Open], null))->toEqual([$third, $first])
+        ->and(array_map(fn (Order $o) => $o->id, $repo->list([OrderStatus::Open, OrderStatus::Closed], 2)))->toBe([3, 2]);
+});

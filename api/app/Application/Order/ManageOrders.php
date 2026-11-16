@@ -21,7 +21,10 @@ use App\Domain\Order\OrderLine;
 use App\Domain\Order\OrderNotFound;
 use App\Domain\Order\OrderStatus;
 
-/** Order mutations. Each one locks the order, writes it and its audit row in one transaction. */
+/**
+ * Order mutations. Each one locks the order, writes it and its audit row in one transaction,
+ * then tells live screens once it has committed.
+ */
 final readonly class ManageOrders
 {
     public function __construct(
@@ -31,6 +34,7 @@ final readonly class ManageOrders
         private AuditLog $audit,
         private SessionAuth $session,
         private Clock $clock,
+        private OrderEvents $events,
     ) {}
 
     /** @param  list<LineInput>  $lines  without `lineId` */
@@ -38,14 +42,14 @@ final readonly class ManageOrders
     {
         $userId = $this->session->userId() ?? throw new NotAuthenticated;
 
-        return $this->transaction->run(function () use ($details, $lines, $userId): Order {
+        return $this->announced($this->transaction->run(function () use ($details, $lines, $userId): Order {
             $snapshot = $this->lines($lines, []);
             // Number taken last and inside the transaction: a failure above or a rollback leaves no gap.
             $order = $this->orders->save(Order::place($this->orders->nextNumber(), $details, $snapshot, $userId, $this->clock->now()));
             $this->record($userId, $order, 'create', $this->summary($order), null);
 
             return $order;
-        });
+        }));
     }
 
     /**
@@ -97,14 +101,21 @@ final readonly class ManageOrders
     {
         $userId = $this->session->userId() ?? throw new NotAuthenticated;
 
-        return $this->transaction->run(function () use ($id, $action, $change, $note, $userId): Order {
+        return $this->announced($this->transaction->run(function () use ($id, $action, $change, $note, $userId): Order {
             $order = $this->orders->lock($id) ?? throw new OrderNotFound($id);
             $summary = $change($order);
             $order = $this->orders->save($order);
             $this->record($userId, $order, $action, $summary, $note);
 
             return $order;
-        });
+        }));
+    }
+
+    private function announced(Order $order): Order
+    {
+        $this->events->updated($order->id, $order->version);
+
+        return $order;
     }
 
     /**

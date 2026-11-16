@@ -24,6 +24,7 @@ use Tests\Fakes\FixedClock;
 use Tests\Fakes\ImmediateTransaction;
 use Tests\Fakes\InMemoryAuditLog;
 use Tests\Fakes\InMemoryMenuRepository;
+use Tests\Fakes\InMemoryOrderEvents;
 use Tests\Fakes\InMemoryOrderRepository;
 use Tests\Fakes\InMemorySessionAuth;
 
@@ -31,7 +32,7 @@ use Tests\Fakes\InMemorySessionAuth;
  * Menu: category 1 > item 10 "Philadelphia" > variant 100 "Inteiro" R$32; add-on 1000 on the item (R$3),
  * add-on 1001 on the category (R$1.50), add-on 1002 on another item, add-on 1003 inactive.
  *
- * @return array{ManageOrders, InMemoryOrderRepository, InMemoryAuditLog, InMemoryMenuRepository, InMemorySessionAuth}
+ * @return array{ManageOrders, InMemoryOrderRepository, InMemoryAuditLog, InMemoryMenuRepository, InMemorySessionAuth, InMemoryOrderEvents}
  */
 function manageOrders(): array
 {
@@ -50,7 +51,9 @@ function manageOrders(): array
     $session = new InMemorySessionAuth;
     $session->login(7);
 
-    return [new ManageOrders($orders, $menu, new ImmediateTransaction, $audit, $session, new FixedClock), $orders, $audit, $menu, $session];
+    $events = new InMemoryOrderEvents;
+
+    return [new ManageOrders($orders, $menu, new ImmediateTransaction, $audit, $session, new FixedClock, $events), $orders, $audit, $menu, $session, $events];
 }
 
 function dineIn(?string $note = null): OrderDetails
@@ -244,3 +247,24 @@ it('refuses to change an order without a session user, writing nothing', functio
     'cancel' => [fn (ManageOrders $m, int $id) => $m->cancel($id, 'x', null)],
     'reopen' => [fn (ManageOrders $m, int $id) => $m->reopen($id, null)],
 ]);
+
+it('announces each change with the order id and version', function (): void {
+    [$manage, , , , , $events] = manageOrders();
+    $order = $manage->create(dineIn(), [new LineInput(100, 1)]);
+    $manage->changeStatus($order->id, OrderStatus::Closed, null);
+    $manage->edit($order->id, dineIn('x'), [new LineInput(100, 2, lineId: 1)], null);
+    $manage->cancel($order->id, 'cliente desistiu', null);
+
+    expect($events->updated)->toBe([
+        ['id' => 1, 'version' => 1], ['id' => 1, 'version' => 1], ['id' => 1, 'version' => 2], ['id' => 1, 'version' => 3],
+    ]);
+});
+
+it('announces nothing when a change fails', function (): void {
+    [$manage, , , , , $events] = manageOrders();
+    $order = $manage->create(dineIn(), [new LineInput(100, 1)]);
+
+    expect(fn () => $manage->changeStatus($order->id, OrderStatus::OutForDelivery, null))->toThrow(InvalidTransition::class)
+        ->and(fn () => $manage->create(dineIn(), [new LineInput(999, 1)]))->toThrow(MenuNotFound::class)
+        ->and($events->updated)->toHaveCount(1);
+});

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Order;
 
 use App\Domain\Order\Order;
+use App\Domain\Order\OrderStatus;
 
 interface OrderRepository
 {
@@ -15,6 +16,14 @@ interface OrderRepository
     public function nextNumber(): int;
 
     public function find(int $id): ?Order;
+
+    /**
+     * Orders in any of the statuses, newest first; at most `$limit` when given.
+     *
+     * @param  list<OrderStatus>  $statuses
+     * @return list<Order>
+     */
+    public function list(array $statuses, ?int $limit): array;
 
     /** Row lock on the order until the transaction ends; null when it does not exist. */
     public function lock(int $id): ?Order;
