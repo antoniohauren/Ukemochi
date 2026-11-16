@@ -36,7 +36,7 @@ final class RenderApiException
         }
 
         return match (true) {
-            $e instanceof DomainException => $this->json($this->domainStatus($e), $e->errorCode, $e->getMessage()),
+            $e instanceof DomainException => $this->json($this->domainStatus($e), $e->errorCode, $e->getMessage(), $e->context),
             $e instanceof ValidationException => $this->json($e->status, 'validation', $e->getMessage(), ['errors' => $e->errors()]),
             $e instanceof AuthenticationException => $this->json(401, 'unauthenticated', 'Unauthenticated.'),
             $e instanceof HttpExceptionInterface => $this->json(

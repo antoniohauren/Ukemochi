@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Application\Audit\AuditLog;
+use App\Infrastructure\Auth\EloquentUser;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -11,11 +12,13 @@ use function Pest\Laravel\travelTo;
 it('records who did what and when', function (): void {
     travelTo(CarbonImmutable::parse('2026-03-04 12:30:15.123456+00:00'));
 
-    app(AuditLog::class)->record(7, 'order', 42, 'created', ['total' => 1990, 'lines' => ['Temaki']], 'phone order');
+    $userId = EloquentUser::factory()->create()->id;
+
+    app(AuditLog::class)->record($userId, 'order', 42, 'created', ['total' => 1990, 'lines' => ['Temaki']], 'phone order');
 
     $row = DB::table('audit_log')->sole();
     expect($row)->toMatchArray([
-        'user_id' => 7,
+        'user_id' => $userId,
         'entity' => 'order',
         'entity_id' => '42',
         'action' => 'created',

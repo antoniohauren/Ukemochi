@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Models\User;
+use App\Infrastructure\Auth\EloquentUser;
 
 return [
 
@@ -65,8 +65,9 @@ return [
 
     'providers' => [
         'users' => [
-            'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', User::class),
+            // Registered in AppServiceProvider: eloquent, active users only.
+            'driver' => 'active-users',
+            'model' => EloquentUser::class,
         ],
 
         // 'users' => [
@@ -115,5 +116,11 @@ return [
     */
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
+
+    // Read by `php artisan user:create-admin` when no arguments are given.
+    'first_admin' => [
+        'name' => env('ADMIN_NAME'),
+        'pin' => env('ADMIN_PIN'),
+    ],
 
 ];
