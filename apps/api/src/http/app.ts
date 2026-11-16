@@ -2,8 +2,10 @@ import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { AuthService } from "../application/auth";
+import type { MenuService } from "../application/menu";
 import { DomainError, type DomainErrorCode } from "../domain/errors";
 import { authRoutes } from "./auth";
+import { menuRoutes } from "./menu";
 
 const STATUS: Record<DomainErrorCode, ContentfulStatusCode> = {
 	not_found: 404,
@@ -14,9 +16,9 @@ const STATUS: Record<DomainErrorCode, ContentfulStatusCode> = {
 	rate_limited: 429,
 };
 
-export type AppDeps = { auth: AuthService };
+export type AppDeps = { auth: AuthService; menu: MenuService };
 
-export function createApp({ auth }: AppDeps) {
+export function createApp({ auth, menu }: AppDeps) {
 	return new Hono()
 		.onError((err, c) => {
 			if (err instanceof DomainError) {
@@ -33,7 +35,8 @@ export function createApp({ auth }: AppDeps) {
 		})
 		.notFound((c) => c.json({ error: "not_found" }, 404))
 		.get("/health", (c) => c.json({ status: "ok" }))
-		.route("/auth", authRoutes(auth));
+		.route("/auth", authRoutes(auth))
+		.route("/menu", menuRoutes(auth, menu));
 }
 
 export type AppType = ReturnType<typeof createApp>;

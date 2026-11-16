@@ -109,7 +109,7 @@ Each step is one TDD vertical slice. Done = tests green + `bun run check` clean 
 - [x] **5. Frontend scaffold** — `packages/ui` MUI theme + base components, `apps/admin` + `apps/waitress` (Vite, React, PWA manifest), `hc<AppType>` client, login screen, language switch.
 
 ### Phase 2 — Menu, staff, settings
-- [ ] **6. Menu API** — categories, items, variants (own price), add-ons, availability toggles.
+- [x] **6. Menu API** — categories, items, variants (own price), add-ons, availability toggles.
 - [ ] **7. Admin menu screens** — CRUD UI for step 6.
 - [ ] **8. Staff + settings** — staff CRUD with PIN reset; settings (restaurant name, language, paper width, printer mode, delivery fee on/off + value). API + admin screens.
 
@@ -152,6 +152,9 @@ Decisions left open by earlier steps. Resolve before or during the step named.
 - **HTTPS on the LAN** (from step 5): service workers only run in a secure context, so phones on `http://<server-ip>` get no PWA install or offline shell, and PIN + token cross the Wi-Fi in plain text. Option: self-signed or local-CA TLS on the server PC.
 - **Token in localStorage** (from step 5): the bearer token lives in `localStorage` (readable by any XSS). Option: httpOnly SameSite cookie set by `/auth/login`.
 - **API path prefix** (from step 5): frontends call `/api/*` and the Vite dev proxy strips `/api`. When `main.ts` serves the built PWAs, mount the API under `/api` the same way.
+- **Menu audit backfill** (from step 6, resolve in step 10): menu writes (categories, items, variants, add-ons) write no `audit_log` row yet. Step 10 adds the table; backfill menu mutations there too.
+- **Variant delete vs order lines** (from step 6, resolve in step 9): `DELETE /menu/variants/:id` is a hard delete (refused for an item's last variant). Once `order_lines.variant_id` references variants, make it `ON DELETE SET NULL` (lines keep snapshots) or switch to a soft delete.
+- **Who toggles availability** (from step 6): only admins can mark a variant unavailable. Kitchen or waitress may need it when an item runs out mid-shift.
 - **Logout revoke not retried** (from step 5): if the server is unreachable at logout, the token is dropped locally but stays valid on the server until it expires.
 
 ## Verification
