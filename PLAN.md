@@ -11,10 +11,10 @@ Runs on the restaurant's local network. UI in pt-BR and English (switchable).
 ## Decisions (from Q&A)
 - **Stack**: API = **Laravel** (PHP 8.4+, latest stable Laravel). DB = **PostgreSQL**. Frontends = **Angular** PWAs (`@angular/pwa` service worker) in one Angular workspace. UI = **Angular Material** (https://material.angular.dev/).
 - **Realtime**: **Laravel Reverb** (first-party WebSocket server) + `laravel-echo` on the frontends.
-- **Runtime**: everything in **Docker Compose** — postgres, Laravel API, Reverb, scheduler, nginx serving the built Angular apps and proxying `/api` + the Reverb socket. One `docker compose up` on the server PC. Only exception: the host print agent (see Printing).
+- **Runtime**: everything in **Docker Compose** — postgres, Laravel API, Reverb, scheduler, nginx serving the built Angular apps and proxying `/api` + the Reverb socket. One `docker compose up` on the server PC.
 - **HTTPS**: nginx serves TLS with a certificate from a local CA (`mkcert`). The CA is installed once on each phone/PC. Needed for service workers (PWA install, offline shell) and so PINs never cross the Wi-Fi in clear text.
 - **Apps**: `frontend/projects/waitress` (mobile PWA), `frontend/projects/admin` (web; includes `/kitchen` route), shared library `frontend/projects/shared`.
-- **Hosting**: v1 runs on one local PC on the LAN, Windows or Linux, printer attached over USB or Bluetooth.
+- **Hosting**: v1 runs on one local PC on the LAN, Windows or Linux, printer attached over USB or Bluetooth and installed as a normal OS printer.
 - **Auth**: user + 4-digit PIN per staff. Roles: admin, waitress, kitchen. Every change records user.
   - Sessions: Sanctum SPA cookie auth (httpOnly, SameSite, same origin behind nginx, CSRF via `XSRF-TOKEN`). No token in `localStorage`.
   - Idle timeout 12h (`SESSION_LIFETIME=720`): an active shift never gets logged out.
@@ -30,15 +30,16 @@ Runs on the restaurant's local network. UI in pt-BR and English (switchable).
 - **Charges**: none by default. Settings: delivery fee on/off + fixed value (editable per order).
 - **Notes**: optional free-text note on every record (order, line, payment, customer, cash movement, edit).
 - **Audit**: light change log (who, when, entity, action, summary JSON, note). Admin can view. Built in the API skeleton so every mutation audits from day one.
-- **Printing**: one printer, USB or Bluetooth on the server PC, ESC/POS, reached through the host print agent. Prints kitchen ticket + customer bill (non-fiscal).
-  Edit after print → reprint whole ticket marked "ATUALIZADO/UPDATED". Paper width configurable (58/80mm).
-  Android waitress may print via Web Bluetooth; fallback = POST to server → USB.
+- **Printing**: the browser prints, with `window.print()` through the OS printer driver. No server-side printing, no ESC/POS.
+  Manual only: staff press "Imprimir" on an order (kitchen ticket or customer bill, non-fiscal). Nothing prints automatically.
+  Any device whose OS can reach a printer can print (the PC with the USB/Bluetooth thermal printer, or a phone with a print service).
+  Edit after print → order shows "changed since print"; printing again marks the whole ticket "ATUALIZADO/UPDATED vN". Paper width configurable (58/80mm).
 - **Payments**: cash, credit, debit, pix (record only), combined. Cash shows change (`troco`).
   Delivery: pay upfront or on delivery (record method + "troco para R$X").
 - **Split**: by amount, by item units (incl. fractions of one item), equal N ways, by consumed lines.
 - **Cash shift**: manual open/close. Opening float, withdrawals/deposits (incl. type `staff_meal` + staff name, e.g. R$22 Amanda), counted vs expected, totals per method.
 - **Customers**: name, phone (lookup key), many addresses, note, order history.
-- **Admin**: menu CRUD, staff + PINs, reports (period, item, method, waitress), settings (name, printer, paper width, delivery fee, language).
+- **Admin**: menu CRUD, staff + PINs, reports (period, item, method, waitress), settings (name, paper width, delivery fee, language).
 - **Stock**: opt-in per variant (e.g. Coca Zero, Combos). Sales subtract automatically (edit/cancel restores).
   Admin records purchases and manual corrections (loss, recount) with note. Stock screen shows expected quantity
   (= movements sum), sold today, and an alert when ≤ optional per-variant minimum.
@@ -51,9 +52,9 @@ docker-compose.yml        # postgres, api (php-fpm), reverb, scheduler, web (ngi
 docker/                   # Dockerfiles + nginx config
 Makefile                  # dev / test / check wrappers around docker compose
 api/                      # Laravel app, clean architecture (see AGENTS.md)
-  app/Domain/             # entities, value objects (Money), pure rules (totals, status, split, shift cash, ticket layout)
-  app/Application/        # use cases + ports (repository/printer/clock/audit interfaces)
-  app/Infrastructure/     # Eloquent models + repositories, printer adapters, ESC/POS, backup, clock
+  app/Domain/             # entities, value objects (Money), pure rules (totals, status, split, shift cash, ticket content)
+  app/Application/        # use cases + ports (repository/clock/audit interfaces)
+  app/Infrastructure/     # Eloquent models + repositories, backup, clock
   app/Http/               # controllers, FormRequests, API Resources, middleware
   app/Providers/          # composition root: binds ports to concrete classes
   database/migrations/    # Laravel migrations (Postgres)
@@ -64,7 +65,7 @@ frontend/                 # Angular workspace
   projects/waitress/      # Angular app + service worker
   projects/admin/         # Angular app; routes: menu, staff, orders, cash, reports, settings, audit, /kitchen
   projects/shared/        # library: API client + TS types, money format/parse, i18n dicts + t pipe, Material theme,
-                          # presentational components (NumPad, MoneyInput, OrderLines, LangSwitch...)
+                          # presentational components (NumPad, MoneyInput, OrderLines, LangSwitch, TicketPrint...)
 ```
 Frontends call the API through one typed `ApiClient` service in `shared` (Angular `HttpClient`), no other fetch layer.
 API types: TS interfaces in `shared` are hand-written to mirror the Laravel API Resources; API feature tests assert the exact JSON shape so drift fails a test.
@@ -109,14 +110,12 @@ as a preview endpoint; the UI then records each as a payment (any method). Logic
 Unallocated remainder always visible. Covered by unit tests (rounding, fractions, remainder).
 
 ## Printing
-- `app/Domain/Ticket`: builds text layout for kitchen ticket (no prices, item notes, add-ons, `#<number> · <name> · <type>`, "UPDATED vN"/"CANCELADO") and customer bill (prices, payments, change, balance). Width param (32/48 chars).
-- `app/Infrastructure/Printing/EscPos.php`: text → ESC/POS bytes (init, bold, cut). Few lines, no dependency.
-- Docker on Windows cannot open a USB or Bluetooth printer, so a **host print agent** (`print-agent/`, runs on the PC outside Docker) owns the printer on both OSes.
-  The api `POST`s ESC/POS bytes to it (`printer.agent_url`, reached via `host.docker.internal`, shared-secret header).
-  Agent targets: Windows shared printer in RAW mode (`\\localhost\<share>`) or COM port (Bluetooth SPP); Linux `/dev/usb/lp0` or `/dev/rfcomm0`.
-- Setting `printer.mode` = `agent` | `none` (writes ticket text to a file/log, for dev and tests).
-- Auto print kitchen ticket when order is created/edited (lines changed) → full reprint with version.
-- Waitress app: "Imprimir" → Web Bluetooth (if supported + paired) else `POST /api/print/...`. Same bytes, fetched from API.
+- `app/Domain/Ticket`: builds the ticket content as data. Kitchen ticket: no prices, item notes, add-ons, `#<number> · <name> · <type>`, "UPDATED vN"/"CANCELADO". Customer bill: prices, payments, change, balance.
+  `GET /api/orders/{id}/ticket?kind=kitchen|bill` returns it.
+- `shared` `TicketPrint` component renders it for print: `@media print` + `@page` sized from the paper width setting (58/80mm), monospace, nothing else on the page.
+- "Imprimir" opens the print view and calls `window.print()`. After the dialog, the app calls `POST /api/orders/{id}/printed {kind, version}` → stores `printed_version`, writes audit.
+- Order list and order screen show "not printed" / "changed since print" when `version > printed_version`, and "cancel not printed" for cancelled orders.
+- Print dialog: each print shows the browser dialog. On the printer PC, Chrome can run with `--kiosk-printing` to print straight to the default printer.
 
 ## Realtime
 Reverb private channel `orders`: broadcasts `order.updated {id, version}` (`ShouldBroadcastNow`, so no queue worker).
@@ -135,7 +134,7 @@ Each step is one TDD vertical slice. Done = tests green + `make check` clean + r
 ### Phase 2 — Menu, staff, settings
 - [ ] **6. Menu API** — categories, items, variants (own price, soft delete), add-ons, availability toggles (admin + kitchen). Audited.
 - [ ] **7. Admin menu screens** — master-detail CRUD UI for step 6.
-- [ ] **8. Staff + settings** — staff CRUD with PIN reset; settings (restaurant name, language, paper width, printer mode, delivery fee on/off + value). API + admin screens.
+- [ ] **8. Staff + settings** — staff CRUD with PIN reset; settings (restaurant name, language, paper width, delivery fee on/off + value). API + admin screens.
 
 ### Phase 3 — Orders
 - [ ] **9. Order domain** — gapless sequential number (counter row), line snapshots (name/price), add-ons, notes, totals incl. delivery fee, status transitions, cancel with reason, reopen + version bump.
@@ -143,8 +142,8 @@ Each step is one TDD vertical slice. Done = tests green + `make check` clean + r
 - [ ] **11. Waitress ordering** — order list (live via Echo), new order (dine-in name / pickup / delivery), add/edit lines with variant, add-ons, notes; cancel.
 
 ### Phase 4 — Printing
-- [ ] **12. Ticket layouts** — kitchen ticket (no prices, `#N · name · type`, UPDATED vN / CANCELADO) and customer bill; 32/48 columns.
-- [ ] **13. Printer** — ESC/POS encoder, host print agent (Windows share/COM, Linux lp/rfcomm), `agent` + `none` → file modes, auto kitchen print on create/edit/cancel, `POST /api/print/...` reprint.
+- [ ] **12. Ticket content** — domain ticket builder (kitchen: no prices, `#N · name · type`, UPDATED vN / CANCELADO; bill: prices, payments, change, balance), `GET /api/orders/{id}/ticket`.
+- [ ] **13. Browser print** — `TicketPrint` print view (58/80mm `@page`), "Imprimir" buttons in waitress + admin, `POST /api/orders/{id}/printed`, "not printed / changed since print" badges.
 
 ### Phase 5 — Money
 - [ ] **14. Cash shifts** — open with float, movements (withdrawal, deposit, staff_meal + staff name), close with count, expected cash + difference, totals per method.
@@ -164,12 +163,11 @@ Each step is one TDD vertical slice. Done = tests green + `make check` clean + r
 - [ ] **22. Reports** — by period, item, payment method, waitress; shift report.
 - [ ] **23. Backups** — `pg_dump` on shift close + daily (scheduler), keep last N, admin download.
 - [ ] **24. Kitchen screen** — `/kitchen` in admin, live via Echo, mark ready.
-- [ ] **25. Bluetooth print** — Web Bluetooth on Android waitress app, fallback to server print.
 
 ## Open questions
 Decisions left open. Resolve before or during the step named. Answered questions are folded into Decisions above.
-- **Print agent language** (step 13): it runs outside Docker on Windows and Linux, so it should need no runtime install. Options: a single Go binary, or a PowerShell (Windows) + shell (Linux) script pair.
+None right now.
 
 ## Verification
-- `make test`: Pest unit tests (split math, totals, shift expected cash, ticket layout widths) and feature tests through HTTP against a Postgres test database; Angular unit tests for services/pipes and components where behavior matters.
-- Manual: `make dev`, log in as waitress on a phone over LAN, create order → ticket prints (or `printer.mode=none` writes ticket text to a file for dev), edit → reprint "UPDATED", pay split with cash+pix → change correct, close shift → expected cash matches. Stock: Coca Zero stock 20, sell 17 → screen shows 3 + alert (min 5); waitress sees "Restam 3"; cancel order → back to 20.
+- `make test`: Pest unit tests (split math, totals, shift expected cash, ticket content) and feature tests through HTTP against a Postgres test database; Angular unit tests for services/pipes and components where behavior matters.
+- Manual: `make dev`, log in as waitress on a phone over LAN, create order → press Imprimir → kitchen ticket prints at 80mm (and 58mm after changing the setting), edit → order shows "changed since print" → reprint shows "UPDATED", pay split with cash+pix → change correct, close shift → expected cash matches. Stock: Coca Zero stock 20, sell 17 → screen shows 3 + alert (min 5); waitress sees "Restam 3"; cancel order → back to 20.
