@@ -1,4 +1,5 @@
 import { createAuthService } from "./application/auth";
+import { createMenuService } from "./application/menu";
 import type { Clock } from "./application/ports";
 import { createApp } from "./http/app";
 import {
@@ -7,6 +8,7 @@ import {
 	createSqliteUserRepository,
 	systemClock,
 } from "./infrastructure/sqlite-auth";
+import { createSqliteMenuRepository } from "./infrastructure/sqlite-menu";
 import { createTestDb } from "./infrastructure/test-db";
 
 /** App wired to a fresh in-memory DB. */
@@ -18,5 +20,6 @@ export function createTestApp(clock: Clock = systemClock) {
 		hasher: bunPinHasher,
 		clock,
 	});
-	return { app: createApp({ auth }), auth, db };
+	const menu = createMenuService(createSqliteMenuRepository(db));
+	return { app: createApp({ auth, menu }), auth, db };
 }

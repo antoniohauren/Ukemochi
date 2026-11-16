@@ -2,6 +2,7 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { pinSchema } from "@ukemochi/shared";
 import { createAuthService } from "./application/auth";
+import { createMenuService } from "./application/menu";
 import { createApp } from "./http/app";
 import { migrate, openDb } from "./infrastructure/db";
 import {
@@ -10,6 +11,7 @@ import {
 	createSqliteUserRepository,
 	systemClock,
 } from "./infrastructure/sqlite-auth";
+import { createSqliteMenuRepository } from "./infrastructure/sqlite-menu";
 
 const dbPath = Bun.env.DB_PATH ?? "data/ukemochi.sqlite";
 const port = Number(Bun.env.PORT ?? 3000);
@@ -26,6 +28,8 @@ const auth = createAuthService({
 	clock: systemClock,
 });
 
+const menu = createMenuService(createSqliteMenuRepository(db));
+
 const adminName = Bun.env.ADMIN_NAME ?? "admin";
 const adminPin = Bun.env.ADMIN_PIN
 	? pinSchema.parse(Bun.env.ADMIN_PIN)
@@ -36,5 +40,5 @@ if (await auth.seedFirstAdmin(adminName, adminPin)) {
 	console.log(`first admin created: name "${adminName}", PIN ${adminPin}`);
 }
 
-const server = Bun.serve({ port, fetch: createApp({ auth }).fetch });
+const server = Bun.serve({ port, fetch: createApp({ auth, menu }).fetch });
 console.log(`api listening on ${server.url}`);
