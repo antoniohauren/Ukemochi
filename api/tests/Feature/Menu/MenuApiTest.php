@@ -3,25 +3,13 @@
 declare(strict_types=1);
 
 use App\Domain\Auth\Role;
-use App\Infrastructure\Auth\EloquentUser;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Testing\TestResponse;
 
-use function Pest\Laravel\actingAs;
 use function Pest\Laravel\deleteJson;
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\json;
 use function Pest\Laravel\postJson;
 use function Pest\Laravel\putJson;
-
-function actAs(Role $role): EloquentUser
-{
-    $user = EloquentUser::factory()->role($role)->create();
-    actingAs($user, 'web');
-
-    return $user;
-}
 
 /** @return array{category: int, item: int, variant: int} */
 function seedMenu(): array
@@ -34,25 +22,6 @@ function seedMenu(): array
     assert(is_int($variant));
 
     return compact('category', 'item', 'variant');
-}
-
-/** @param  TestResponse<JsonResponse>  $response */
-function createdId(TestResponse $response): int
-{
-    $id = $response->json('id');
-    assert(is_int($id));
-
-    return $id;
-}
-
-/** @return array<string, mixed> */
-function lastAudit(): array
-{
-    /** @var array<string, mixed> $row */
-    $row = (array) DB::table('audit_log')->orderByDesc('id')->first();
-    $row['summary'] = json_decode(is_string($row['summary']) ? $row['summary'] : '', true);
-
-    return $row;
 }
 
 it('builds the menu tree with variants and add-ons for any role', function (): void {

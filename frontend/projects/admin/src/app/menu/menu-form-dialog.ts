@@ -1,12 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import {
-  type AbstractControl,
-  FormControl,
-  FormGroup,
-  ReactiveFormsModule,
-  type ValidationErrors,
-  Validators,
-} from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButton } from '@angular/material/button';
 import {
   MAT_DIALOG_DATA,
@@ -19,7 +12,14 @@ import {
 import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
-import { formatMoney, LanguageService, parseMoney, TPipe, type TranslationKey } from 'shared';
+import {
+  formatMoney,
+  LanguageService,
+  moneyValidator,
+  parseMoney,
+  TPipe,
+  type TranslationKey,
+} from 'shared';
 
 /** What the dialog hands back; fields not shown keep their defaults. */
 export interface MenuForm {
@@ -41,12 +41,6 @@ export interface MenuFormData {
   flagLabel?: TranslationKey;
   /** Resolves an error key to show, or null when saved (the dialog then closes). */
   save: (value: MenuForm) => Promise<TranslationKey | null>;
-}
-
-/** Mirrors the API's `min:0` integer cents rule on a typed amount. */
-function moneyValidator(control: AbstractControl<string>): ValidationErrors | null {
-  const cents = parseMoney(control.value);
-  return cents === null || cents < 0 ? { money: true } : null;
 }
 
 /** Create/edit form for categories, items, variants and add-ons. Rules mirror the API FormRequests. */

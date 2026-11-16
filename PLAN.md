@@ -138,7 +138,7 @@ Each step is one TDD vertical slice. Done = tests green + `make check` clean + r
 ### Phase 2 — Menu, staff, settings
 - [x] **6. Menu API** — categories, items, variants (own price, soft delete), add-ons, availability toggles (admin + kitchen). Audited.
 - [x] **7. Admin menu screens** — master-detail CRUD UI for step 6.
-- [ ] **8. Staff + settings** — staff CRUD with PIN reset; settings (restaurant name, language, paper width, delivery fee on/off + value). API + admin screens.
+- [x] **8. Staff + settings** — staff CRUD with PIN reset; settings (restaurant name, language, paper width, delivery fee on/off + value). API + admin screens.
 
 ### Phase 3 — Orders
 - [ ] **9. Order domain** — gapless sequential number, line snapshots (name/price), add-ons, notes, totals incl. delivery fee, status transitions, cancel with reason, reopen + version bump.

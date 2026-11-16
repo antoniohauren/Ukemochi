@@ -5,6 +5,8 @@ declare(strict_types=1);
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\MenuController;
+use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\StaffController;
 use Illuminate\Support\Facades\Route;
 
 // Ids fit a bigint: longer ones are 404, not an int overflow.
@@ -20,6 +22,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/me', [AuthController::class, 'me']);
 
     Route::get('/menu', [MenuController::class, 'show']);
+    Route::get('/settings', [SettingsController::class, 'show']);
 
     Route::middleware('role:admin,kitchen')->group(function (): void {
         Route::put('/items/{id}/active', [MenuController::class, 'setItemActive']);
@@ -36,5 +39,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::delete('/variants/{id}', [MenuController::class, 'destroyVariant']);
         Route::post('/addons', [MenuController::class, 'storeAddon']);
         Route::put('/addons/{id}', [MenuController::class, 'updateAddon']);
+        Route::get('/users', [StaffController::class, 'index']);
+        Route::post('/users', [StaffController::class, 'store']);
+        Route::put('/users/{id}', [StaffController::class, 'update']);
+        Route::put('/users/{id}/pin', [StaffController::class, 'resetPin']);
+        Route::put('/settings', [SettingsController::class, 'update']);
     });
 });

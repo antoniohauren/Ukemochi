@@ -5,6 +5,7 @@ import { Layout } from './layout';
 import { MenuPage } from './menu/menu-page';
 import { roleGuard } from './role.guard';
 import { SettingsPage } from './settings-page';
+import { StaffPage } from './staff/staff-page';
 
 export const routes: Routes = [
   { path: 'login', component: LoginPage },
@@ -25,7 +26,7 @@ export const routes: Routes = [
       { path: 'kitchen', component: PlaceholderPage, data: { title: 'nav.kitchen' } },
       { path: 'cash', component: PlaceholderPage, data: { title: 'nav.cash' } },
       { path: 'reports', component: PlaceholderPage, data: { title: 'nav.reports' } },
-      { path: 'staff', component: PlaceholderPage, data: { title: 'nav.staff' } },
+      { path: 'staff', component: StaffPage, data: { title: 'nav.staff' } },
       { path: 'audit', component: PlaceholderPage, data: { title: 'nav.audit' } },
       {
         path: 'settings',

@@ -34,8 +34,45 @@ final class InMemoryUserRepository implements UserRepository
         return null;
     }
 
-    public function create(string $name, string $pinHash, Role $role): User
+    public function all(): array
     {
-        return $this->add(new User(count($this->users) + 1, $name, $role, true, $pinHash));
+        $users = array_values($this->users);
+        usort($users, fn (User $a, User $b) => strcasecmp($a->name, $b->name));
+
+        return $users;
+    }
+
+    public function create(string $name, string $pinHash, Role $role, bool $active = true): User
+    {
+        return $this->add(new User(count($this->users) + 1, $name, $role, $active, $pinHash));
+    }
+
+    public function update(int $id, string $name, Role $role, bool $active): ?User
+    {
+        $user = $this->find($id);
+
+        return $user === null ? null : $this->add(new User($id, $name, $role, $active, $user->pinHash));
+    }
+
+    public function setPinHash(int $id, string $pinHash): bool
+    {
+        $user = $this->find($id);
+        if ($user !== null) {
+            $this->add(new User($id, $user->name, $user->role, $user->active, $pinHash));
+        }
+
+        return $user !== null;
+    }
+
+    public function lockActiveAdminIds(): array
+    {
+        $ids = [];
+        foreach ($this->users as $user) {
+            if ($user->role === Role::Admin && $user->active) {
+                $ids[] = $user->id;
+            }
+        }
+
+        return $ids;
     }
 }
