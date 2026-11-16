@@ -18,6 +18,7 @@ import {
   LANGS,
   LangSwitch,
   LanguageService,
+  maxMoney,
   moneyValidator,
   type PaperWidth,
   parseMoney,
@@ -146,7 +147,11 @@ export class SettingsPage {
     language: new FormControl<Lang>('pt-BR', { nonNullable: true }),
     paper_width: new FormControl<PaperWidth>(80, { nonNullable: true }),
     delivery_fee_enabled: new FormControl(false, { nonNullable: true }),
-    delivery_fee: new FormControl('', { nonNullable: true, validators: [moneyValidator] }),
+    delivery_fee: new FormControl('', {
+      nonNullable: true,
+      // SettingsRequest: delivery_fee_cents max:100000000
+      validators: [moneyValidator, maxMoney(100_000_000)],
+    }),
   });
   protected readonly busy = signal(false);
   protected readonly error = signal<TranslationKey | null>(null);

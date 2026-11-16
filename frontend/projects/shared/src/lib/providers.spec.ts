@@ -6,6 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import { ApiClient, type ApiError } from './api/api-client';
 import type { User } from './api/user';
 import { AuthService } from './auth/auth';
+import { LanguageService } from './i18n/language';
 import { provideUkemochi } from './providers';
 
 const admin: User = { id: 1, name: 'Ana', role: 'admin' };
@@ -14,6 +15,7 @@ describe('provideUkemochi', () => {
   let http: HttpTestingController;
 
   beforeEach(async () => {
+    localStorage.clear();
     TestBed.configureTestingModule({
       providers: [provideRouter([]), provideUkemochi(), provideHttpClientTesting()],
     });
@@ -22,6 +24,12 @@ describe('provideUkemochi', () => {
     const init = TestBed.inject(ApplicationInitStatus).donePromise;
     http.expectOne('/api/me').flush(admin);
     await init;
+    TestBed.tick();
+    http.expectOne('/api/settings').flush({ language: 'en' });
+  });
+
+  it('applies the restaurant default language once signed in', () => {
+    expect(TestBed.inject(LanguageService).lang()).toBe('en');
   });
 
   afterEach(() => {

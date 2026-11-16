@@ -1,7 +1,9 @@
 import { TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
-import { StaffApi, type StaffUser } from 'shared';
+import { AuthService, StaffApi, type StaffUser, type User } from 'shared';
 import type { StaffForm } from './staff-form-dialog';
 import { StaffStore } from './staff-store';
 
@@ -12,6 +14,9 @@ describe('StaffStore', () => {
   let api: Record<string, ReturnType<typeof vi.fn>>;
   let store: StaffStore;
   let snack: ReturnType<typeof vi.spyOn>;
+  const me = signal<User | null>({ id: 1, name: 'Boss', role: 'admin' });
+  let restore: ReturnType<typeof vi.fn>;
+  let navigate: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     localStorage.clear();
@@ -21,8 +26,16 @@ describe('StaffStore', () => {
       update: vi.fn(() => of({})),
       resetPin: vi.fn(() => of(null)),
     };
+    me.set({ id: 1, name: 'Boss', role: 'admin' });
+    restore = vi.fn(async () => undefined);
+    navigate = vi.fn(async () => true);
     TestBed.configureTestingModule({
-      providers: [StaffStore, { provide: StaffApi, useValue: api }],
+      providers: [
+        StaffStore,
+        { provide: StaffApi, useValue: api },
+        { provide: AuthService, useValue: { user: me, restore } },
+        { provide: Router, useValue: { navigateByUrl: navigate } },
+      ],
     });
     store = TestBed.inject(StaffStore);
     snack = vi.spyOn(TestBed.inject(MatSnackBar), 'open');
@@ -61,5 +74,26 @@ describe('StaffStore', () => {
     expect(await store.resetPin(2, { ...FORM, pin: '9876' })).toBeNull();
     expect(api['resetPin']).toHaveBeenCalledWith(2, '9876');
     expect(snack).toHaveBeenCalledWith('PIN redefinido.', undefined, { duration: 3000 });
+  });
+
+  it('does not refresh the session user when editing someone else', async () => {
+    await store.save(2, FORM);
+    expect(restore).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('refreshes the session user after a self-edit and leaves when no longer admin', async () => {
+    restore.mockImplementation(async () => me.set({ id: 1, name: 'Boss', role: 'kitchen' }));
+    await store.save(1, FORM);
+    expect(restore).toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith('/');
+    expect(api['list']).not.toHaveBeenCalled();
+  });
+
+  it('stays after a self-edit that keeps admin', async () => {
+    await store.save(1, { ...FORM, role: 'admin', active: true });
+    expect(restore).toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
+    expect(api['list']).toHaveBeenCalledTimes(1);
   });
 });

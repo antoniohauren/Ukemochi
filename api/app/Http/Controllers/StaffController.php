@@ -35,7 +35,7 @@ final readonly class StaffController
 
     public function resetPin(ResetPinRequest $r, int $id): Response
     {
-        $this->staff->resetPin($id, $r->string('pin')->toString());
+        $this->staff->resetPin($id, $r->string('pin')->toString(), $r->hasSession() ? $r->session()->getId() : null);
 
         return response()->noContent();
     }

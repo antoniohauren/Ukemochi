@@ -8,6 +8,7 @@ use App\Application\Audit\AuditLog;
 use App\Application\Auth\LoginThrottle;
 use App\Application\Auth\PinHasher;
 use App\Application\Auth\SessionAuth;
+use App\Application\Auth\SessionRevoker;
 use App\Application\Auth\UserRepository;
 use App\Application\Clock;
 use App\Application\Health\DatabaseProbe;
@@ -16,6 +17,7 @@ use App\Application\Settings\SettingsRepository;
 use App\Application\Transaction;
 use App\Infrastructure\Audit\DatabaseAuditLog;
 use App\Infrastructure\Auth\CacheLoginThrottle;
+use App\Infrastructure\Auth\DatabaseSessionRevoker;
 use App\Infrastructure\Auth\EloquentUserRepository;
 use App\Infrastructure\Auth\GuardSessionAuth;
 use App\Infrastructure\Auth\HashPinHasher;
@@ -44,6 +46,7 @@ class AppServiceProvider extends ServiceProvider
         MenuRepository::class => EloquentMenuRepository::class,
         PinHasher::class => HashPinHasher::class,
         SessionAuth::class => GuardSessionAuth::class,
+        SessionRevoker::class => DatabaseSessionRevoker::class,
         SettingsRepository::class => DatabaseSettingsRepository::class,
         Transaction::class => DatabaseTransaction::class,
         UserRepository::class => EloquentUserRepository::class,

@@ -41,4 +41,9 @@ final class InMemoryLoginThrottle implements LoginThrottle
 
         return $ok;
     }
+
+    public function clear(string $key): void
+    {
+        unset($this->failures[$key], $this->locked[$key]);
+    }
 }

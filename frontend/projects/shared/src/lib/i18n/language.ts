@@ -10,7 +10,7 @@ const dictionaries: Record<Lang, Partial<Dictionary>> = { 'pt-BR': ptBR, en };
 
 @Injectable({ providedIn: 'root' })
 export class LanguageService {
-  private readonly current = signal<Lang>(readStoredLang());
+  private readonly current = signal<Lang>(readStoredLang() ?? 'pt-BR');
   readonly lang = this.current.asReadonly();
   private readonly document = inject(DOCUMENT);
 
@@ -28,17 +28,25 @@ export class LanguageService {
     }
   }
 
+  /** The restaurant's default (settings.language): used only while this device has no choice of its own. */
+  useDefault(lang: Lang): void {
+    if (readStoredLang() === null) {
+      this.current.set(lang);
+      this.document.documentElement.lang = lang;
+    }
+  }
+
   /** Falls back to pt-BR, then to the key itself, so a gap never blanks the UI. */
   t(key: TranslationKey): string {
     return dictionaries[this.current()][key] ?? dictionaries['pt-BR'][key] ?? key;
   }
 }
 
-function readStoredLang(): Lang {
+function readStoredLang(): Lang | null {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return LANGS.find((lang) => lang === stored) ?? 'pt-BR';
+    return LANGS.find((lang) => lang === stored) ?? null;
   } catch {
-    return 'pt-BR';
+    return null;
   }
 }

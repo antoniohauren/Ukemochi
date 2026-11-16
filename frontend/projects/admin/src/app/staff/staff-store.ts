@@ -1,8 +1,10 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Router } from '@angular/router';
 import { firstValueFrom, type Observable } from 'rxjs';
 import {
   type ApiError,
+  AuthService,
   errorKey,
   LanguageService,
   StaffApi,
@@ -17,6 +19,8 @@ export class StaffStore {
   private readonly api = inject(StaffApi);
   private readonly snackBar = inject(MatSnackBar);
   private readonly language = inject(LanguageService);
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
 
   readonly users = signal<StaffUser[] | null>(null);
   readonly loadError = signal<TranslationKey | null>(null);
@@ -37,10 +41,19 @@ export class StaffStore {
       id === null ? this.api.create({ ...body, pin: v.pin }) : this.api.update(id, body),
       'staff.saved',
     );
-    if (error === null) {
-      await this.load();
+    if (error !== null) {
+      return error;
     }
-    return error;
+    if (id !== null && id === this.auth.user()?.id) {
+      // Editing yourself: a demoted or deactivated admin must leave the admin screens.
+      await this.auth.restore();
+      if (this.auth.user()?.role !== 'admin') {
+        await this.router.navigateByUrl('/');
+        return null;
+      }
+    }
+    await this.load();
+    return null;
   }
 
   resetPin(id: number, v: StaffForm): Promise<TranslationKey | null> {

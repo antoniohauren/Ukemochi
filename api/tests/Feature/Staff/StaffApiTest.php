@@ -5,23 +5,27 @@ declare(strict_types=1);
 use App\Domain\Auth\Role;
 use App\Infrastructure\Auth\EloquentUser;
 use Illuminate\Auth\SessionGuard;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Testing\TestResponse;
 
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\json;
 use function Pest\Laravel\postJson;
 use function Pest\Laravel\putJson;
+use function Pest\Laravel\withHeader;
 use function Pest\Laravel\withSession;
 
 it('lists users by name without their PIN hash', function (): void {
     $admin = actAs(Role::Admin);
+    $admin->forceFill(['name' => 'Zé'])->save();
     $bia = EloquentUser::factory()->role(Role::Kitchen)->inactive()->create(['name' => 'bia']);
     $amanda = EloquentUser::factory()->create(['name' => 'Amanda']);
 
     getJson('/api/users')->assertOk()->assertExactJson(['users' => [
         ['id' => $amanda->id, 'name' => 'Amanda', 'role' => 'waitress', 'active' => true],
         ['id' => $bia->id, 'name' => 'bia', 'role' => 'kitchen', 'active' => false],
-        ['id' => $admin->id, 'name' => $admin->name, 'role' => 'admin', 'active' => true],
+        ['id' => $admin->id, 'name' => 'Zé', 'role' => 'admin', 'active' => true],
     ]]);
 });
 
@@ -142,4 +146,103 @@ it('is for admins only', function (Role $role): void {
 
 it('answers 401 without a session', function (): void {
     getJson('/api/users')->assertUnauthorized();
+});
+
+/** A fresh request, like a new PHP process: no user or session state left from the last one. */
+function freshRequest(): void
+{
+    // The next request's StartSession reloads the attributes from the sessions table.
+    session()->flush();
+    auth()->forgetGuards();
+    // The session handler takes the row's user_id from `auth.driver`, a singleton guard;
+    // auth:sanctum also switched the default guard.
+    auth()->shouldUse('web');
+    app()->forgetInstance('auth.driver');
+}
+
+/** Logs in over HTTP with the database session driver and returns the session id. */
+function sessionFor(string $name, string $pin): string
+{
+    freshRequest();
+    $id = withHeader('Origin', 'https://localhost')->postJson('/api/login', ['name' => $name, 'pin' => $pin])
+        ->assertOk()->getCookie(config()->string('session.cookie'))?->getValue();
+    assert(is_string($id));
+
+    return $id;
+}
+
+/**
+ * @param  array<string, mixed>  $body
+ * @return TestResponse<JsonResponse>
+ */
+function withSessionId(string $id, string $method, string $uri, array $body = []): TestResponse
+{
+    freshRequest();
+
+    return withHeader('Origin', 'https://localhost')->withCredentials()->withCookie(config()->string('session.cookie'), $id)->json($method, $uri, $body);
+}
+
+function userId(string $name): int
+{
+    $id = EloquentUser::query()->where('name', $name)->value('id');
+    assert(is_int($id));
+
+    return $id;
+}
+
+describe('session revocation', function (): void {
+    beforeEach(function (): void {
+        config(['session.driver' => 'database']);
+        EloquentUser::factory()->role(Role::Admin)->create(['name' => 'Boss', 'pin_hash' => Hash::make('0000')]);
+        EloquentUser::factory()->create(['name' => 'Amanda', 'pin_hash' => Hash::make('1234')]);
+    });
+
+    it('ends the user\'s open sessions on a PIN reset', function (): void {
+        $admin = sessionFor('Boss', '0000');
+        $amanda = sessionFor('Amanda', '1234');
+        withSessionId($amanda, 'GET', '/api/me')->assertOk();
+        $id = userId('Amanda');
+
+        withSessionId($admin, 'PUT', "/api/users/{$id}/pin", ['pin' => '4321'])->assertNoContent();
+
+        withSessionId($amanda, 'GET', '/api/me')->assertUnauthorized();
+        withSessionId($admin, 'GET', '/api/me')->assertOk();
+    });
+
+    it('keeps the caller logged in on a self-reset but ends their other sessions', function (): void {
+        $here = sessionFor('Boss', '0000');
+        $elsewhere = sessionFor('Boss', '0000');
+        $id = userId('Boss');
+
+        $renewed = withSessionId($here, 'PUT', "/api/users/{$id}/pin", ['pin' => '4321'])->assertNoContent()
+            ->getCookie(config()->string('session.cookie'))?->getValue();
+        assert(is_string($renewed));
+
+        withSessionId($renewed, 'GET', '/api/me')->assertOk();
+        withSessionId($here, 'GET', '/api/me')->assertUnauthorized();
+        withSessionId($elsewhere, 'GET', '/api/me')->assertUnauthorized();
+    });
+
+    it('does not revive a session when a deactivated user is reactivated', function (): void {
+        $admin = sessionFor('Boss', '0000');
+        $amanda = sessionFor('Amanda', '1234');
+        $id = userId('Amanda');
+
+        withSessionId($admin, 'PUT', "/api/users/{$id}", ['name' => 'Amanda', 'role' => 'waitress', 'active' => false])->assertOk();
+        withSessionId($admin, 'PUT', "/api/users/{$id}", ['name' => 'Amanda', 'role' => 'waitress', 'active' => true])->assertOk();
+
+        withSessionId($amanda, 'GET', '/api/me')->assertUnauthorized();
+    });
+
+    it('lifts the wrong-PIN delay on a PIN reset', function (): void {
+        $admin = sessionFor('Boss', '0000');
+        freshRequest();
+        withHeader('Origin', 'https://localhost')->postJson('/api/login', ['name' => 'Amanda', 'pin' => '0000'])->assertStatus(422);
+        withHeader('Origin', 'https://localhost')->postJson('/api/login', ['name' => 'Amanda', 'pin' => '1234'])->assertStatus(429);
+        $id = userId('Amanda');
+
+        withSessionId($admin, 'PUT', "/api/users/{$id}/pin", ['pin' => '4321'])->assertNoContent();
+
+        sessionFor('Amanda', '4321');
+    });
 });

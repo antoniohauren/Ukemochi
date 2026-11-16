@@ -27,7 +27,7 @@ final readonly class CacheLoginThrottle implements LoginThrottle
     {
         $store = $this->cache->getStore();
         assert($store instanceof LockProvider);
-        $stateKey = 'login-pin:'.hash('sha256', $key);
+        $stateKey = self::stateKey($key);
 
         try {
             return $store->lock("{$stateKey}:lock", self::LOCK_SECONDS)->block(
@@ -38,6 +38,11 @@ final readonly class CacheLoginThrottle implements LoginThrottle
             // Another attempt for this key is still running: same answer as a lockout.
             throw new LoginThrottled(1);
         }
+    }
+
+    public function clear(string $key): void
+    {
+        $this->cache->forget(self::stateKey($key));
     }
 
     /** @param  Closure(): bool  $check */
@@ -59,6 +64,11 @@ final readonly class CacheLoginThrottle implements LoginThrottle
         $this->cache->put($stateKey, ['failures' => $failures, 'until' => $now + PinDelay::seconds($failures)], self::REMEMBER_SECONDS);
 
         return false;
+    }
+
+    private static function stateKey(string $key): string
+    {
+        return 'login-pin:'.hash('sha256', $key);
     }
 
     /** @return array{failures: int, until: int} */

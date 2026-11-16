@@ -19,4 +19,7 @@ interface LoginThrottle
      * @throws LoginThrottled
      */
     public function attempt(string $key, Closure $check): bool;
+
+    /** Drops the key's failures and lockout (e.g. after an admin resets the PIN). */
+    public function clear(string $key): void;
 }

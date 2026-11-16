@@ -46,10 +46,10 @@ describe('SettingsPage', () => {
     });
   });
 
-  it('does not save an invalid fee', async () => {
+  it.each(['-1', '1.000.000,01'])('does not save fee %j', async (fee) => {
     const { fixture, loader } = await setup();
     const inputs = await loader.getAllHarnesses(MatInputHarness);
-    await inputs[1].setValue('-1');
+    await inputs[1].setValue(fee);
     await (await loader.getHarness(MatButtonHarness.with({ text: 'Salvar' }))).click();
     await fixture.whenStable();
     expect(api.update).not.toHaveBeenCalled();
