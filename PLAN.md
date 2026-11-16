@@ -103,7 +103,7 @@ Each step is one TDD vertical slice. Done = tests green + `bun run check` clean 
 
 ### Phase 1 — Foundation
 - [x] **1. Monorepo scaffold** — bun workspaces, `tsconfig.base.json` (strict), Biome lint/format, root scripts `dev`/`test`/`check`, empty `apps/*` + `packages/*`.
-- [ ] **2. Shared basics** — `packages/shared`: money (cents, parse, format pt-BR/en), i18n dictionaries + `t()`, base zod schemas.
+- [x] **2. Shared basics** — `packages/shared`: money (cents, parse, format pt-BR/en), i18n dictionaries + `t()`, base zod schemas.
 - [ ] **3. API skeleton** — Hono app, `/health`, error handler, SQLite open (WAL) + migration runner, test helper with in-memory DB.
 - [ ] **4. Auth** — users table, PIN hash (`Bun.password`), sessions, login/logout/me, role middleware, seed first admin.
 - [ ] **5. Frontend scaffold** — `packages/ui` MUI theme + base components, `apps/admin` + `apps/waitress` (Vite, React, PWA manifest), `hc<AppType>` client, login screen, language switch.
