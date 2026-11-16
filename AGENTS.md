@@ -43,7 +43,7 @@ Frontends: keep components thin. Logic goes in services or `shared`. Presentatio
 Rules:
 - Tests use **Pest** on the API, Angular's default unit test runner on the frontends.
 - Domain and application: unit tests (`tests/Unit/...`, mirroring `app/`) with in-memory fakes for ports. Cover edge cases (rounding, fractions, negative stock, reopen).
-- HTTP: feature tests (`tests/Feature/...`) through `$this->postJson()` etc. against the Postgres test database with `RefreshDatabase`. No SQLite: behavior must match production Postgres.
+- HTTP: feature tests (`tests/Feature/...`) through `$this->postJson()` etc. against the Postgres test database with `RefreshDatabase`.
 - Every endpoint's feature test asserts the exact JSON shape, because the TS types in `shared` are hand-written to match it.
 - Infrastructure: repository tests against the test database; backup against a temp directory.
 - Angular: test services, pipes and logic; components only where behavior matters (`TestBed` + Angular CDK test harnesses for Material). Specs sit next to code: `foo.ts` + `foo.spec.ts`.
@@ -53,7 +53,7 @@ Rules:
 ## Laravel
 - Use what Laravel ships first: `Hash` (PIN hash), `RateLimiter`, Sanctum, Reverb, scheduler, `Storage`, `Process`. Do not add a package for something the framework already does.
 - Every route under `routes/api.php` (`/api/*`). Validate every body, query and route param with a FormRequest. The HTTP layer is the trust boundary.
-- Auth via `auth:sanctum` with SPA cookie sessions (no tokens in `localStorage`); role checks as middleware per route group.
+- Auth via `auth:sanctum` with SPA cookie sessions; role checks as middleware per route group.
 - Responses through API Resources only, so the JSON shape is defined in one place.
 - Broadcast events implement `ShouldBroadcastNow` (no queue worker). Channel auth in `routes/channels.php`.
 

@@ -14,9 +14,9 @@ UI in pt-BR and English (switchable).
 - **Apps**: `waitress` (mobile PWA), `admin` (web, includes `/kitchen`), library `shared`.
 - **Hosting**: one local PC on the LAN, Windows or Linux. Printer on USB or Bluetooth, installed as an OS printer.
 - **Auth**: user + 4-digit PIN per staff. Roles: admin, waitress, kitchen. Every change records user.
-  - Sanctum SPA cookie sessions (httpOnly, SameSite, CSRF via `XSRF-TOKEN`). No token in `localStorage`.
+  - Sanctum SPA cookie sessions (httpOnly, SameSite, CSRF via `XSRF-TOKEN`).
   - Idle timeout 12h (`SESSION_LIFETIME=720`).
-  - Wrong PINs: growing delay per name (1s, 2s, 4s… max 30s), no hard lock, resets on success.
+  - Wrong PINs: growing delay per name (1s, 2s, 4s… max 30s), resets on success.
   - Logout while server unreachable: app shows logged out, server session expires on idle timeout.
   - Admin app by role: admin sees everything, kitchen only `/kitchen`, waitress refused with a message.
 - **Orders**: dine-in by customer name (no tables). Phone: pickup or delivery.
@@ -42,16 +42,16 @@ UI in pt-BR and English (switchable).
 - **Backup**: `pg_dump` on shift close + daily, keep last N; download in admin.
 
 ## UI
-Modern, minimal, little clutter. Material 3 theme in `shared`: one primary color, light + dark (follows system), system font, flat surfaces, whitespace over borders/dividers.
+Modern and minimal. Material 3 theme in `shared`: one primary color, light + dark (follows system), system font, flat surfaces, whitespace instead of borders/dividers.
 - **One primary action per screen**; secondary actions in an overflow menu (`mat-menu`).
 - **Mobile looks native** (waitress, and admin under 600px):
   - Bottom tab bar (`BottomNav` in `shared`), 3–5 tabs, icon + label. Waitress: Pedidos, Novo, Clientes, Mais.
   - Top app bar with title + back arrow; no hamburger menu.
   - Pickers and quick actions as bottom sheets (`mat-bottom-sheet`); forms as full-screen dialogs.
   - Sticky bottom action bar for the main action (e.g. "Enviar pedido", total + "Pagar").
-  - Installed PWA runs `standalone`, safe-area insets respected, 48px touch targets, inputs ≥16px (no iOS zoom), no hover-only UI.
+  - Installed PWA runs `standalone`, safe-area insets respected, 48px touch targets, inputs ≥16px, no hover-only UI.
 - **Desktop admin**: side nav rail (`mat-sidenav`), list/detail layouts, tables only where data is tabular (reports, audit).
-- **Feedback**: snackbars for success/undo, inline field errors, skeletons instead of spinners for lists.
+- **Feedback**: snackbars for success/undo, inline field errors, skeleton loaders for lists.
 
 ## Repo layout
 ```
