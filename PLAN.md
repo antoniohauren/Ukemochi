@@ -136,7 +136,7 @@ Each step is one TDD vertical slice. Done = tests green + `make check` clean + r
 - [x] **5. Frontend scaffold** — Material 3 theme (light/dark), `AppShell` (bottom tabs on mobile, side nav rail on desktop), admin + waitress apps (PWA manifest + service worker), `ApiClient` with credentials + XSRF, login screen, language switch, admin route guards by role.
 
 ### Phase 2 — Menu, staff, settings
-- [ ] **6. Menu API** — categories, items, variants (own price, soft delete), add-ons, availability toggles (admin + kitchen). Audited.
+- [x] **6. Menu API** — categories, items, variants (own price, soft delete), add-ons, availability toggles (admin + kitchen). Audited.
 - [ ] **7. Admin menu screens** — master-detail CRUD UI for step 6.
 - [ ] **8. Staff + settings** — staff CRUD with PIN reset; settings (restaurant name, language, paper width, delivery fee on/off + value). API + admin screens.
 

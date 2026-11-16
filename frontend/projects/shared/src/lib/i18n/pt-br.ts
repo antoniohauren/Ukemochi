@@ -39,6 +39,10 @@ export const ptBR = {
   'error.forbidden': 'Sem permissão.',
   'error.network': 'Sem conexão com o servidor.',
   'error.money.invalid': 'Valor inválido.',
+  'error.menu.not_found': 'Não encontrado no cardápio.',
+  'error.menu.invalid_price': 'O preço não pode ser negativo.',
+  'error.menu.invalid_addon_target': 'O adicional pertence a um item ou a uma categoria.',
+  'error.menu.last_variant': 'O item precisa de ao menos uma variação.',
 };
 
 export type TranslationKey = keyof typeof ptBR;

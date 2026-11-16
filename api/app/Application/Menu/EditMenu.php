@@ -1,0 +1,186 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Application\Menu;
+
+use App\Application\Audit\AuditLog;
+use App\Application\Auth\SessionAuth;
+use App\Application\Transaction;
+use App\Domain\Menu\Addon;
+use App\Domain\Menu\Category;
+use App\Domain\Menu\Item;
+use App\Domain\Menu\LastVariant;
+use App\Domain\Menu\MenuNotFound;
+use App\Domain\Menu\Variant;
+
+/** Menu mutations. Each one writes the record and its audit row in one transaction. */
+final readonly class EditMenu
+{
+    public function __construct(
+        private MenuRepository $menu,
+        private Transaction $transaction,
+        private AuditLog $audit,
+        private SessionAuth $session,
+    ) {}
+
+    public function createCategory(string $name, int $sort, bool $active): Category
+    {
+        return $this->transaction->run(fn () => $this->saved(
+            $this->menu->saveCategory(new Category(0, $name, $sort, $active)), 'category', 'create',
+        ));
+    }
+
+    public function updateCategory(int $id, string $name, int $sort, bool $active): Category
+    {
+        $this->category($id);
+
+        return $this->transaction->run(fn () => $this->saved(
+            $this->menu->saveCategory(new Category($id, $name, $sort, $active)), 'category', 'update',
+        ));
+    }
+
+    /** A new item gets one unnamed default variant at `$priceCents`. */
+    public function createItem(int $categoryId, string $name, ?string $note, bool $active, int $priceCents): Item
+    {
+        $this->category($categoryId);
+
+        return $this->transaction->run(function () use ($categoryId, $name, $note, $active, $priceCents): Item {
+            $item = $this->saved($this->menu->saveItem(new Item(0, $categoryId, $name, $note, $active)), 'item', 'create');
+            $this->saved($this->menu->saveVariant(new Variant(0, $item->id, '', $priceCents, true, 0)), 'variant', 'create');
+
+            return $item;
+        });
+    }
+
+    /** `active` stays as it is: only setItemActive changes it. */
+    public function updateItem(int $id, int $categoryId, string $name, ?string $note): Item
+    {
+        $this->category($categoryId);
+
+        return $this->transaction->run(fn () => $this->saved(
+            $this->menu->saveItem(new Item($id, $categoryId, $name, $note, $this->item($id)->active)), 'item', 'update',
+        ));
+    }
+
+    public function setItemActive(int $id, bool $active, ?string $note): Item
+    {
+        return $this->transaction->run(fn () => $this->saved(
+            $this->menu->setItemActive($id, $active) ?? throw new MenuNotFound('item', $id), 'item', 'set_active', $note,
+        ));
+    }
+
+    public function createVariant(int $itemId, string $name, int $priceCents, bool $available, int $sort): Variant
+    {
+        $this->item($itemId);
+        $variant = new Variant(0, $itemId, $name, $priceCents, $available, $sort);
+
+        return $this->transaction->run(fn () => $this->saved($this->menu->saveVariant($variant), 'variant', 'create'));
+    }
+
+    /** `available` stays as it is: only setVariantAvailable changes it. */
+    public function updateVariant(int $id, string $name, int $priceCents, int $sort): Variant
+    {
+        return $this->transaction->run(function () use ($id, $name, $priceCents, $sort): Variant {
+            $current = $this->variant($id);
+
+            return $this->saved(
+                $this->menu->saveVariant(new Variant($id, $current->itemId, $name, $priceCents, $current->available, $sort)), 'variant', 'update',
+            );
+        });
+    }
+
+    public function setVariantAvailable(int $id, bool $available, ?string $note): Variant
+    {
+        return $this->transaction->run(fn () => $this->saved(
+            $this->menu->setVariantAvailable($id, $available) ?? throw new MenuNotFound('variant', $id), 'variant', 'set_available', $note,
+        ));
+    }
+
+    /** Soft delete: order lines keep pointing at it. */
+    public function deleteVariant(int $id, ?string $note): void
+    {
+        $this->transaction->run(function () use ($id, $note): void {
+            $this->menu->lockItem($this->variant($id)->itemId);
+            // Re-read under the lock: a parallel delete may have just removed it.
+            $variant = $this->variant($id);
+            if ($this->menu->countVariants($variant->itemId) <= 1) {
+                throw new LastVariant;
+            }
+
+            $this->menu->deleteVariant($variant->id);
+            $this->record('variant', $variant->id, 'delete', ['name' => $variant->name], $note);
+        });
+    }
+
+    public function createAddon(?int $itemId, ?int $categoryId, string $name, int $priceCents, bool $active): Addon
+    {
+        $addon = $this->targeted(new Addon(0, $itemId, $categoryId, $name, $priceCents, $active));
+
+        return $this->transaction->run(fn () => $this->saved($this->menu->saveAddon($addon), 'addon', 'create'));
+    }
+
+    public function updateAddon(int $id, ?int $itemId, ?int $categoryId, string $name, int $priceCents, bool $active): Addon
+    {
+        if ($this->menu->findAddon($id) === null) {
+            throw new MenuNotFound('addon', $id);
+        }
+        $addon = $this->targeted(new Addon($id, $itemId, $categoryId, $name, $priceCents, $active));
+
+        return $this->transaction->run(fn () => $this->saved($this->menu->saveAddon($addon), 'addon', 'update'));
+    }
+
+    private function targeted(Addon $addon): Addon
+    {
+        if ($addon->itemId !== null) {
+            $this->item($addon->itemId);
+        }
+        if ($addon->categoryId !== null) {
+            $this->category($addon->categoryId);
+        }
+
+        return $addon;
+    }
+
+    private function category(int $id): Category
+    {
+        return $this->menu->findCategory($id) ?? throw new MenuNotFound('category', $id);
+    }
+
+    private function item(int $id): Item
+    {
+        return $this->menu->findItem($id) ?? throw new MenuNotFound('item', $id);
+    }
+
+    private function variant(int $id): Variant
+    {
+        return $this->menu->findVariant($id) ?? throw new MenuNotFound('variant', $id);
+    }
+
+    /**
+     * Audits the stored entity with its fields as the summary.
+     *
+     * @template T of Category|Item|Variant|Addon
+     *
+     * @param  T  $entity
+     * @return T
+     */
+    private function saved(Category|Item|Variant|Addon $entity, string $name, string $action, ?string $note = null): Category|Item|Variant|Addon
+    {
+        $summary = [];
+        foreach (get_object_vars($entity) as $key => $value) {
+            // Same snake_case keys as the API.
+            $summary[strtolower((string) preg_replace('/[A-Z]/', '_$0', $key))] = $value;
+        }
+        unset($summary['id']);
+        $this->record($name, $entity->id, $action, $summary, $note);
+
+        return $entity;
+    }
+
+    /** @param  array<string, mixed>  $summary */
+    private function record(string $entity, int $id, string $action, array $summary, ?string $note): void
+    {
+        $this->audit->record($this->session->userId(), $entity, $id, $action, $summary, $note);
+    }
+}

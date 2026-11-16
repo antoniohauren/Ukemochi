@@ -3,6 +3,8 @@
  */
 
 export * from './lib/api/api-client';
+export * from './lib/api/menu';
+export * from './lib/api/menu-api';
 export * from './lib/api/user';
 export * from './lib/auth/auth';
 export * from './lib/auth/auth.guard';

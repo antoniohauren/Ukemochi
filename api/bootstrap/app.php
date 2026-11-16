@@ -6,6 +6,8 @@ use App\Domain\Auth\LoginThrottled;
 use App\Domain\Auth\NameTaken;
 use App\Domain\Auth\NotAuthenticated;
 use App\Domain\DomainException;
+use App\Domain\Menu\LastVariant;
+use App\Domain\Menu\MenuNotFound;
 use App\Http\Middleware\EnsureRole;
 use App\Http\RenderApiException;
 use Illuminate\Foundation\Application;
@@ -35,6 +37,8 @@ return Application::configure(basePath: dirname(__DIR__))
             NotAuthenticated::class => 401,
             NameTaken::class => 409,
             LoginThrottled::class => 429,
+            MenuNotFound::class => 404,
+            LastVariant::class => 409,
         ]));
         // Business rule violations are expected outcomes, not errors to log.
         $exceptions->dontReport(DomainException::class);

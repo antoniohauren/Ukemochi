@@ -40,4 +40,8 @@ export const en: Dictionary = {
   'error.forbidden': 'Not allowed.',
   'error.network': 'Cannot reach the server.',
   'error.money.invalid': 'Invalid amount.',
+  'error.menu.not_found': 'Not found in the menu.',
+  'error.menu.invalid_price': 'Price cannot be negative.',
+  'error.menu.invalid_addon_target': 'An add-on belongs to one item or one category.',
+  'error.menu.last_variant': 'An item needs at least one variant.',
 };
