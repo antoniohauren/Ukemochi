@@ -81,6 +81,7 @@
             </a>
             <mat-slide-toggle
               [checked]="i.active"
+              [disabled]="store.pending().has('item:' + i.id)"
               (change)="setItemActive(i, $event)"
               aria-label="{{ 'menu.active' | t }}: {{ i.name }}"
             />
@@ -163,6 +164,7 @@
             <span class="price">{{ money(v.price_cents) }}</span>
             <mat-slide-toggle
               [checked]="v.available"
+              [disabled]="store.pending().has('variant:' + v.id)"
               (change)="setVariantAvailable(v, $event)"
               aria-label="{{ 'menu.available' | t }}: {{ v.name || ('menu.variant.default' | t) }}"
             />
@@ -179,7 +181,7 @@
         }
         <mat-menu #variantMenu="matMenu">
           <ng-template matMenuContent let-v>
-            <button mat-menu-item type="button" (click)="store.deleteVariant(v.id)">
+            <button mat-menu-item type="button" (click)="deleteVariant(v)">
               {{ 'menu.variant.delete' | t }}
             </button>
           </ng-template>

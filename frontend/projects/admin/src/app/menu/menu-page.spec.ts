@@ -1,5 +1,7 @@
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import { TestBed } from '@angular/core/testing';
+import { MatButtonHarness } from '@angular/material/button/testing';
+import { MatMenuHarness } from '@angular/material/menu/testing';
 import { MatSlideToggleHarness } from '@angular/material/slide-toggle/testing';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -34,19 +36,29 @@ const MENU: Menu = {
 
 describe('MenuPage', () => {
   const setVariantAvailable = vi.fn();
+  const setItemActive = vi.fn();
+  const deleteVariant = vi.fn(() => of(null));
 
   async function visit(url: string) {
     localStorage.clear();
     TestBed.configureTestingModule({
       providers: [
         provideRouter([{ path: 'menu', component: MenuPage }]),
-        { provide: MenuApi, useValue: { menu: () => of(MENU), setVariantAvailable } },
+        {
+          provide: MenuApi,
+          useValue: { menu: () => of(MENU), setVariantAvailable, setItemActive, deleteVariant },
+        },
       ],
     });
     const harness = await RouterTestingHarness.create(url);
     await harness.fixture.whenStable();
     const loader = TestbedHarnessEnvironment.loader(harness.fixture);
-    return { harness, loader, el: harness.routeNativeElement as HTMLElement };
+    return {
+      harness,
+      loader,
+      root: TestbedHarnessEnvironment.documentRootLoader(harness.fixture),
+      el: harness.routeNativeElement as HTMLElement,
+    };
   }
 
   it('shows the selected item with its default variant and price', async () => {
@@ -64,5 +76,34 @@ describe('MenuPage', () => {
     await harness.fixture.whenStable();
     expect(setVariantAvailable).toHaveBeenCalledWith(100, false);
     expect(await toggle.isChecked()).toBe(true);
+  });
+
+  it('flips the active switch back when the API refuses', async () => {
+    setItemActive.mockReturnValue(throwError(() => ({ code: 'forbidden', message: '' })));
+    const { loader, harness } = await visit('/menu?category=1');
+    const toggle = await loader.getHarness(MatSlideToggleHarness.with({ ancestor: '.items' }));
+    await toggle.toggle();
+    await harness.fixture.whenStable();
+    expect(setItemActive).toHaveBeenCalledWith(10, false);
+    expect(await toggle.isChecked()).toBe(true);
+  });
+
+  it('falls back a level when the URL points at nothing', async () => {
+    const missingItem = await visit('/menu?category=1&item=99');
+    expect(missingItem.el.querySelector('.panes')?.classList).toContain('depth-1');
+    expect(missingItem.el.textContent).toContain('Escolha um item.');
+    TestBed.resetTestingModule();
+    const missingCategory = await visit('/menu?category=99');
+    expect(missingCategory.el.querySelector('.panes')?.classList).toContain('depth-0');
+    expect(missingCategory.el.textContent).toContain('Escolha uma categoria.');
+  });
+
+  it('removes a variant only after confirming', async () => {
+    const { loader, root } = await visit('/menu?category=1&item=10');
+    const menu = await loader.getHarness(MatMenuHarness.with({ ancestor: '.detail .row' }));
+    await menu.clickItem({ text: 'Remover variação' });
+    expect(deleteVariant).not.toHaveBeenCalled();
+    await (await root.getHarness(MatButtonHarness.with({ text: 'Remover' }))).click();
+    await vi.waitFor(() => expect(deleteVariant).toHaveBeenCalledWith(100));
   });
 });

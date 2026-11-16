@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { type Menu, MenuApi } from 'shared';
 import type { MenuForm } from './menu-form-dialog';
 import { MenuStore } from './menu-store';
@@ -129,9 +129,10 @@ describe('MenuStore', () => {
     });
   });
 
-  it('returns the error key of a failed save without reloading', async () => {
-    api['createCategory'] = fail('validation');
-    expect(await store.saveCategory(null, FORM)).toBe('error.validation');
+  it('returns the API error of a failed save without reloading', async () => {
+    const error = { code: 'validation', message: 'x', errors: { name: ['too long'] } };
+    api['createCategory'] = vi.fn(() => throwError(() => error));
+    expect(await store.saveCategory(null, FORM)).toEqual(error);
     expect(api['menu']).not.toHaveBeenCalled();
     expect(snack).not.toHaveBeenCalled();
   });
@@ -149,5 +150,39 @@ describe('MenuStore', () => {
     expect(api['setVariantAvailable']).toHaveBeenCalledWith(100, false);
     api['setItemActive'] = fail('forbidden');
     expect(await store.setItemActive(10, false)).toBe(false);
+  });
+
+  it('sends name, sort and active for a category', async () => {
+    await store.saveCategory(1, FORM);
+    expect(api['updateCategory']).toHaveBeenCalledWith(1, {
+      name: 'Queijo',
+      sort: 2,
+      active: false,
+    });
+  });
+
+  it('keeps the latest menu when an older reload answers last', async () => {
+    const first = new Subject<Menu>();
+    const second = new Subject<Menu>();
+    api['menu'] = vi.fn().mockReturnValueOnce(first).mockReturnValueOnce(second);
+    const loads = [store.load(), store.load()];
+    second.next({ categories: [] });
+    second.complete();
+    first.next(MENU);
+    first.complete();
+    await Promise.all(loads);
+    expect(store.menu()).toEqual({ categories: [] });
+  });
+
+  it('marks a switch pending while its request runs', async () => {
+    const reply = new Subject<unknown>();
+    api['setVariantAvailable'] = vi.fn(() => reply);
+    const done = store.setVariantAvailable(100, false);
+    expect(store.pending().has('variant:100')).toBe(true);
+    expect(store.pending().has('item:100')).toBe(false);
+    reply.next({});
+    reply.complete();
+    await done;
+    expect(store.pending().size).toBe(0);
   });
 });

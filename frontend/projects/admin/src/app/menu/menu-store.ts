@@ -24,6 +24,9 @@ export class MenuStore {
   /** Selected ids; 0 means none (ids start at 1). */
   readonly categoryId = signal(0);
   readonly itemId = signal(0);
+  /** Switches with a request in flight, as `item:<id>` / `variant:<id>`. */
+  readonly pending = signal<ReadonlySet<string>>(new Set());
+  private loads = 0;
 
   readonly categories = computed(() => this.menu()?.categories ?? []);
   readonly category = computed(
@@ -33,23 +36,30 @@ export class MenuStore {
     () => this.category()?.items.find((i) => i.id === this.itemId()) ?? null,
   );
 
+  /** Only the latest call's answer is applied, so overlapping reloads never show an older tree. */
   async load(): Promise<void> {
+    const load = ++this.loads;
     try {
-      this.menu.set(await firstValueFrom(this.api.menu()));
-      this.loadError.set(null);
+      const menu = await firstValueFrom(this.api.menu());
+      if (load === this.loads) {
+        this.menu.set(menu);
+        this.loadError.set(null);
+      }
     } catch (e) {
-      this.loadError.set(errorKey(e as ApiError));
+      if (load === this.loads) {
+        this.loadError.set(errorKey(e as ApiError));
+      }
     }
   }
 
-  saveCategory(id: number | null, v: MenuForm): Promise<TranslationKey | null> {
+  saveCategory(id: number | null, v: MenuForm): Promise<ApiError | null> {
     const body = { name: v.name, sort: v.sort, active: v.flag };
     return this.write(
       id === null ? this.api.createCategory(body) : this.api.updateCategory(id, body),
     );
   }
 
-  saveItem(categoryId: number, id: number | null, v: MenuForm): Promise<TranslationKey | null> {
+  saveItem(categoryId: number, id: number | null, v: MenuForm): Promise<ApiError | null> {
     const body = { category_id: categoryId, name: v.name, note: v.note || null };
     return this.write(
       id === null
@@ -58,7 +68,7 @@ export class MenuStore {
     );
   }
 
-  saveVariant(itemId: number, id: number | null, v: MenuForm): Promise<TranslationKey | null> {
+  saveVariant(itemId: number, id: number | null, v: MenuForm): Promise<ApiError | null> {
     const body = { name: v.name, price_cents: v.price_cents, sort: v.sort };
     return this.write(
       id === null
@@ -71,7 +81,7 @@ export class MenuStore {
     owner: Pick<Addon, 'item_id' | 'category_id'>,
     id: number | null,
     v: MenuForm,
-  ): Promise<TranslationKey | null> {
+  ): Promise<ApiError | null> {
     const { item_id, category_id } = owner;
     const body = { item_id, category_id, name: v.name, price_cents: v.price_cents, active: v.flag };
     return this.write(id === null ? this.api.createAddon(body) : this.api.updateAddon(id, body));
@@ -79,26 +89,26 @@ export class MenuStore {
 
   /** Resolves false on failure, so the caller can flip the switch back. */
   setItemActive(id: number, active: boolean): Promise<boolean> {
-    return this.act(this.api.setItemActive(id, active));
+    return this.toggle(`item:${id}`, this.api.setItemActive(id, active));
   }
 
   setVariantAvailable(id: number, available: boolean): Promise<boolean> {
-    return this.act(this.api.setVariantAvailable(id, available));
+    return this.toggle(`variant:${id}`, this.api.setVariantAvailable(id, available));
   }
 
   deleteVariant(id: number): Promise<boolean> {
     return this.act(this.api.deleteVariant(id), 'menu.variant.deleted');
   }
 
-  /** Returns the error key on failure (nothing reloaded), so a dialog can show it and stay open. */
+  /** Returns the error on failure (nothing reloaded), so a dialog can show it and stay open. */
   private async write(
     call: Observable<unknown>,
     done: TranslationKey = 'menu.saved',
-  ): Promise<TranslationKey | null> {
+  ): Promise<ApiError | null> {
     try {
       await firstValueFrom(call);
     } catch (e) {
-      return errorKey(e as ApiError);
+      return e as ApiError;
     }
     this.notify(done);
     await this.load();
@@ -109,9 +119,22 @@ export class MenuStore {
   private async act(call: Observable<unknown>, done?: TranslationKey): Promise<boolean> {
     const error = await this.write(call, done);
     if (error) {
-      this.notify(error);
+      this.notify(errorKey(error));
     }
     return error === null;
+  }
+
+  private async toggle(key: string, call: Observable<unknown>): Promise<boolean> {
+    this.pending.update((keys) => new Set(keys).add(key));
+    try {
+      return await this.act(call);
+    } finally {
+      this.pending.update((keys) => {
+        const rest = new Set(keys);
+        rest.delete(key);
+        return rest;
+      });
+    }
   }
 
   private notify(key: TranslationKey): void {

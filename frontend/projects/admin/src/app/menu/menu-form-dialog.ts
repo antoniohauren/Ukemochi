@@ -7,12 +7,13 @@ import {
   MatDialogClose,
   MatDialogContent,
   MatDialogRef,
-  MatDialogTitle,
 } from '@angular/material/dialog';
 import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
 import {
+  type ApiError,
+  errorKey,
   formatMoney,
   LanguageService,
   moneyValidator,
@@ -20,6 +21,7 @@ import {
   TPipe,
   type TranslationKey,
 } from 'shared';
+import { FormDialogTitle } from '../form-dialog';
 
 /** What the dialog hands back; fields not shown keep their defaults. */
 export interface MenuForm {
@@ -39,9 +41,17 @@ export interface MenuFormData {
   /** Variant names may be empty (the default variant). */
   nameOptional?: boolean;
   flagLabel?: TranslationKey;
-  /** Resolves an error key to show, or null when saved (the dialog then closes). */
-  save: (value: MenuForm) => Promise<TranslationKey | null>;
+  /** Resolves the API error to show, or null when saved (the dialog then closes). */
+  save: (value: MenuForm) => Promise<ApiError | null>;
 }
+
+/** API field name (FormRequest key) to form control. */
+const API_FIELDS: Partial<Record<string, 'name' | 'note' | 'price' | 'sort'>> = {
+  name: 'name',
+  note: 'note',
+  price_cents: 'price',
+  sort: 'sort',
+};
 
 /** Create/edit form for categories, items, variants and add-ons. Rules mirror the API FormRequests. */
 @Component({
@@ -51,7 +61,7 @@ export interface MenuFormData {
     MatDialogActions,
     MatDialogClose,
     MatDialogContent,
-    MatDialogTitle,
+    FormDialogTitle,
     MatError,
     MatFormField,
     MatInput,
@@ -62,7 +72,7 @@ export interface MenuFormData {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h2 mat-dialog-title>{{ data.title | t }}</h2>
+    <app-form-dialog-title [title]="data.title" />
     <form class="form" [formGroup]="form" (ngSubmit)="submit()">
       <mat-dialog-content class="fields">
         @if (has('name')) {
@@ -76,6 +86,7 @@ export interface MenuFormData {
           <mat-form-field>
             <mat-label>{{ 'menu.note' | t }}</mat-label>
             <textarea matInput formControlName="note" maxlength="1000" rows="2"></textarea>
+            <mat-error>{{ 'menu.note.invalid' | t }}</mat-error>
           </mat-form-field>
         }
         @if (has('price_cents')) {
@@ -184,9 +195,22 @@ export class MenuFormDialog {
     });
     this.busy.set(false);
     if (error) {
-      this.error.set(error);
+      this.error.set(errorKey(error));
+      this.showFieldErrors(error);
     } else {
       this.ref.close(true);
+    }
+  }
+
+  /** Marks the fields a 422 names; each shows its own translated rule message. */
+  private showFieldErrors(error: ApiError): void {
+    for (const field of Object.keys(error.errors ?? {})) {
+      const name = API_FIELDS[field];
+      const control = name && this.form.controls[name];
+      if (control) {
+        control.setErrors({ api: true });
+        control.markAsTouched();
+      }
     }
   }
 }

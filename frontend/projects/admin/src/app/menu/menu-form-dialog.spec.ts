@@ -3,7 +3,6 @@ import { TestBed } from '@angular/core/testing';
 import { MatButtonHarness } from '@angular/material/button/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatInputHarness } from '@angular/material/input/testing';
-import type { TranslationKey } from 'shared';
 import { MenuFormDialog, type MenuFormData } from './menu-form-dialog';
 
 describe('MenuFormDialog', () => {
@@ -75,12 +74,43 @@ describe('MenuFormDialog', () => {
       value: { name: 'Carne', price_cents: 1250 },
     });
     expect(await inputs[1].getValue()).toBe('R$ 12,50');
-    save.mockResolvedValue('error.menu.invalid_price' satisfies TranslationKey);
+    save.mockResolvedValue({ code: 'menu.invalid_price', message: 'x' });
     await submit.click();
     await fixture.whenStable();
     expect(close).not.toHaveBeenCalled();
     expect(el.querySelector('[role=alert]')?.textContent).toContain(
       'O preço não pode ser negativo.',
     );
+  });
+
+  it.each(['', '1.5', '-1', '100001'])('refuses sort %j without saving', async (sort) => {
+    const { inputs, submit, fixture, el } = await setup({ fields: ['name', 'sort'] });
+    await inputs[0].setValue('Carne');
+    await inputs[1].setValue(sort);
+    await submit.click();
+    await fixture.whenStable();
+    expect(save).not.toHaveBeenCalled();
+    expect(el.textContent).toContain('Use um número inteiro de 0 a 100000.');
+  });
+
+  it('puts per-field API errors on their fields', async () => {
+    const { inputs, submit, fixture, el } = await setup({ fields: ['name', 'price_cents'] });
+    await inputs[0].setValue('Carne');
+    await inputs[1].setValue('5');
+    save.mockResolvedValue({
+      code: 'validation',
+      message: 'x',
+      errors: { price_cents: ['The price cents field must be at least 0.'] },
+    });
+    await submit.click();
+    await fixture.whenStable();
+    expect(el.textContent).toContain('Informe um valor');
+    expect(el.textContent).not.toContain('Informe o nome.');
+    expect(el.querySelector('[role=alert]')?.textContent).toContain('Verifique os campos.');
+  });
+
+  it('has a back button that closes it', async () => {
+    const { el } = await setup({ fields: ['name'] });
+    expect(el.querySelector('.close[mat-dialog-close]')).not.toBeNull();
   });
 });

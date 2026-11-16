@@ -5,6 +5,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatIcon } from '@angular/material/icon';
 import { MatMenu, MatMenuContent, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
 import { type StaffUser, TPipe } from 'shared';
+import { formDialogConfig } from '../form-dialog';
 import { roleKey, StaffFormDialog, type StaffFormData } from './staff-form-dialog';
 import { StaffStore } from './staff-store';
 
@@ -49,12 +50,9 @@ export class StaffPage {
   }
 
   private open(data: StaffFormData): void {
-    const fullScreen = this.breakpoints.isMatched(Breakpoints.XSmall);
-    this.dialog.open(StaffFormDialog, {
-      data,
-      ...(fullScreen
-        ? { width: '100vw', maxWidth: '100vw', height: '100%', panelClass: 'full-screen-dialog' }
-        : { width: '480px' }),
-    });
+    this.dialog.open(
+      StaffFormDialog,
+      formDialogConfig(data, this.breakpoints.isMatched(Breakpoints.XSmall)),
+    );
   }
 }

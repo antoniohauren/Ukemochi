@@ -17,6 +17,9 @@ import {
   TPipe,
   type Variant,
 } from 'shared';
+import { firstValueFrom } from 'rxjs';
+import { ConfirmDialog, type ConfirmData } from '../confirm-dialog';
+import { formDialogConfig } from '../form-dialog';
 import { MenuFormDialog, type MenuFormData } from './menu-form-dialog';
 import { MenuStore } from './menu-store';
 
@@ -132,13 +135,18 @@ export class MenuPage {
     }
   }
 
+  protected async deleteVariant(variant: Variant): Promise<void> {
+    const data: ConfirmData = { message: 'menu.variant.delete.confirm', confirm: 'common.remove' };
+    const ref = this.dialog.open<ConfirmDialog, ConfirmData, boolean>(ConfirmDialog, { data });
+    if (await firstValueFrom(ref.afterClosed())) {
+      await this.store.deleteVariant(variant.id);
+    }
+  }
+
   private open(data: MenuFormData): void {
-    const fullScreen = this.breakpoints.isMatched(Breakpoints.XSmall);
-    this.dialog.open(MenuFormDialog, {
-      data,
-      ...(fullScreen
-        ? { width: '100vw', maxWidth: '100vw', height: '100%', panelClass: 'full-screen-dialog' }
-        : { width: '480px' }),
-    });
+    this.dialog.open(
+      MenuFormDialog,
+      formDialogConfig(data, this.breakpoints.isMatched(Breakpoints.XSmall)),
+    );
   }
 }

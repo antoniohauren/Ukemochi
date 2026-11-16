@@ -7,13 +7,13 @@ import {
   MatDialogClose,
   MatDialogContent,
   MatDialogRef,
-  MatDialogTitle,
 } from '@angular/material/dialog';
 import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
 import { type Role, TPipe, type TranslationKey } from 'shared';
+import { FormDialogTitle } from '../form-dialog';
 
 export interface StaffForm {
   name: string;
@@ -52,7 +52,7 @@ const TITLES: Record<StaffFormMode, TranslationKey> = {
     MatDialogActions,
     MatDialogClose,
     MatDialogContent,
-    MatDialogTitle,
+    FormDialogTitle,
     MatError,
     MatFormField,
     MatInput,
@@ -65,7 +65,7 @@ const TITLES: Record<StaffFormMode, TranslationKey> = {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h2 mat-dialog-title>{{ title | t }}</h2>
+    <app-form-dialog-title [title]="title" />
     <form class="form" [formGroup]="form" (ngSubmit)="submit()">
       <mat-dialog-content class="fields">
         @if (data.mode !== 'pin') {
