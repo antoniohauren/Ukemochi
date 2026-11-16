@@ -1,39 +1,35 @@
 # Ukemochi — Sushi Restaurant Ordering, Kitchen & Cash App
 
-## Context
-Restart of the project on a new stack (the first attempt, a Bun/Hono/React monorepo, lives on `main`).
-No code is carried over; this plan is the starting point. One sushi restaurant needs:
-waitresses take dine-in (by customer name) and phone orders (pickup/delivery), kitchen gets
-thermal-printed tickets (optional screen), bills can be edited/reopened any time, split many
-ways, paid with mixed methods, and a cash shift close computes expected money.
-Runs on the restaurant's local network. UI in pt-BR and English (switchable).
+## Scope
+One sushi restaurant, on its local network. Waitresses take dine-in (by customer name) and phone orders
+(pickup/delivery), kitchen gets printed tickets (optional screen), bills can be edited/reopened any time,
+split many ways, paid with mixed methods, and a cash shift close computes expected money.
+UI in pt-BR and English (switchable).
 
-## Decisions (from Q&A)
-- **Stack**: API = **Laravel** (PHP 8.4+, latest stable Laravel). DB = **PostgreSQL**. Frontends = **Angular** PWAs (`@angular/pwa` service worker) in one Angular workspace. UI = **Angular Material** (https://material.angular.dev/).
-- **Realtime**: **Laravel Reverb** (first-party WebSocket server) + `laravel-echo` on the frontends.
-- **Runtime**: everything in **Docker Compose** — postgres, Laravel API, Reverb, scheduler, nginx serving the built Angular apps and proxying `/api` + the Reverb socket. One `docker compose up` on the server PC.
-- **HTTPS**: nginx serves TLS with a certificate from a local CA (`mkcert`). The CA is installed once on each phone/PC. Needed for service workers (PWA install, offline shell) and so PINs never cross the Wi-Fi in clear text.
-- **Apps**: `frontend/projects/waitress` (mobile PWA), `frontend/projects/admin` (web; includes `/kitchen` route), shared library `frontend/projects/shared`.
-- **Hosting**: v1 runs on one local PC on the LAN, Windows or Linux, printer attached over USB or Bluetooth and installed as a normal OS printer.
+## Decisions
+- **Stack**: API = **Laravel** (PHP 8.4+). DB = **PostgreSQL**. Frontends = **Angular** PWAs (`@angular/pwa`) in one workspace. UI = **Angular Material** (https://material.angular.dev/).
+- **Realtime**: **Laravel Reverb** + `laravel-echo`.
+- **Runtime**: **Docker Compose** — postgres, api, reverb, scheduler, nginx (built Angular apps, proxies `/api` + Reverb socket).
+- **HTTPS**: nginx TLS with a local CA cert (`mkcert`), CA installed on each phone/PC.
+- **Apps**: `waitress` (mobile PWA), `admin` (web, includes `/kitchen`), library `shared`.
+- **Hosting**: one local PC on the LAN, Windows or Linux. Printer on USB or Bluetooth, installed as an OS printer.
 - **Auth**: user + 4-digit PIN per staff. Roles: admin, waitress, kitchen. Every change records user.
-  - Sessions: Sanctum SPA cookie auth (httpOnly, SameSite, same origin behind nginx, CSRF via `XSRF-TOKEN`). No token in `localStorage`.
-  - Idle timeout 12h (`SESSION_LIFETIME=720`): an active shift never gets logged out.
-  - Wrong PINs: growing delay per name (1s, 2s, 4s… capped at 30s), never a hard lock. Resets on success.
-  - Logout when the server is unreachable: app shows logged out; the server session dies on idle timeout. No retry.
-  - Admin app routes by role: admin sees everything, kitchen sees only `/kitchen`, waitress is refused with a message.
-- **Orders**: dine-in identified by customer name (no tables). Phone: pickup or delivery.
-  Status: `open → ready → out_for_delivery (delivery only) → closed`; plus `cancelled` (reason note, excluded from revenue, prints CANCEL ticket).
+  - Sanctum SPA cookie sessions (httpOnly, SameSite, CSRF via `XSRF-TOKEN`). No token in `localStorage`.
+  - Idle timeout 12h (`SESSION_LIFETIME=720`).
+  - Wrong PINs: growing delay per name (1s, 2s, 4s… max 30s), no hard lock, resets on success.
+  - Logout while server unreachable: app shows logged out, server session expires on idle timeout.
+  - Admin app by role: admin sees everything, kitchen only `/kitchen`, waitress refused with a message.
+- **Orders**: dine-in by customer name (no tables). Phone: pickup or delivery.
+  Status: `open → ready → out_for_delivery (delivery only) → closed`; plus `cancelled` (reason note, excluded from revenue, CANCEL ticket).
   Any staff can edit/reopen closed orders.
-- **Order number**: global sequential, never resets, no gaps: taken from a locked counter row (`SELECT … FOR UPDATE`) inside the order transaction. Printed on kitchen ticket and customer bill.
-- **Menu**: Category → Item → Variant (each variant own price; item with no variants has one default variant). Optional priced add-ons per item. Item/variant "unavailable" toggle, by admin or kitchen (waitresses only see it).
-  Deleting a variant is a soft delete: hidden from the menu, still linked from old order lines, reports and stock history.
+- **Order number**: global sequential, never resets, no gaps (locked counter row inside the order transaction). On kitchen ticket and customer bill.
+- **Menu**: Category → Item → Variant (each variant own price; item with no variants has one default variant). Optional priced add-ons per item.
+  Item/variant "unavailable" toggle by admin or kitchen. Variant delete is a soft delete.
 - **Charges**: none by default. Settings: delivery fee on/off + fixed value (editable per order).
 - **Notes**: optional free-text note on every record (order, line, payment, customer, cash movement, edit).
-- **Audit**: light change log (who, when, entity, action, summary JSON, note). Admin can view. Built in the API skeleton so every mutation audits from day one.
-- **Printing**: the browser prints, with `window.print()` through the OS printer driver. No server-side printing, no ESC/POS.
-  Manual only: staff press "Imprimir" on an order (kitchen ticket or customer bill, non-fiscal). Nothing prints automatically.
-  Any device whose OS can reach a printer can print (the PC with the USB/Bluetooth thermal printer, or a phone with a print service).
-  Edit after print → order shows "changed since print"; printing again marks the whole ticket "ATUALIZADO/UPDATED vN". Paper width configurable (58/80mm).
+- **Audit**: change log (who, when, entity, action, summary JSON, note) on every mutation. Admin can view.
+- **Printing**: browser `window.print()` through the OS printer driver, manual "Imprimir" button. Kitchen ticket + customer bill (non-fiscal).
+  Edit after print → "changed since print" badge; reprint marks the ticket "ATUALIZADO/UPDATED vN". Paper width 58/80mm.
 - **Payments**: cash, credit, debit, pix (record only), combined. Cash shows change (`troco`).
   Delivery: pay upfront or on delivery (record method + "troco para R$X").
 - **Split**: by amount, by item units (incl. fractions of one item), equal N ways, by consumed lines.
@@ -41,10 +37,21 @@ Runs on the restaurant's local network. UI in pt-BR and English (switchable).
 - **Customers**: name, phone (lookup key), many addresses, note, order history.
 - **Admin**: menu CRUD, staff + PINs, reports (period, item, method, waitress), settings (name, paper width, delivery fee, language).
 - **Stock**: opt-in per variant (e.g. Coca Zero, Combos). Sales subtract automatically (edit/cancel restores).
-  Admin records purchases and manual corrections (loss, recount) with note. Stock screen shows expected quantity
-  (= movements sum), sold today, and an alert when ≤ optional per-variant minimum.
-  Never blocks: stock may go negative. Waitress sees a warning badge on low/zero variants ("Restam 2", "Esgotado?").
-- **Backup**: automatic `pg_dump` on shift close + daily, keep last N; download button in admin.
+  Admin records purchases and corrections (loss, recount) with note. Stock screen: expected quantity (= movements sum), sold today, alert when ≤ optional per-variant minimum.
+  Never blocks: stock may go negative. Waitress sees a badge on low/zero variants ("Restam 2", "Esgotado?").
+- **Backup**: `pg_dump` on shift close + daily, keep last N; download in admin.
+
+## UI
+Modern, minimal, little clutter. Material 3 theme in `shared`: one primary color, light + dark (follows system), system font, flat surfaces, whitespace over borders/dividers.
+- **One primary action per screen**; secondary actions in an overflow menu (`mat-menu`).
+- **Mobile looks native** (waitress, and admin under 600px):
+  - Bottom tab bar (`BottomNav` in `shared`), 3–5 tabs, icon + label. Waitress: Pedidos, Novo, Clientes, Mais.
+  - Top app bar with title + back arrow; no hamburger menu.
+  - Pickers and quick actions as bottom sheets (`mat-bottom-sheet`); forms as full-screen dialogs.
+  - Sticky bottom action bar for the main action (e.g. "Enviar pedido", total + "Pagar").
+  - Installed PWA runs `standalone`, safe-area insets respected, 48px touch targets, inputs ≥16px (no iOS zoom), no hover-only UI.
+- **Desktop admin**: side nav rail (`mat-sidenav`), list/detail layouts, tables only where data is tabular (reports, audit).
+- **Feedback**: snackbars for success/undo, inline field errors, skeletons instead of spinners for lists.
 
 ## Repo layout
 ```
@@ -65,31 +72,30 @@ frontend/                 # Angular workspace
   projects/waitress/      # Angular app + service worker
   projects/admin/         # Angular app; routes: menu, staff, orders, cash, reports, settings, audit, /kitchen
   projects/shared/        # library: API client + TS types, money format/parse, i18n dicts + t pipe, Material theme,
-                          # presentational components (NumPad, MoneyInput, OrderLines, LangSwitch, TicketPrint...)
+                          # presentational components (AppShell, BottomNav, NumPad, MoneyInput, OrderLines, LangSwitch, TicketPrint...)
 ```
-Frontends call the API through one typed `ApiClient` service in `shared` (Angular `HttpClient`), no other fetch layer.
-API types: TS interfaces in `shared` are hand-written to mirror the Laravel API Resources; API feature tests assert the exact JSON shape so drift fails a test.
-Validation: Laravel FormRequests on the API (trust boundary); typed reactive forms on the frontends.
-i18n: plain dictionary objects + `t` pipe/service, no library. Money: always integer cents, formatted with `Intl.NumberFormat`.
+- API calls through one typed `ApiClient` service in `shared` (`HttpClient`).
+- TS types in `shared` hand-written to mirror Laravel API Resources; feature tests assert the exact JSON shape.
+- Validation: FormRequests on the API; typed reactive forms on the frontends.
+- i18n: dictionary objects + `t` pipe/service. Money: integer cents, formatted with `Intl.NumberFormat`.
 
 ## Data model (PostgreSQL)
-Money columns are `bigint` cents. Timestamps are `timestamptz`. Enum-like columns are `text` + `CHECK`.
+Money columns `bigint` cents. Timestamps `timestamptz`. Enum-like columns `text` + `CHECK`.
 - `users(id, name, pin_hash, role, active)`
-- `sessions` (Laravel database session driver, used by Sanctum SPA auth)
-- `counters(name PK, value)` — `order_number` row; source of gapless order numbers
+- `sessions` (Laravel database session driver)
+- `counters(name PK, value)` — `order_number` row
 - `categories(id, name, sort, active)`
 - `items(id, category_id, name, note, active)`
-- `variants(id, item_id, name, price_cents, available, sort, deleted_at)` — e.g. "Inteiro 8un", "Meio 4un", "Coca Zero"
+- `variants(id, item_id, name, price_cents, available, sort, track_stock, stock_min NULL, deleted_at)` — e.g. "Inteiro 8un", "Meio 4un", "Coca Zero"
 - `addons(id, item_id NULL, category_id NULL, name, price_cents, active)`
 - `customers(id, name, phone UNIQUE NULL, note)`; `addresses(id, customer_id, text, note)`
-- `orders(id = order number (identity), type dine_in|pickup|delivery, status, customer_id NULL, customer_name, address_text, delivery_fee_cents, pay_on_delivery, change_for_cents, note, created_by, created_at, closed_at, cancel_reason, printed_version, version)`
+- `orders(id = order number, type dine_in|pickup|delivery, status, customer_id NULL, customer_name, address_text, delivery_fee_cents, pay_on_delivery, change_for_cents, note, created_by, created_at, closed_at, cancel_reason, printed_version, version)`
 - `order_lines(id, order_id, variant_id, item_name, variant_name, unit_price_cents, qty, note)` — names/prices snapshotted
 - `line_addons(id, line_id, addon_id, name, price_cents)`
 - `payments(id, order_id, shift_id, method cash|credit|debit|pix, amount_cents, tendered_cents NULL, payer_label, note, created_by, created_at, voided)`
-- `payment_allocations(payment_id, line_id, qty_fraction numeric)` — only for split by units / by goods
+- `payment_allocations(payment_id, line_id, qty_fraction numeric)` — split by units / by goods only
 - `shifts(id, opened_by, opened_at, opening_float_cents, closed_by, closed_at, counted_cents, note)`
 - `cash_movements(id, shift_id, kind withdrawal|deposit|staff_meal, amount_cents, staff_name, note, created_by, created_at)`
-- `variants` also gets `track_stock BOOL, stock_min NULL`
 - `stock_movements(id, variant_id, delta, kind sale|purchase|adjust, order_line_id NULL, note, created_by, created_at)` — stock = Σ delta; line edit writes the difference, cancel writes the reverse
 - `settings(key, value)`; `audit_log(id, user_id, at, entity, entity_id, action, summary jsonb, note)`
 
@@ -101,35 +107,33 @@ Rules:
 - Payments link to the shift open at payment time; payment requires an open shift.
 
 ## Split logic (`api/app/Domain/Split`)
-Pure PHP functions, return a list of `{payer_label, amount_cents, allocations?}` suggestions. The API exposes them
-as a preview endpoint; the UI then records each as a payment (any method). Logic lives once, on the server:
+Pure functions returning `{payer_label, amount_cents, allocations?}` suggestions, exposed as a preview endpoint. The UI records each as a payment (any method).
 - `equal(total, n)` — remainder cents go to first payers.
 - `byAmount(amounts[])` — free amounts, last payer gets the rest.
 - `byUnits(lines, picks)` — picks = `{line_id, qty}` per payer; fractions allowed (0.5 of a line).
 - `byGoods(lines, assignment)` — whole lines per payer.
-Unallocated remainder always visible. Covered by unit tests (rounding, fractions, remainder).
+Unallocated remainder always visible.
 
 ## Printing
-- `app/Domain/Ticket`: builds the ticket content as data. Kitchen ticket: no prices, item notes, add-ons, `#<number> · <name> · <type>`, "UPDATED vN"/"CANCELADO". Customer bill: prices, payments, change, balance.
-  `GET /api/orders/{id}/ticket?kind=kitchen|bill` returns it.
-- `shared` `TicketPrint` component renders it for print: `@media print` + `@page` sized from the paper width setting (58/80mm), monospace, nothing else on the page.
-- "Imprimir" opens the print view and calls `window.print()`. After the dialog, the app calls `POST /api/orders/{id}/printed {kind, version}` → stores `printed_version`, writes audit.
-- Order list and order screen show "not printed" / "changed since print" when `version > printed_version`, and "cancel not printed" for cancelled orders.
-- Print dialog: each print shows the browser dialog. On the printer PC, Chrome can run with `--kiosk-printing` to print straight to the default printer.
+- `app/Domain/Ticket` builds ticket content. Kitchen: no prices, item notes, add-ons, `#<number> · <name> · <type>`, "UPDATED vN"/"CANCELADO". Bill: prices, payments, change, balance.
+  `GET /api/orders/{id}/ticket?kind=kitchen|bill`.
+- `TicketPrint` (`shared`) renders it: `@media print` + `@page` from the paper width setting, monospace.
+- "Imprimir" → print view → `window.print()` → `POST /api/orders/{id}/printed {kind, version}` (stores `printed_version`, writes audit).
+- Badges "not printed" / "changed since print" when `version > printed_version`; "cancel not printed" for cancelled orders.
+- Printer PC: Chrome with `--kiosk-printing` skips the dialog.
 
 ## Realtime
-Reverb private channel `orders`: broadcasts `order.updated {id, version}` (`ShouldBroadcastNow`, so no queue worker).
-Kitchen screen and waitress order list refetch on event. Channel auth through the session cookie.
+Reverb private channel `orders` broadcasts `order.updated {id, version}` (`ShouldBroadcastNow`). Kitchen screen and waitress order list refetch on event. Channel auth through the session cookie.
 
 ## Steps
-Each step is one TDD vertical slice. Done = tests green + `make check` clean + review subagent findings fixed (workflow in AGENTS.md). One commit per step.
+Each step is one TDD vertical slice. Done = tests green + `make check` clean + review findings fixed (workflow in AGENTS.md). One commit per step.
 
 ### Phase 1 — Foundation
-- [ ] **1. Repo scaffold** — Docker Compose (postgres, api, reverb, scheduler, web), nginx TLS with a `mkcert` cert (script + README for installing the CA on phones), Laravel app in `api/`, Angular workspace in `frontend/` (waitress, admin, shared), Pint + Larastan, ESLint + Prettier, TS strict, `Makefile` targets `dev`/`test`/`check`.
+- [ ] **1. Repo scaffold** — Docker Compose (postgres, api, reverb, scheduler, web), nginx TLS with `mkcert` (script + CA install guide for phones), Laravel in `api/`, Angular workspace in `frontend/` (waitress, admin, shared), Pint + Larastan, ESLint + Prettier, TS strict, `Makefile` targets `dev`/`test`/`check`.
 - [ ] **2. Shared basics** — API: `Money` value object (cents, parse, format). Frontend `shared`: money format/parse pt-BR/en, i18n dictionaries + `t` pipe, typed `ApiClient` skeleton.
-- [ ] **3. API skeleton** — `/api/health`, domain-error → HTTP mapping in the exception handler, Postgres connection, test DB setup, `audit_log` migration + `AuditLog` port.
+- [ ] **3. API skeleton** — `/api/health`, domain-error → HTTP mapping, Postgres connection, test DB setup, `audit_log` migration + `AuditLog` port.
 - [ ] **4. Auth** — users table, PIN hash (`Hash`), Sanctum SPA cookie sessions (12h idle), login/logout/me, role middleware, seed first admin, growing delay on wrong PINs, audit on login/logout/seed.
-- [ ] **5. Frontend scaffold** — Material theme + base components in `shared`, admin + waitress apps (PWA manifest + service worker), `ApiClient` with credentials + XSRF, login screen, language switch, admin route guards by role.
+- [ ] **5. Frontend scaffold** — Material 3 theme (light/dark), `AppShell` (bottom tabs on mobile, side nav rail on desktop), admin + waitress apps (PWA manifest + service worker), `ApiClient` with credentials + XSRF, login screen, language switch, admin route guards by role.
 
 ### Phase 2 — Menu, staff, settings
 - [ ] **6. Menu API** — categories, items, variants (own price, soft delete), add-ons, availability toggles (admin + kitchen). Audited.
@@ -137,13 +141,13 @@ Each step is one TDD vertical slice. Done = tests green + `make check` clean + r
 - [ ] **8. Staff + settings** — staff CRUD with PIN reset; settings (restaurant name, language, paper width, delivery fee on/off + value). API + admin screens.
 
 ### Phase 3 — Orders
-- [ ] **9. Order domain** — gapless sequential number (counter row), line snapshots (name/price), add-ons, notes, totals incl. delivery fee, status transitions, cancel with reason, reopen + version bump.
+- [ ] **9. Order domain** — gapless sequential number, line snapshots (name/price), add-ons, notes, totals incl. delivery fee, status transitions, cancel with reason, reopen + version bump.
 - [ ] **10. Orders API** — create/edit/cancel/status, audit log writes, Reverb `order.updated` broadcast + channel auth.
-- [ ] **11. Waitress ordering** — order list (live via Echo), new order (dine-in name / pickup / delivery), add/edit lines with variant, add-ons, notes; cancel.
+- [ ] **11. Waitress ordering** — order list (live via Echo), new order (dine-in name / pickup / delivery), add/edit lines with variant, add-ons, notes (bottom sheets); cancel.
 
 ### Phase 4 — Printing
-- [ ] **12. Ticket content** — domain ticket builder (kitchen: no prices, `#N · name · type`, UPDATED vN / CANCELADO; bill: prices, payments, change, balance), `GET /api/orders/{id}/ticket`.
-- [ ] **13. Browser print** — `TicketPrint` print view (58/80mm `@page`), "Imprimir" buttons in waitress + admin, `POST /api/orders/{id}/printed`, "not printed / changed since print" badges.
+- [ ] **12. Ticket content** — domain ticket builder (kitchen + bill), `GET /api/orders/{id}/ticket`.
+- [ ] **13. Browser print** — `TicketPrint` view (58/80mm `@page`), "Imprimir" in waitress + admin, `POST /api/orders/{id}/printed`, print badges.
 
 ### Phase 5 — Money
 - [ ] **14. Cash shifts** — open with float, movements (withdrawal, deposit, staff_meal + staff name), close with count, expected cash + difference, totals per method.
@@ -164,10 +168,7 @@ Each step is one TDD vertical slice. Done = tests green + `make check` clean + r
 - [ ] **23. Backups** — `pg_dump` on shift close + daily (scheduler), keep last N, admin download.
 - [ ] **24. Kitchen screen** — `/kitchen` in admin, live via Echo, mark ready.
 
-## Open questions
-Decisions left open. Resolve before or during the step named. Answered questions are folded into Decisions above.
-None right now.
-
 ## Verification
-- `make test`: Pest unit tests (split math, totals, shift expected cash, ticket content) and feature tests through HTTP against a Postgres test database; Angular unit tests for services/pipes and components where behavior matters.
-- Manual: `make dev`, log in as waitress on a phone over LAN, create order → press Imprimir → kitchen ticket prints at 80mm (and 58mm after changing the setting), edit → order shows "changed since print" → reprint shows "UPDATED", pay split with cash+pix → change correct, close shift → expected cash matches. Stock: Coca Zero stock 20, sell 17 → screen shows 3 + alert (min 5); waitress sees "Restam 3"; cancel order → back to 20.
+- `make test`: Pest unit tests (split math, totals, shift expected cash, ticket content), feature tests through HTTP against a Postgres test database, Angular unit tests for services/pipes and components where behavior matters.
+- Manual: `make dev`, log in as waitress on a phone over LAN, create order → Imprimir → kitchen ticket prints at 80mm (and 58mm after changing the setting), edit → "changed since print" → reprint shows "UPDATED", pay split with cash+pix → change correct, close shift → expected cash matches. Stock: Coca Zero stock 20, sell 17 → screen shows 3 + alert (min 5); waitress sees "Restam 3"; cancel order → back to 20.
+- Mobile check at 360px: bottom tabs visible, no horizontal scroll, main action reachable with one thumb.

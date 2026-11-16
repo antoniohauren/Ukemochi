@@ -69,7 +69,8 @@ Rules:
 - Prefer Material components (`mat-button`, `mat-form-field`, `mat-dialog`, `mat-list`...) over hand-rolled ones; wrap in `shared` only when adding app-specific behavior (NumPad, MoneyInput).
 - Server state through the typed `ApiClient` service in `shared` (`HttpClient` with credentials + XSRF). API types are hand-written TS interfaces in `shared`; change them in the same commit as the API Resource. No NgRx unless needed.
 - Forms: typed reactive forms; validation mirrors the API's FormRequest rules, the API stays authoritative.
-- Mobile first for `waitress`: big touch targets, works at 360px width.
+- Mobile first, native look: follow the UI section of `PLAN.md` (bottom tabs, bottom sheets, sticky main action, 48px targets, works at 360px). Desktop admin uses the side nav rail. Navigation lives in `AppShell` only.
+- Keep screens uncluttered: one primary action, the rest in an overflow menu.
 - Accessibility: real `<button>`/`<label>`, visible focus, no click handlers on non-interactive elements.
 - All user-visible text through `t`. Keys exist in both `pt-BR` and `en` dictionaries (the `en` dictionary is typed from the `pt-BR` keys).
 
