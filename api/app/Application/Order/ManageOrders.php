@@ -42,7 +42,7 @@ final readonly class ManageOrders
             $snapshot = $this->lines($lines, []);
             // Number taken last and inside the transaction: a failure above or a rollback leaves no gap.
             $order = $this->orders->save(Order::place($this->orders->nextNumber(), $details, $snapshot, $userId, $this->clock->now()));
-            $this->record($order, 'create', $this->summary($order), null);
+            $this->record($userId, $order, 'create', $this->summary($order), null);
 
             return $order;
         });
@@ -95,11 +95,13 @@ final readonly class ManageOrders
     /** @param  \Closure(Order): array<string, mixed>  $change  applies the change, returns the audit summary */
     private function mutate(int $id, string $action, \Closure $change, ?string $note): Order
     {
-        return $this->transaction->run(function () use ($id, $action, $change, $note): Order {
+        $userId = $this->session->userId() ?? throw new NotAuthenticated;
+
+        return $this->transaction->run(function () use ($id, $action, $change, $note, $userId): Order {
             $order = $this->orders->lock($id) ?? throw new OrderNotFound($id);
             $summary = $change($order);
             $order = $this->orders->save($order);
-            $this->record($order, $action, $summary, $note);
+            $this->record($userId, $order, $action, $summary, $note);
 
             return $order;
         });
@@ -190,8 +192,8 @@ final readonly class ManageOrders
     }
 
     /** @param  array<string, mixed>  $summary */
-    private function record(Order $order, string $action, array $summary, ?string $note): void
+    private function record(int $userId, Order $order, string $action, array $summary, ?string $note): void
     {
-        $this->audit->record($this->session->userId(), 'order', $order->id, $action, $summary, $note);
+        $this->audit->record($userId, 'order', $order->id, $action, $summary, $note);
     }
 }

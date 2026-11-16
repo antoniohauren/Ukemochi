@@ -227,3 +227,20 @@ it('reports a missing order', function (Closure $call): void {
     'cancel' => [fn (ManageOrders $m) => $m->cancel(5, 'x', null)],
     'reopen' => [fn (ManageOrders $m) => $m->reopen(5, null)],
 ]);
+
+it('refuses to change an order without a session user, writing nothing', function (Closure $call): void {
+    [$manage, $orders, $audit, , $session] = manageOrders();
+    $order = $manage->create(dineIn(), [new LineInput(100, 1)]);
+    $manage->changeStatus($order->id, OrderStatus::Closed, null);
+    $before = $orders->find($order->id);
+    $session->logout();
+
+    expect(fn () => $call($manage, $order->id))->toThrow(NotAuthenticated::class)
+        ->and($audit->entries)->toHaveCount(2)
+        ->and($orders->find($order->id))->toEqual($before);
+})->with([
+    'edit' => [fn (ManageOrders $m, int $id) => $m->edit($id, dineIn('x'), [new LineInput(100, 2, lineId: 1)], null)],
+    'status' => [fn (ManageOrders $m, int $id) => $m->changeStatus($id, OrderStatus::Ready, null)],
+    'cancel' => [fn (ManageOrders $m, int $id) => $m->cancel($id, 'x', null)],
+    'reopen' => [fn (ManageOrders $m, int $id) => $m->reopen($id, null)],
+]);
