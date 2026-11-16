@@ -1,0 +1,22 @@
+# PHP / Laravel
+/api/vendor/
+/api/.env
+/api/storage/*.key
+/api/storage/logs/
+/api/bootstrap/cache/*.php
+.phpunit.result.cache
+
+# Node / Angular
+node_modules/
+/frontend/dist/
+/frontend/.angular/
+
+# Docker volumes / backups
+/docker/data/
+/backups/
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+.env
