@@ -106,7 +106,7 @@ Each step is one TDD vertical slice. Done = tests green + `bun run check` clean 
 - [x] **2. Shared basics** — `packages/shared`: money (cents, parse, format pt-BR/en), i18n dictionaries + `t()`, base zod schemas.
 - [x] **3. API skeleton** — Hono app, `/health`, error handler, SQLite open (WAL) + migration runner, test helper with in-memory DB.
 - [x] **4. Auth** — users table, PIN hash (`Bun.password`), sessions, login/logout/me, role middleware, seed first admin.
-- [ ] **5. Frontend scaffold** — `packages/ui` MUI theme + base components, `apps/admin` + `apps/waitress` (Vite, React, PWA manifest), `hc<AppType>` client, login screen, language switch.
+- [x] **5. Frontend scaffold** — `packages/ui` MUI theme + base components, `apps/admin` + `apps/waitress` (Vite, React, PWA manifest), `hc<AppType>` client, login screen, language switch.
 
 ### Phase 2 — Menu, staff, settings
 - [ ] **6. Menu API** — categories, items, variants (own price), add-ons, availability toggles.
@@ -148,6 +148,11 @@ Decisions left open by earlier steps. Resolve before or during the step named.
 - **Lockout count reset by flooding** (from step 4): when the failure map passes 1000 names, entries with no active lock are evicted. That resets a name's partial count (under 5), giving a few extra guesses. Active locks are kept.
 - **Lockout state in memory** (from step 4): it resets on server restart.
 - **Session length** (from step 4): sessions expire 24h after login (`SESSION_TTL_MS` in `apps/api/src/application/auth.ts`). Confirm this fits shift length, or switch to an idle timeout.
+
+- **HTTPS on the LAN** (from step 5): service workers only run in a secure context, so phones on `http://<server-ip>` get no PWA install or offline shell, and PIN + token cross the Wi-Fi in plain text. Option: self-signed or local-CA TLS on the server PC.
+- **Token in localStorage** (from step 5): the bearer token lives in `localStorage` (readable by any XSS). Option: httpOnly SameSite cookie set by `/auth/login`.
+- **API path prefix** (from step 5): frontends call `/api/*` and the Vite dev proxy strips `/api`. When `main.ts` serves the built PWAs, mount the API under `/api` the same way.
+- **Logout revoke not retried** (from step 5): if the server is unreachable at logout, the token is dropped locally but stays valid on the server until it expires.
 
 ## Verification
 - `bun test` in `packages/shared` (split math, totals, shift expected cash, ticket layout widths) and API route tests via `app.request()` against an in-memory SQLite.

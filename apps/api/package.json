@@ -3,7 +3,10 @@
 	"version": "0.0.0",
 	"private": true,
 	"type": "module",
-	"exports": "./src/index.ts",
+	"exports": {
+		".": "./src/index.ts",
+		"./test-app": "./src/test-app.ts"
+	},
 	"scripts": {
 		"dev": "bun --watch src/main.ts"
 	},
