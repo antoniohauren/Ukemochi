@@ -22,6 +22,7 @@ final readonly class ReadOrders
      */
     public function list(?OrderStatus $status): array
     {
+        // shortcut: active list is unbounded since one restaurant has few active orders; add a cap + paging if lists grow.
         return $status === null
             ? $this->orders->list([OrderStatus::Open, OrderStatus::Ready, OrderStatus::OutForDelivery], null)
             : $this->orders->list([$status], self::LIMIT);

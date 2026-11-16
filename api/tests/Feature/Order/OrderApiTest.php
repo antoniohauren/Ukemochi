@@ -126,6 +126,12 @@ it('shows one order, or 404 for a missing one', function (): void {
     getJson('/api/orders/99')->assertNotFound()->assertExactJson(['code' => 'order.not_found', 'message' => 'No order with number 99.']);
 });
 
+it('404s for ids outside the route pattern', function (string $id): void {
+    actAs(Role::Waitress);
+
+    getJson("/api/orders/{$id}")->assertNotFound()->assertJsonPath('code', 'not_found');
+})->with(['abc', '1234567890123456789']);
+
 it('edits lines and details, keeping kept lines, bumping the version and auditing the edit note', function (): void {
     $user = actAs(Role::Waitress);
     ['variant' => $v, 'half' => $h] = orderApiMenu();
