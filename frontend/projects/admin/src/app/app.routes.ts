@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard, LoginPage, PlaceholderPage } from 'shared';
 import { BlockedPage } from './blocked-page';
 import { Layout } from './layout';
+import { MenuPage } from './menu/menu-page';
 import { roleGuard } from './role.guard';
 import { SettingsPage } from './settings-page';
 
@@ -20,7 +21,7 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'orders' },
       { path: 'orders', component: PlaceholderPage, data: { title: 'nav.orders' } },
-      { path: 'menu', component: PlaceholderPage, data: { title: 'nav.menu' } },
+      { path: 'menu', component: MenuPage, data: { title: 'nav.menu' } },
       { path: 'kitchen', component: PlaceholderPage, data: { title: 'nav.kitchen' } },
       { path: 'cash', component: PlaceholderPage, data: { title: 'nav.cash' } },
       { path: 'reports', component: PlaceholderPage, data: { title: 'nav.reports' } },

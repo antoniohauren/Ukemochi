@@ -4,7 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { of } from 'rxjs';
-import { AuthService, type Role, type User } from 'shared';
+import { AuthService, MenuApi, type Role, type User } from 'shared';
 import { routes } from './app.routes';
 
 describe('admin routes', () => {
@@ -17,6 +17,7 @@ describe('admin routes', () => {
       providers: [
         provideRouter(routes),
         { provide: AuthService, useValue: { user, retryIn: signal(0), logout: vi.fn() } },
+        { provide: MenuApi, useValue: { menu: () => of({ categories: [] }) } },
         { provide: BreakpointObserver, useValue: { observe: () => of({ matches: false }) } },
       ],
     });

@@ -1,0 +1,216 @@
+@if (store.menu() === null) {
+  @if (store.loadError(); as key) {
+    <p class="error" role="alert">{{ key | t }}</p>
+    <button matButton="tonal" type="button" (click)="store.load()">
+      {{ 'common.retry' | t }}
+    </button>
+  } @else {
+    <div class="skeleton" aria-hidden="true">
+      @for (row of [1, 2, 3, 4]; track row) {
+        <span class="bar"></span>
+      }
+    </div>
+  }
+} @else {
+  <div [class]="'panes depth-' + depth()">
+    <section class="pane categories">
+      <h2 class="pane-title">{{ 'menu.categories' | t }}</h2>
+      <mat-nav-list>
+        @for (c of store.categories(); track c.id) {
+          <a
+            mat-list-item
+            [routerLink]="[]"
+            [queryParams]="{ category: c.id }"
+            [activated]="c.id === store.category()?.id"
+          >
+            <span matListItemTitle>{{ c.name }}</span>
+            @if (!c.active) {
+              <span matListItemLine>{{ 'menu.inactive' | t }}</span>
+            }
+          </a>
+        } @empty {
+          <p class="hint">{{ 'menu.empty' | t }}</p>
+        }
+      </mat-nav-list>
+      <div class="pane-action">
+        <button matButton="tonal" type="button" (click)="editCategory(null)">
+          <mat-icon aria-hidden="true">add</mat-icon>
+          {{ 'menu.category.new' | t }}
+        </button>
+      </div>
+    </section>
+
+    <section class="pane items">
+      @if (store.category(); as c) {
+        <header class="pane-head">
+          <a
+            mat-icon-button
+            class="back"
+            [routerLink]="[]"
+            [queryParams]="{}"
+            [attr.aria-label]="'nav.back' | t"
+          >
+            <mat-icon aria-hidden="true">arrow_back</mat-icon>
+          </a>
+          <h2 class="pane-title">{{ c.name }}</h2>
+          <button
+            mat-icon-button
+            type="button"
+            [matMenuTriggerFor]="categoryMenu"
+            [attr.aria-label]="'nav.options' | t"
+          >
+            <mat-icon aria-hidden="true">more_vert</mat-icon>
+          </button>
+          <mat-menu #categoryMenu="matMenu">
+            <button mat-menu-item type="button" (click)="editCategory(c)">
+              {{ 'menu.category.edit' | t }}
+            </button>
+            <button
+              mat-menu-item
+              type="button"
+              (click)="editAddon({ item_id: null, category_id: c.id }, null)"
+            >
+              {{ 'menu.addon.new' | t }}
+            </button>
+          </mat-menu>
+        </header>
+        @for (i of c.items; track i.id) {
+          <div class="row">
+            <a class="row-main" [routerLink]="[]" [queryParams]="{ category: c.id, item: i.id }">
+              {{ i.name }}
+            </a>
+            <mat-slide-toggle
+              [checked]="i.active"
+              (change)="setItemActive(i, $event)"
+              aria-label="{{ 'menu.active' | t }}: {{ i.name }}"
+            />
+          </div>
+        } @empty {
+          <p class="hint">{{ 'menu.empty' | t }}</p>
+        }
+        @if (c.addons.length) {
+          <h3 class="label">{{ 'menu.addons' | t }}</h3>
+          @for (a of c.addons; track a.id) {
+            <div class="row">
+              <button class="row-main" type="button" (click)="editAddon(a, a)">
+                {{ a.name }}
+                @if (!a.active) {
+                  <span class="muted">· {{ 'menu.inactive' | t }}</span>
+                }
+              </button>
+              <span class="price">{{ money(a.price_cents) }}</span>
+            </div>
+          }
+        }
+        <div class="pane-action">
+          <button matButton="tonal" type="button" (click)="editItem(c.id, null)">
+            <mat-icon aria-hidden="true">add</mat-icon>
+            {{ 'menu.item.new' | t }}
+          </button>
+        </div>
+      } @else {
+        <p class="hint">{{ 'menu.pick_category' | t }}</p>
+      }
+    </section>
+
+    <section class="pane detail">
+      @if (store.item(); as i) {
+        <header class="pane-head">
+          <a
+            mat-icon-button
+            class="back"
+            [routerLink]="[]"
+            [queryParams]="{ category: i.category_id }"
+            [attr.aria-label]="'nav.back' | t"
+          >
+            <mat-icon aria-hidden="true">arrow_back</mat-icon>
+          </a>
+          <h2 class="pane-title">{{ i.name }}</h2>
+          <button
+            mat-icon-button
+            type="button"
+            [matMenuTriggerFor]="itemMenu"
+            [attr.aria-label]="'nav.options' | t"
+          >
+            <mat-icon aria-hidden="true">more_vert</mat-icon>
+          </button>
+          <mat-menu #itemMenu="matMenu">
+            <button mat-menu-item type="button" (click)="editItem(i.category_id, i)">
+              {{ 'menu.item.edit' | t }}
+            </button>
+            <button
+              mat-menu-item
+              type="button"
+              (click)="editAddon({ item_id: i.id, category_id: null }, null)"
+            >
+              {{ 'menu.addon.new' | t }}
+            </button>
+          </mat-menu>
+        </header>
+        @if (i.note) {
+          <p class="muted">{{ i.note }}</p>
+        }
+        <h3 class="label">{{ 'menu.variants' | t }}</h3>
+        @for (v of i.variants; track v.id) {
+          <div class="row">
+            <button
+              class="row-main"
+              type="button"
+              (click)="editVariant(i.id, v, i.variants.length)"
+            >
+              {{ v.name || ('menu.variant.default' | t) }}
+            </button>
+            <span class="price">{{ money(v.price_cents) }}</span>
+            <mat-slide-toggle
+              [checked]="v.available"
+              (change)="setVariantAvailable(v, $event)"
+              aria-label="{{ 'menu.available' | t }}: {{ v.name || ('menu.variant.default' | t) }}"
+            />
+            <button
+              mat-icon-button
+              type="button"
+              [matMenuTriggerFor]="variantMenu"
+              [matMenuTriggerData]="{ $implicit: v }"
+              [attr.aria-label]="'nav.options' | t"
+            >
+              <mat-icon aria-hidden="true">more_vert</mat-icon>
+            </button>
+          </div>
+        }
+        <mat-menu #variantMenu="matMenu">
+          <ng-template matMenuContent let-v>
+            <button mat-menu-item type="button" (click)="store.deleteVariant(v.id)">
+              {{ 'menu.variant.delete' | t }}
+            </button>
+          </ng-template>
+        </mat-menu>
+        @if (i.addons.length) {
+          <h3 class="label">{{ 'menu.addons' | t }}</h3>
+          @for (a of i.addons; track a.id) {
+            <div class="row">
+              <button class="row-main" type="button" (click)="editAddon(a, a)">
+                {{ a.name }}
+                @if (!a.active) {
+                  <span class="muted">· {{ 'menu.inactive' | t }}</span>
+                }
+              </button>
+              <span class="price">{{ money(a.price_cents) }}</span>
+            </div>
+          }
+        }
+        <div class="pane-action">
+          <button
+            matButton="tonal"
+            type="button"
+            (click)="editVariant(i.id, null, i.variants.length)"
+          >
+            <mat-icon aria-hidden="true">add</mat-icon>
+            {{ 'menu.variant.new' | t }}
+          </button>
+        </div>
+      } @else if (store.category()) {
+        <p class="hint">{{ 'menu.pick_item' | t }}</p>
+      }
+    </section>
+  </div>
+}
