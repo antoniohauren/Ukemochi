@@ -1,15 +1,14 @@
 import { Routes } from '@angular/router';
 import { authGuard, LoginPage, PlaceholderPage } from 'shared';
-import { BlockedPage } from './blocked-page';
 import { Layout } from './layout';
 import { roleGuard } from './role.guard';
-import { SettingsPage } from './settings-page';
 
+// Feature screens load on first visit, keeping the initial bundle small.
 export const routes: Routes = [
   { path: 'login', component: LoginPage },
   {
     path: 'blocked',
-    component: BlockedPage,
+    loadComponent: () => import('./blocked-page').then((m) => m.BlockedPage),
     canActivate: [authGuard],
   },
   {
@@ -20,15 +19,23 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'orders' },
       { path: 'orders', component: PlaceholderPage, data: { title: 'nav.orders' } },
-      { path: 'menu', component: PlaceholderPage, data: { title: 'nav.menu' } },
+      {
+        path: 'menu',
+        loadComponent: () => import('./menu/menu-page').then((m) => m.MenuPage),
+        data: { title: 'nav.menu' },
+      },
       { path: 'kitchen', component: PlaceholderPage, data: { title: 'nav.kitchen' } },
       { path: 'cash', component: PlaceholderPage, data: { title: 'nav.cash' } },
       { path: 'reports', component: PlaceholderPage, data: { title: 'nav.reports' } },
-      { path: 'staff', component: PlaceholderPage, data: { title: 'nav.staff' } },
+      {
+        path: 'staff',
+        loadComponent: () => import('./staff/staff-page').then((m) => m.StaffPage),
+        data: { title: 'nav.staff' },
+      },
       { path: 'audit', component: PlaceholderPage, data: { title: 'nav.audit' } },
       {
         path: 'settings',
-        component: SettingsPage,
+        loadComponent: () => import('./settings-page').then((m) => m.SettingsPage),
         data: { title: 'nav.settings' },
       },
     ],

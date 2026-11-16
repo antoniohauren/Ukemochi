@@ -1,3 +1,4 @@
+import type { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 import type { Lang } from '../i18n/language';
 
 /** Formats integer cents as BRL for the given UI language. */
@@ -54,4 +55,18 @@ function separators(s: string): [decimal: string | null, thousands: string | nul
   const sep = s[last];
   const isThousands = s.split(sep).length > 2 || s.length - last - 1 === 3;
   return isThousands ? [null, sep] : [sep, null];
+}
+
+/** Form validator mirroring the API's `integer|min:0` cents rule on a typed amount. */
+export function moneyValidator(control: AbstractControl<string>): ValidationErrors | null {
+  const cents = parseMoney(control.value);
+  return cents === null || cents < 0 ? { money: true } : null;
+}
+
+/** Upper bound in cents on a typed amount, mirroring an API `max:` rule. Unparsable input is left to moneyValidator. */
+export function maxMoney(maxCents: number): ValidatorFn {
+  return (control: AbstractControl<string>) => {
+    const cents = parseMoney(control.value);
+    return cents !== null && cents > maxCents ? { money: true } : null;
+  };
 }

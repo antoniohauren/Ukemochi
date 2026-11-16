@@ -28,6 +28,17 @@ describe('LanguageService', () => {
     expect(document.documentElement.lang).toBe('en');
   });
 
+  it('uses the restaurant default until the device picks a language', () => {
+    const service = create();
+    service.useDefault('en');
+    expect(service.lang()).toBe('en');
+    expect(document.documentElement.lang).toBe('en');
+    expect(localStorage.getItem('ukemochi.lang')).toBeNull();
+    service.setLang('pt-BR');
+    service.useDefault('en');
+    expect(service.lang()).toBe('pt-BR');
+  });
+
   it('restores the stored language', () => {
     localStorage.setItem('ukemochi.lang', 'en');
     expect(create().lang()).toBe('en');

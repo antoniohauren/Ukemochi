@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Application\Auth\UserRepository;
 use App\Domain\Auth\NameTaken;
 use App\Domain\Auth\Role;
+use App\Domain\Auth\User;
 use App\Infrastructure\Auth\EloquentUser;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -42,3 +43,34 @@ it('refuses to delete a user the audit log points at', function (): void {
 
     DB::table('users')->delete($user->id);
 })->throws(QueryException::class);
+
+it('updates, re-hashes and lists users by name', function (): void {
+    $users = app(UserRepository::class);
+    $bia = $users->create('bia', 'h1', Role::Kitchen, false);
+    $amanda = $users->create('Amanda', 'h2', Role::Waitress);
+
+    $updated = $users->update($bia->id, 'Bia', Role::Admin, true);
+
+    expect($updated)->toEqual(new User($bia->id, 'Bia', Role::Admin, true, 'h1'))
+        ->and($users->setPinHash($amanda->id, 'h3'))->toBeTrue()
+        ->and($users->all())->toEqual([new User($amanda->id, 'Amanda', Role::Waitress, true, 'h3'), $updated])
+        ->and($users->update(999999, 'X', Role::Admin, true))->toBeNull()
+        ->and($users->setPinHash(999999, 'h'))->toBeFalse();
+});
+
+it('turns a rename onto a taken name into NameTaken', function (): void {
+    $users = app(UserRepository::class);
+    $users->create('Amanda', 'h', Role::Waitress);
+    $bia = $users->create('Bia', 'h', Role::Waitress);
+
+    $users->update($bia->id, 'AMANDA', Role::Waitress, true);
+})->throws(NameTaken::class);
+
+it('lists only active admins when locking them', function (): void {
+    $users = app(UserRepository::class);
+    $admin = $users->create('A', 'h', Role::Admin);
+    $users->create('B', 'h', Role::Admin, false);
+    $users->create('C', 'h', Role::Waitress);
+
+    expect(DB::transaction(fn () => $users->lockActiveAdminIds()))->toBe([$admin->id]);
+});

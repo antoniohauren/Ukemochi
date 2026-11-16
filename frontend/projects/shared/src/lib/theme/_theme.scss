@@ -34,6 +34,20 @@ html {
   );
 }
 
+// Forms open as full-screen dialogs on phones (see MatDialog `panelClass`).
+.full-screen-dialog {
+  @include mat.dialog-overrides(
+    (
+      container-shape: 0,
+    )
+  );
+
+  .mat-mdc-dialog-surface {
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+      env(safe-area-inset-left);
+  }
+}
+
 body {
   height: 100%;
   margin: 0;

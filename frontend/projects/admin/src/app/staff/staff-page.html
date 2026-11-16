@@ -1,0 +1,45 @@
+@if (store.users(); as users) {
+  <ul class="list">
+    @for (u of users; track u.id) {
+      <li class="row">
+        <button class="row-main" type="button" (click)="edit(u)">
+          <span class="name">{{ u.name }}</span>
+          <span class="muted">
+            {{ roleKey(u.role) | t }}
+            @if (!u.active) {
+              · {{ 'staff.inactive' | t }}
+            }
+          </span>
+        </button>
+        <button
+          mat-icon-button
+          type="button"
+          [matMenuTriggerFor]="userMenu"
+          [matMenuTriggerData]="{ $implicit: u }"
+          [attr.aria-label]="'nav.options' | t"
+        >
+          <mat-icon aria-hidden="true">more_vert</mat-icon>
+        </button>
+      </li>
+    } @empty {
+      <li class="hint">{{ 'staff.empty' | t }}</li>
+    }
+  </ul>
+  <mat-menu #userMenu="matMenu">
+    <ng-template matMenuContent let-u>
+      <button mat-menu-item type="button" (click)="resetPin(u)">
+        <mat-icon aria-hidden="true">password</mat-icon>
+        <span>{{ 'staff.reset_pin' | t }}</span>
+      </button>
+    </ng-template>
+  </mat-menu>
+  <div class="main-action">
+    <button matButton="filled" type="button" (click)="edit(null)">
+      <mat-icon aria-hidden="true">add</mat-icon>
+      {{ 'staff.new' | t }}
+    </button>
+  </div>
+} @else if (store.loadError(); as key) {
+  <p class="error" role="alert">{{ key | t }}</p>
+  <button matButton="tonal" type="button" (click)="store.load()">{{ 'common.retry' | t }}</button>
+}

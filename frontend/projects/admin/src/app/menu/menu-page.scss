@@ -1,0 +1,193 @@
+.panes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.5fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.pane-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pane-title {
+  flex: 1;
+  margin: 0;
+  padding: 12px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: var(--mat-sys-title-medium);
+}
+
+.back {
+  display: none;
+}
+
+.label {
+  margin: 16px 0 4px;
+  font: var(--mat-sys-label-large);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// One row shape in every pane: handle · card (name, status, price) · options.
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 56px;
+}
+
+.drag-handle {
+  cursor: grab;
+}
+
+// Same width as the handle, for rows that cannot be reordered.
+.drag-space {
+  flex: none;
+  width: 48px;
+}
+
+// Preview and placeholder are clones of the row, so these scoped rules reach them.
+.cdk-drag-preview {
+  background: var(--mat-sys-surface-container-high);
+  border-radius: var(--mat-sys-corner-medium);
+  box-shadow: var(--mat-sys-level3);
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.4;
+}
+
+.cdk-drop-list-dragging .cdk-drag:not(.cdk-drag-placeholder),
+.cdk-drag-animating {
+  transition: transform 200ms ease;
+}
+
+// The card: full-width tap target that selects (category, item) or edits (variant, add-on).
+.row-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 56px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 0;
+  border-radius: var(--mat-sys-corner-medium);
+  background: var(--mat-sys-surface-container-low);
+  color: inherit;
+  font: var(--mat-sys-body-large);
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--mat-sys-surface-container-high);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mat-sys-primary);
+  }
+
+  &.selected {
+    background: var(--mat-sys-secondary-container);
+    color: var(--mat-sys-on-secondary-container);
+  }
+}
+
+.row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.row-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-sub {
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.price {
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+  white-space: nowrap;
+}
+
+.muted,
+.hint {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.hint {
+  padding: 12px 0;
+}
+
+.error {
+  color: var(--mat-sys-error);
+}
+
+.pane-action {
+  padding: 16px 0;
+}
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .bar {
+    height: 48px;
+    border-radius: var(--mat-sys-corner-small);
+    background: var(--mat-sys-surface-container-high);
+  }
+}
+
+@media (max-width: 599.98px) {
+  .panes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .back {
+    display: inline-flex;
+  }
+
+  // One level at a time: the deepest selected pane.
+  .depth-0 :is(.items, .detail),
+  .depth-1 :is(.categories, .detail),
+  .depth-2 :is(.categories, .items) {
+    display: none;
+  }
+
+  // Sticky main action above the bottom tabs.
+  .pane-action {
+    position: sticky;
+    bottom: 0;
+    margin-top: auto;
+    padding: 8px 0;
+    background: var(--mat-sys-surface);
+
+    button {
+      width: 100%;
+    }
+  }
+}
