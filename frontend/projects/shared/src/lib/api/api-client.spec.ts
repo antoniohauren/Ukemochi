@@ -87,6 +87,31 @@ describe('ApiClient', () => {
     });
   });
 
+  it('keeps retry_after of a throttled login', async () => {
+    const error = await failWith((url) =>
+      http
+        .expectOne(url)
+        .flush(
+          { code: 'auth.throttled', message: 'Too many wrong PINs.', retry_after: 4 },
+          { status: 429, statusText: 'Too Many Requests' },
+        ),
+    );
+    expect(error).toEqual({
+      code: 'auth.throttled',
+      message: 'Too many wrong PINs.',
+      retry_after: 4,
+    });
+  });
+
+  it('fetches the CSRF cookie from /sanctum, outside /api', async () => {
+    const result = firstValueFrom(api.csrfCookie());
+    const req = http.expectOne('/sanctum/csrf-cookie');
+    expect(req.request.method).toBe('GET');
+    expect(req.request.withCredentials).toBe(true);
+    req.flush(null, { status: 204, statusText: 'No Content' });
+    expect(await result).toBeNull();
+  });
+
   it('maps an error without a code to unknown', async () => {
     const error = await failWith((url) =>
       http.expectOne(url).flush('<html>', { status: 500, statusText: 'Server Error' }),

@@ -8,6 +8,8 @@ export interface ApiError {
   message: string;
   /** Field messages, only when `code` is `validation`. */
   errors?: Record<string, string[]>;
+  /** Seconds until the next attempt is allowed, only when `code` is `auth.throttled`. */
+  retry_after?: number;
 }
 
 type Params = HttpParams | Record<string, string | number | boolean | readonly string[]>;
@@ -37,6 +39,13 @@ export class ApiClient {
     return this.request<T>('DELETE', path, undefined, params);
   }
 
+  /** Sets the `XSRF-TOKEN` cookie that Angular echoes back as `X-XSRF-TOKEN`. */
+  csrfCookie(): Observable<null> {
+    return this.http
+      .get<null>('/sanctum/csrf-cookie', { withCredentials: true })
+      .pipe(catchError((error: unknown) => throwError(() => toApiError(error))));
+  }
+
   private request<T>(method: string, path: string, body?: unknown, params?: Params): Observable<T> {
     return this.http
       .request<T>(method, `${this.baseUrl}${path}`, { body, params, withCredentials: true })
@@ -53,8 +62,13 @@ export function toApiError(error: unknown): ApiError {
   }
   const body: unknown = error.error;
   if (isApiError(body)) {
-    const { code, message, errors } = body;
-    return errors === undefined ? { code, message } : { code, message, errors };
+    const { code, message, errors, retry_after } = body;
+    return {
+      code,
+      message,
+      ...(errors !== undefined && { errors }),
+      ...(retry_after !== undefined && { retry_after }),
+    };
   }
   return { code: 'unknown', message: error.message };
 }
@@ -63,10 +77,11 @@ function isApiError(value: unknown): value is ApiError {
   if (typeof value !== 'object' || value === null) {
     return false;
   }
-  const { code, message, errors } = value as Record<string, unknown>;
+  const { code, message, errors, retry_after } = value as Record<string, unknown>;
   return (
     typeof code === 'string' &&
     typeof message === 'string' &&
-    (errors === undefined || (typeof errors === 'object' && errors !== null))
+    (errors === undefined || (typeof errors === 'object' && errors !== null)) &&
+    (retry_after === undefined || typeof retry_after === 'number')
   );
 }

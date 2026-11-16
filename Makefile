@@ -27,6 +27,7 @@ check: api/vendor api/.env frontend/node_modules
 	$(NODE) npm run lint
 	$(NODE) npm run format:check
 	$(NODE) npm run typecheck
+	$(NODE) npm run build
 
 certs:
 	./docker/certs.sh

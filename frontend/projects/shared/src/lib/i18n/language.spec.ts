@@ -20,6 +20,14 @@ describe('LanguageService', () => {
     expect(localStorage.getItem('ukemochi.lang')).toBe('en');
   });
 
+  it('sets <html lang> on start and on every switch', () => {
+    document.documentElement.lang = 'xx';
+    const service = create();
+    expect(document.documentElement.lang).toBe('pt-BR');
+    service.setLang('en');
+    expect(document.documentElement.lang).toBe('en');
+  });
+
   it('restores the stored language', () => {
     localStorage.setItem('ukemochi.lang', 'en');
     expect(create().lang()).toBe('en');

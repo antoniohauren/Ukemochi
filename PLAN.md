@@ -133,7 +133,7 @@ Each step is one TDD vertical slice. Done = tests green + `make check` clean + r
 - [x] **2. Shared basics** — API: `Money` value object (cents, parse, format). Frontend `shared`: money format/parse pt-BR/en, i18n dictionaries + `t` pipe, typed `ApiClient` skeleton.
 - [x] **3. API skeleton** — `/api/health`, domain-error → HTTP mapping, Postgres connection, test DB setup, `audit_log` migration + `AuditLog` port.
 - [x] **4. Auth** — users table, PIN hash (`Hash`), Sanctum SPA cookie sessions (12h idle), login/logout/me, role middleware, seed first admin, growing delay on wrong PINs, audit on login/logout/seed.
-- [ ] **5. Frontend scaffold** — Material 3 theme (light/dark), `AppShell` (bottom tabs on mobile, side nav rail on desktop), admin + waitress apps (PWA manifest + service worker), `ApiClient` with credentials + XSRF, login screen, language switch, admin route guards by role.
+- [x] **5. Frontend scaffold** — Material 3 theme (light/dark), `AppShell` (bottom tabs on mobile, side nav rail on desktop), admin + waitress apps (PWA manifest + service worker), `ApiClient` with credentials + XSRF, login screen, language switch, admin route guards by role.
 
 ### Phase 2 — Menu, staff, settings
 - [ ] **6. Menu API** — categories, items, variants (own price, soft delete), add-ons, availability toggles (admin + kitchen). Audited.

@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { DOCUMENT, inject, Injectable, signal } from '@angular/core';
 import { en } from './en';
 import { type Dictionary, ptBR, type TranslationKey } from './pt-br';
 
@@ -12,9 +12,15 @@ const dictionaries: Record<Lang, Partial<Dictionary>> = { 'pt-BR': ptBR, en };
 export class LanguageService {
   private readonly current = signal<Lang>(readStoredLang());
   readonly lang = this.current.asReadonly();
+  private readonly document = inject(DOCUMENT);
+
+  constructor() {
+    this.document.documentElement.lang = this.current();
+  }
 
   setLang(lang: Lang): void {
     this.current.set(lang);
+    this.document.documentElement.lang = lang;
     try {
       localStorage.setItem(STORAGE_KEY, lang);
     } catch {

@@ -1,0 +1,33 @@
+<main class="login">
+  <lib-lang-switch class="lang" />
+  <h1 class="brand">{{ 'app.name' | t }}</h1>
+  <form class="form" [formGroup]="form" (ngSubmit)="submit()">
+    <mat-form-field>
+      <mat-label>{{ 'login.name' | t }}</mat-label>
+      <input matInput formControlName="name" autocomplete="username" autocapitalize="words" />
+      <mat-error>{{ 'login.name.required' | t }}</mat-error>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{ 'login.pin' | t }}</mat-label>
+      <input
+        matInput
+        formControlName="pin"
+        type="password"
+        inputmode="numeric"
+        autocomplete="off"
+        maxlength="4"
+      />
+      <mat-error>{{ 'login.pin.invalid' | t }}</mat-error>
+    </mat-form-field>
+    @if (retryIn() > 0) {
+      <p class="error" role="alert">
+        {{ 'login.throttled' | t }} {{ retryIn() }}{{ 'login.seconds' | t }}
+      </p>
+    } @else if (error(); as key) {
+      <p class="error" role="alert">{{ key | t }}</p>
+    }
+    <button mat-flat-button type="submit" [disabled]="busy() || retryIn() > 0">
+      {{ 'login.submit' | t }}
+    </button>
+  </form>
+</main>
