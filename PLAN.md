@@ -115,7 +115,7 @@ Each step is one TDD vertical slice. Done = tests green + `bun run check` clean 
 
 ### Phase 3 — Orders
 - [ ] **9. Order domain** — sequential number, line snapshots (name/price), add-ons, notes, totals incl. delivery fee, status transitions, cancel with reason, reopen + version bump.
-- [ ] **10. Orders API** — create/edit/cancel/status, audit log writes, SSE `order.updated`.
+- [ ] **10. Orders API** — create/edit/cancel/status, audit log writes (`audit_log` migration; also backfill auth: login, logout, first-admin seed), SSE `order.updated`.
 - [ ] **11. Waitress ordering** — order list (live via SSE), new order (dine-in name / pickup / delivery), add/edit lines with variant, add-ons, notes; cancel.
 
 ### Phase 4 — Printing
@@ -141,6 +141,13 @@ Each step is one TDD vertical slice. Done = tests green + `bun run check` clean 
 - [ ] **23. Backups** — DB copy on shift close + daily, keep last N, admin download.
 - [ ] **24. Kitchen screen** — `/kitchen` in admin, live via SSE, mark ready.
 - [ ] **25. Bluetooth print** — Web Bluetooth on Android waitress app, fallback to server print.
+
+## Open questions
+Decisions left open by earlier steps. Resolve before or during the step named.
+- **Login lockout vs "never block staff"** (from step 4, revisit by step 8): 5 wrong PINs lock a name for 60s, so anyone on the LAN can lock out a staff member. Option: a growing delay per attempt instead of a hard lock.
+- **Lockout count reset by flooding** (from step 4): when the failure map passes 1000 names, entries with no active lock are evicted. That resets a name's partial count (under 5), giving a few extra guesses. Active locks are kept.
+- **Lockout state in memory** (from step 4): it resets on server restart.
+- **Session length** (from step 4): sessions expire 24h after login (`SESSION_TTL_MS` in `apps/api/src/application/auth.ts`). Confirm this fits shift length, or switch to an idle timeout.
 
 ## Verification
 - `bun test` in `packages/shared` (split math, totals, shift expected cash, ticket layout widths) and API route tests via `app.request()` against an in-memory SQLite.
