@@ -28,13 +28,22 @@ function onDelivery(validator: ValidatorFn): ValidatorFn {
     control.parent?.get('type')?.value === 'delivery' ? validator(control) : null;
 }
 
+/** Applies `validator` only while change is asked for (delivery + pay on delivery), when the field shows. */
+function onPayOnDelivery(validator: ValidatorFn): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null =>
+    control.parent?.get('pay_on_delivery')?.value === true ? onDelivery(validator)(control) : null;
+}
+
 /** Empty means "no change needed"; otherwise a valid amount. */
 function optionalMoney(control: AbstractControl<string>): ValidationErrors | null {
   return control.value.trim() === '' ? null : moneyValidator(control);
 }
 
-/** Order details form; rules mirror OrderRequest + OrderDetails (address required for delivery). */
-export function orderForm() {
+/**
+ * Order details form; rules mirror OrderRequest + OrderDetails (address required for delivery).
+ * `defaultFee` (formatted) fills the fee when the type becomes delivery and no fee is set yet.
+ */
+export function orderForm(defaultFee: () => string = () => '') {
   const text = (validators: ValidatorFn[] = []) =>
     new FormControl('', { nonNullable: true, validators });
   const form = new FormGroup({
@@ -47,15 +56,22 @@ export function orderForm() {
     ]),
     delivery_fee: text([onDelivery(moneyValidator), onDelivery(maxMoney(MAX_CENTS))]),
     pay_on_delivery: new FormControl(false, { nonNullable: true }),
-    change_for: text([onDelivery(optionalMoney), onDelivery(maxMoney(MAX_CENTS))]),
+    change_for: text([onPayOnDelivery(optionalMoney), onPayOnDelivery(maxMoney(MAX_CENTS))]),
     note: text([Validators.maxLength(1000)]),
   });
   // Delivery-only rules depend on the type: re-check them when it changes.
-  form.controls.type.valueChanges.subscribe(() => {
+  form.controls.type.valueChanges.subscribe((type) => {
+    const fee = form.controls.delivery_fee;
+    if (type === 'delivery' && !parseMoney(fee.value)) {
+      fee.setValue(defaultFee(), { emitEvent: false });
+    }
     for (const name of ['address_text', 'delivery_fee', 'change_for'] as const) {
       form.controls[name].updateValueAndValidity({ emitEvent: false });
     }
   });
+  form.controls.pay_on_delivery.valueChanges.subscribe(() =>
+    form.controls.change_for.updateValueAndValidity({ emitEvent: false }),
+  );
   return form;
 }
 

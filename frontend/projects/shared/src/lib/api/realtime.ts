@@ -1,8 +1,8 @@
 import { DOCUMENT, inject, Injectable, InjectionToken } from '@angular/core';
 import type Echo from 'laravel-echo';
 import type { EchoOptions } from 'laravel-echo';
-import { Observable, retry, share, switchMap } from 'rxjs';
-import { ApiClient } from './api-client';
+import { Observable, retry, share, switchMap, throwError, timer } from 'rxjs';
+import { type ApiError, ApiClient } from './api-client';
 import { ORDER_UPDATED_EVENT, ORDERS_CHANNEL, type OrderUpdated } from './order';
 
 /** Creates the Echo client; tests swap it for a fake. Echo + pusher-js load on first use, off the initial bundle. */
@@ -47,13 +47,28 @@ export function echoOptions(key: string, host: string, api: ApiClient): EchoOpti
           })
           .subscribe({
             next: (data) => callback(null, data),
-            error: (e: unknown) => callback(new Error(JSON.stringify(e)), null),
+            // pusher-js keeps only the message: carry the API error code in it.
+            error: (e: unknown) => callback(new Error((e as ApiError).code), null),
           }),
     },
   };
 }
 
-/** Reverb connection. Connects on the first subscriber and disconnects after the last one leaves. */
+/** Longest wait between reconnect attempts. */
+const MAX_RETRY_DELAY = 30_000;
+/** How long the socket stays open after the last subscriber leaves (e.g. list → detail → list). */
+const LINGER = 30_000;
+
+/** `pusher:subscription_error` payload; `error` is the message (here: the API error code). */
+interface SubscriptionError {
+  error?: string;
+  status?: number;
+}
+
+/**
+ * Reverb connection. Connects on the first subscriber, stays open for a while after the last one
+ * leaves. Failures retry with backoff, except a 401 (session gone), which errors the stream.
+ */
 @Injectable({ providedIn: 'root' })
 export class RealtimeService {
   private readonly api = inject(ApiClient);
@@ -61,8 +76,9 @@ export class RealtimeService {
   private readonly host = inject(DOCUMENT).location.hostname;
 
   /**
-   * Each `order.updated`, plus `null` after a reconnect (events may have been missed while offline).
-   * Either way: refetch. Not deduped by version, since status moves keep the version.
+   * Each `order.updated`, plus `null` whenever the channel (re)subscribes: on the first connect and
+   * after reconnects, since events may have been missed. Either way: refetch. Not deduped by version,
+   * since status moves keep the version.
    */
   readonly orderUpdates$: Observable<OrderUpdated | null> = this.api
     // The key comes from the API (`REVERB_APP_KEY` in api/.env), so it never drifts from the server.
@@ -80,15 +96,16 @@ export class RealtimeService {
                   return;
                 }
                 echo = created;
-                let connectedBefore = false;
-                echo.connector.pusher.connection.bind('connected', () => {
-                  if (connectedBefore) {
-                    subscriber.next(null);
-                  }
-                  connectedBefore = true;
-                });
                 echo
                   .private(ORDERS_CHANNEL)
+                  .subscribed(() => subscriber.next(null))
+                  .error((e: SubscriptionError) =>
+                    subscriber.error({
+                      code:
+                        e.status === 401 ? 'unauthenticated' : (e.error ?? 'realtime.subscription'),
+                      message: 'channel subscription failed',
+                    } satisfies ApiError),
+                  )
                   .listen(ORDER_UPDATED_EVENT, (event: OrderUpdated) => subscriber.next(event));
               },
               (e: unknown) => subscriber.error(e),
@@ -99,8 +116,13 @@ export class RealtimeService {
             };
           }),
       ),
-      // Key fetch failed (offline, server restarting): try again later; the list still works by hand.
-      retry({ delay: 5000 }),
-      share(),
+      retry({
+        delay: (error: unknown, attempt) =>
+          (error as Partial<ApiError>).code === 'unauthenticated'
+            ? throwError(() => error)
+            : timer(Math.min(MAX_RETRY_DELAY, 1000 * 2 ** (attempt - 1))),
+        resetOnSuccess: true,
+      }),
+      share({ resetOnRefCountZero: () => timer(LINGER) }),
     );
 }

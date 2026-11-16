@@ -12,6 +12,16 @@ const LINE: DraftLine = {
   addons: [{ addon_id: 30, name: 'Cream cheese', price_cents: 300 }],
 };
 
+const PICKUP = {
+  type: 'pickup',
+  customer_name: 'Ana',
+  address_text: null,
+  delivery_fee_cents: 0,
+  pay_on_delivery: false,
+  change_for_cents: null,
+  note: null,
+} as Order;
+
 describe('order form', () => {
   it('needs a customer name on every type', () => {
     const form = orderForm();
@@ -35,13 +45,34 @@ describe('order form', () => {
 
     form.patchValue({ address_text: 'Rua A, 10', delivery_fee: '7,00' });
     expect(form.valid).toBe(true);
+    form.controls.change_for.setValue('-1');
+    expect(form.valid).toBe(true); // hidden while pay on delivery is off
+    form.controls.pay_on_delivery.setValue(true);
+    expect(form.controls.change_for.hasError('money')).toBe(true);
     form.controls.change_for.setValue('100');
     expect(form.valid).toBe(true);
     form.controls.change_for.setValue('-1');
-    expect(form.valid).toBe(false);
+    form.controls.pay_on_delivery.setValue(false);
+    expect(form.valid).toBe(true);
 
     form.controls.type.setValue('pickup');
     expect(form.valid).toBe(true);
+  });
+
+  it('fills the default fee when switching to delivery without a fee, keeping a typed one', () => {
+    const form = orderForm(() => 'R$ 7,00');
+    form.controls.type.setValue('delivery');
+    expect(form.controls.delivery_fee.value).toBe('R$ 7,00');
+
+    const saved = orderForm(() => 'R$ 7,00');
+    saved.setValue(orderFormValue({ ...PICKUP, type: 'pickup' }, 'pt-BR'));
+    saved.controls.type.setValue('delivery');
+    expect(feeCents(saved.getRawValue())).toBe(700);
+
+    form.controls.delivery_fee.setValue('9,00');
+    form.controls.type.setValue('pickup');
+    form.controls.type.setValue('delivery');
+    expect(form.controls.delivery_fee.value).toBe('9,00');
   });
 
   it('builds a delivery body with fee, pay on delivery and change', () => {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Domain\Realtime\RealtimeUnavailable;
 use App\Http\Resources\RealtimeConfigResource;
 use Illuminate\Contracts\Config\Repository;
 
@@ -14,6 +15,11 @@ final readonly class RealtimeController
 
     public function __invoke(): RealtimeConfigResource
     {
-        return new RealtimeConfigResource($this->config->get('broadcasting.connections.reverb.key'));
+        $key = $this->config->get('broadcasting.connections.reverb.key');
+        if (! is_string($key) || $key === '') {
+            throw new RealtimeUnavailable;
+        }
+
+        return new RealtimeConfigResource($key);
     }
 }

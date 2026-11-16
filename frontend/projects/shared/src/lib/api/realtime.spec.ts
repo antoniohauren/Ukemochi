@@ -9,27 +9,33 @@ import { ECHO_FACTORY, echoOptions, RealtimeService } from './realtime';
 
 class FakeEcho {
   readonly listeners = new Map<string, (event: OrderUpdated) => void>();
-  connected: (() => void) | null = null;
+  subscribed: () => void = () => undefined;
+  failed: (e: { error?: string; status?: number }) => void = () => undefined;
   channel = '';
   disconnect = vi.fn();
-  connector = {
-    pusher: { connection: { bind: (_: string, cb: () => void) => (this.connected = cb) } },
-  };
   constructor(readonly options: EchoOptions<'reverb'>) {}
   private(channel: string) {
     this.channel = channel;
-    return {
-      listen: (event: string, cb: (event: OrderUpdated) => void) => this.listeners.set(event, cb),
+    const ch = {
+      subscribed: (cb: () => void) => ((this.subscribed = cb), ch),
+      error: (cb: FakeEcho['failed']) => ((this.failed = cb), ch),
+      listen: (event: string, cb: (event: OrderUpdated) => void) => (
+        this.listeners.set(event, cb),
+        ch
+      ),
     };
+    return ch;
   }
 }
 
 describe('RealtimeService', () => {
   let http: HttpTestingController;
   let echoes: FakeEcho[];
+  let seen: (OrderUpdated | null)[];
 
   beforeEach(() => {
     echoes = [];
+    seen = [];
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
@@ -47,12 +53,20 @@ describe('RealtimeService', () => {
     http = TestBed.inject(HttpTestingController);
   });
 
-  it('connects with the key from the API and emits order.updated on the private orders channel', async () => {
-    const seen: (OrderUpdated | null)[] = [];
-    const sub = TestBed.inject(RealtimeService).orderUpdates$.subscribe((e) => seen.push(e));
-    http.expectOne('/api/realtime').flush({ key: 'k3y' });
-    await Promise.resolve();
+  afterEach(() => vi.useRealTimers());
 
+  async function connect(key = 'k') {
+    const sub = TestBed.inject(RealtimeService).orderUpdates$.subscribe({
+      next: (e) => seen.push(e),
+      error: (e: unknown) => seen.push({ id: -1, version: -1, error: e } as OrderUpdated),
+    });
+    http.expectOne('/api/realtime').flush({ key });
+    await Promise.resolve();
+    return sub;
+  }
+
+  it('connects with the key from the API and emits order.updated on the private orders channel', async () => {
+    await connect('k3y');
     const [echo] = echoes;
     expect(echo.options).toMatchObject({ broadcaster: 'reverb', key: 'k3y', forceTLS: true });
     expect(echo.channel).toBe('orders');
@@ -62,20 +76,13 @@ describe('RealtimeService', () => {
       { id: 7, version: 1 },
       { id: 7, version: 1 },
     ]);
-
-    sub.unsubscribe();
-    expect(echo.disconnect).toHaveBeenCalled();
   });
 
-  it('emits null on a reconnect but not on the first connect', async () => {
-    const seen: (OrderUpdated | null)[] = [];
-    TestBed.inject(RealtimeService).orderUpdates$.subscribe((e) => seen.push(e));
-    http.expectOne('/api/realtime').flush({ key: 'k' });
-    await Promise.resolve();
-    echoes[0].connected?.();
-    expect(seen).toEqual([]);
-    echoes[0].connected?.();
-    expect(seen).toEqual([null]);
+  it('emits null each time the channel subscribes: first connect and every reconnect', async () => {
+    await connect();
+    echoes[0].subscribed();
+    echoes[0].subscribed();
+    expect(seen).toEqual([null, null]);
   });
 
   it('shares one connection between subscribers', async () => {
@@ -86,12 +93,68 @@ describe('RealtimeService', () => {
     expect(echoes.length).toBe(1);
   });
 
-  it('disconnects a client that finished connecting after everyone left', async () => {
+  it('keeps the socket for 30s after the last subscriber leaves, so list ↔ detail reuses it', async () => {
+    vi.useFakeTimers();
+    const realtime = TestBed.inject(RealtimeService);
+    (await connect()).unsubscribe();
+    vi.advanceTimersByTime(29_000);
+    realtime.orderUpdates$.subscribe();
+    http.expectNone('/api/realtime');
+    expect(echoes[0].disconnect).not.toHaveBeenCalled();
+  });
+
+  it('disconnects 30s after everyone left, even when the client finished connecting late', async () => {
+    vi.useFakeTimers();
     const sub = TestBed.inject(RealtimeService).orderUpdates$.subscribe();
     http.expectOne('/api/realtime').flush({ key: 'k' });
     sub.unsubscribe();
+    vi.advanceTimersByTime(30_000);
     await Promise.resolve();
     expect(echoes[0].disconnect).toHaveBeenCalled();
+  });
+
+  it('reconnects with backoff after a channel subscription error', async () => {
+    vi.useFakeTimers();
+    await connect();
+    echoes[0].failed({ error: 'network' });
+    expect(echoes[0].disconnect).toHaveBeenCalled();
+    vi.advanceTimersByTime(999);
+    http.expectNone('/api/realtime');
+    vi.advanceTimersByTime(1);
+    http.expectOne('/api/realtime').flush({ key: 'k' });
+    await Promise.resolve();
+    echoes[1].failed({ error: 'network' });
+    vi.advanceTimersByTime(1999);
+    http.expectNone('/api/realtime');
+    vi.advanceTimersByTime(1);
+    http.expectOne('/api/realtime');
+  });
+
+  it.each([{ status: 401 }, { error: 'unauthenticated' }])(
+    'stops on a 401 from channel auth (%o)',
+    async (failure) => {
+      vi.useFakeTimers();
+      await connect();
+      echoes[0].failed(failure);
+      vi.advanceTimersByTime(60_000);
+      http.expectNone('/api/realtime');
+      expect(seen).toEqual([
+        expect.objectContaining({ error: expect.objectContaining({ code: 'unauthenticated' }) }),
+      ]);
+    },
+  );
+
+  it('stops when the key fetch is refused with 401', () => {
+    vi.useFakeTimers();
+    TestBed.inject(RealtimeService).orderUpdates$.subscribe({
+      error: (e: unknown) => seen.push(e as OrderUpdated),
+    });
+    http
+      .expectOne('/api/realtime')
+      .flush({ code: 'unauthenticated', message: '' }, { status: 401, statusText: 'Unauthorized' });
+    vi.advanceTimersByTime(60_000);
+    http.expectNone('/api/realtime');
+    expect(seen).toEqual([expect.objectContaining({ code: 'unauthenticated' })]);
   });
 });
 
@@ -121,5 +184,12 @@ describe('echoOptions', () => {
     expect(req.request.withCredentials).toBe(true);
     req.flush({ auth: 'k:sig' });
     expect(callback).toHaveBeenCalledWith(null, { auth: 'k:sig' });
+
+    // A refused auth hands pusher-js the API error code as the message.
+    auth.customHandler({ socketId: '1.2', channelName: 'private-orders' }, callback);
+    http
+      .expectOne('/api/broadcasting/auth')
+      .flush({ code: 'unauthenticated', message: '' }, { status: 401, statusText: 'Unauthorized' });
+    expect(callback).toHaveBeenLastCalledWith(new Error('unauthenticated'), null);
   });
 });

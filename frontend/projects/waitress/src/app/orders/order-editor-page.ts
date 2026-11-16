@@ -200,7 +200,10 @@ export class OrderEditorPage {
     inject(ActivatedRoute).snapshot.paramMap.get('id'),
   );
 
-  protected readonly form = orderForm();
+  // New orders and saved non-delivery ones get the settings' fee when switched to delivery.
+  protected readonly form = orderForm(() =>
+    formatMoney(this.store.defaultFeeCents(), untracked(this.lang)),
+  );
   protected readonly value = toSignal(
     this.form.valueChanges.pipe(map(() => this.form.getRawValue())),
     {
@@ -212,16 +215,11 @@ export class OrderEditorPage {
   protected readonly error = signal<TranslationKey | null>(null);
 
   constructor() {
-    // Once loaded: a saved order fills the form; a new one starts with the settings' delivery fee.
+    // A saved order fills the form once loaded.
     effect(() => {
-      if (this.store.menu()) {
-        const order = this.store.order();
-        const lang = untracked(this.lang); // a language switch must not reset typed input
-        if (order) {
-          this.form.setValue(orderFormValue(order, lang));
-        } else {
-          this.form.controls.delivery_fee.setValue(formatMoney(this.store.defaultFeeCents(), lang));
-        }
+      const order = this.store.order();
+      if (order) {
+        this.form.setValue(orderFormValue(order, untracked(this.lang))); // a language switch must not reset input
       }
     });
     void this.store.load(this.id);

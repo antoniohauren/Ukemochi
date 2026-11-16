@@ -7,7 +7,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** Resource is the Reverb app key (public: it only names the app, the secret signs). */
+/** Resource is the non-empty Reverb app key (public: it only names the app, the secret signs). */
 final class RealtimeConfigResource extends JsonResource
 {
     public static $wrap = null;

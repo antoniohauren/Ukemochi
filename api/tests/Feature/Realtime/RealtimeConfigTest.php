@@ -16,3 +16,10 @@ it('gives signed-in staff the public Reverb app key', function (Role $role): voi
 it('refuses a signed-out visitor', function (): void {
     getJson('/api/realtime')->assertUnauthorized();
 });
+
+it('answers 503 realtime.unavailable when no Reverb key is configured', function (mixed $key): void {
+    config(['broadcasting.connections.reverb.key' => $key]);
+    actAs(Role::Waitress);
+
+    getJson('/api/realtime')->assertStatus(503)->assertJsonPath('code', 'realtime.unavailable');
+})->with(['', null]);

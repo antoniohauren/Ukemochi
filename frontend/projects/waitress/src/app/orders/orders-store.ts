@@ -3,6 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import {
   catchError,
+  EMPTY,
   filter,
   firstValueFrom,
   map,
@@ -18,6 +19,7 @@ import {
   LanguageService,
   type Order,
   OrdersApi,
+  type OrderUpdated,
   RealtimeService,
   type TranslationKey,
 } from 'shared';
@@ -34,7 +36,7 @@ export class OrdersStore {
   readonly loadError = signal<TranslationKey | null>(null);
 
   constructor() {
-    merge(this.reload, inject(RealtimeService).orderUpdates$)
+    merge(this.reload, liveUpdates())
       .pipe(
         switchMap(() => loaded(this.api.list().pipe(map((r) => r.orders)))),
         takeUntilDestroyed(),
@@ -65,9 +67,7 @@ export class OrderStore {
   readonly loadError = signal<TranslationKey | null>(null);
 
   constructor() {
-    const changes = inject(RealtimeService).orderUpdates$.pipe(
-      filter((e) => e === null || e.id === this.id),
-    );
+    const changes = liveUpdates().pipe(filter((e) => e === null || e.id === this.id));
     merge(this.reload, changes)
       .pipe(
         switchMap(() => loaded(this.api.get(this.id))),
@@ -96,6 +96,11 @@ export class OrderStore {
     this.snackBar.open(this.language.t('order.cancelled'), undefined, { duration: 3000 });
     return null;
   }
+}
+
+/** Live updates; when they end (signed out), the page keeps working with manual reloads. */
+function liveUpdates(): Observable<OrderUpdated | null> {
+  return inject(RealtimeService).orderUpdates$.pipe(catchError(() => EMPTY));
 }
 
 function loaded<T>(source: Observable<T>): Observable<Loaded<T>> {

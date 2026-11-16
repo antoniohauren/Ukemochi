@@ -52,9 +52,24 @@ describe('order stores', () => {
       updates.next(null); // the stream survives the error
       expect(api['list']).toHaveBeenCalledTimes(3);
     });
+
+    it('keeps reloading by hand after the live stream ends with an error (signed out)', () => {
+      const store = TestBed.inject(OrdersStore);
+      updates.error({ code: 'unauthenticated', message: '' });
+      store.load();
+      expect(api['list']).toHaveBeenCalledTimes(1);
+      expect(store.orders()).toEqual([order(1)]);
+    });
   });
 
   describe('OrderStore', () => {
+    it('keeps reloading by hand after the live stream ends with an error', () => {
+      const store = TestBed.inject(OrderStore);
+      updates.error({ code: 'unauthenticated', message: '' });
+      store.open(7);
+      expect(store.order()?.id).toBe(7);
+    });
+
     it('refetches only on events for its order or a reconnect', () => {
       const store = TestBed.inject(OrderStore);
       store.open(7);

@@ -12,6 +12,7 @@ use App\Domain\Menu\LastVariant;
 use App\Domain\Menu\MenuNotFound;
 use App\Domain\Order\LineNotFound;
 use App\Domain\Order\OrderNotFound;
+use App\Domain\Realtime\RealtimeUnavailable;
 use App\Http\Middleware\EnsureRole;
 use App\Http\RenderApiException;
 use Illuminate\Foundation\Application;
@@ -49,6 +50,7 @@ return Application::configure(basePath: dirname(__DIR__))
             LastAdmin::class => 409,
             OrderNotFound::class => 404,
             LineNotFound::class => 404,
+            RealtimeUnavailable::class => 503,
         ]));
         // Business rule violations are expected outcomes, not errors to log.
         $exceptions->dontReport(DomainException::class);
