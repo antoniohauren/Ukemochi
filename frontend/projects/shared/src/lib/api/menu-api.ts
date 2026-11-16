@@ -60,6 +60,10 @@ export class MenuApi {
   }
 
   /** Same as `reorderCategories`, for the item's (non-deleted) variants. */
+  reorderItems(categoryId: number, body: ReorderInput): Observable<null> {
+    return this.api.put<null>(`/categories/${categoryId}/items/order`, body);
+  }
+
   reorderVariants(itemId: number, body: ReorderInput): Observable<null> {
     return this.api.put<null>(`/items/${itemId}/variants/order`, body);
   }

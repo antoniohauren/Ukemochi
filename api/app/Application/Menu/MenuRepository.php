@@ -44,6 +44,18 @@ interface MenuRepository
     /** Row lock on the item until the transaction ends (serializes deletes of its variants). */
     public function lockItem(int $id): void;
 
+    /** Row lock on the category until the transaction ends. */
+    public function lockCategory(int $id): void;
+
+    /** Sort for a new last item in the category. */
+    public function nextItemSort(int $categoryId): int;
+
+    /** @return list<int> */
+    public function itemIds(int $categoryId): array;
+
+    /** @param  array<int, int>  $sorts  item id => sort */
+    public function setItemSorts(array $sorts): void;
+
     public function deleteVariant(int $id): void;
 
     /** Variants of the item that are not soft-deleted. */

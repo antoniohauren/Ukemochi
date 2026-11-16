@@ -20,12 +20,12 @@ final class EloquentItem extends Model
 
     public function toDomain(): Item
     {
-        return new Item($this->id, $this->category_id, $this->name, $this->note, $this->active);
+        return new Item($this->id, $this->category_id, $this->name, $this->note, $this->active, $this->sort);
     }
 
     /** @return array<string, string> */
     protected function casts(): array
     {
-        return ['active' => 'boolean'];
+        return ['active' => 'boolean', 'sort' => 'integer'];
     }
 }

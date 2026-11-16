@@ -38,7 +38,7 @@ it('builds the menu tree with variants and add-ons for any role', function (): v
         'id' => $c, 'name' => 'Uramaki', 'sort' => 1, 'active' => true,
         'addons' => [['id' => $onCategory, 'item_id' => null, 'category_id' => $c, 'name' => 'Tarê', 'price_cents' => 0, 'active' => true]],
         'items' => [[
-            'id' => $i, 'category_id' => $c, 'name' => 'Philadelphia', 'note' => null, 'active' => true,
+            'id' => $i, 'category_id' => $c, 'name' => 'Philadelphia', 'note' => null, 'active' => true, 'sort' => 0,
             'variants' => [
                 ['id' => $v, 'item_id' => $i, 'name' => '', 'price_cents' => 3200, 'available' => true, 'sort' => 0],
                 ['id' => $half, 'item_id' => $i, 'name' => 'Meio', 'price_cents' => 1700, 'available' => true, 'sort' => 1],
@@ -58,7 +58,7 @@ it('returns each saved record in its exact shape', function (): void {
     putJson("/api/categories/{$c}", ['name' => 'Hot', 'sort' => 3, 'active' => false])->assertOk()
         ->assertExactJson(['id' => $c, 'name' => 'Hot', 'sort' => 3, 'active' => false]);
     putJson("/api/items/{$i}", ['category_id' => $c, 'name' => 'Hot Philadelphia', 'note' => 'empanado'])->assertOk()
-        ->assertExactJson(['id' => $i, 'category_id' => $c, 'name' => 'Hot Philadelphia', 'note' => 'empanado', 'active' => true]);
+        ->assertExactJson(['id' => $i, 'category_id' => $c, 'name' => 'Hot Philadelphia', 'note' => 'empanado', 'active' => true, 'sort' => 0]);
     putJson("/api/variants/{$v}", ['name' => 'Inteiro 8un', 'price_cents' => 3500, 'sort' => 0])->assertOk()
         ->assertExactJson(['id' => $v, 'item_id' => $i, 'name' => 'Inteiro 8un', 'price_cents' => 3500, 'available' => true, 'sort' => 0]);
     $a = createdId(postJson('/api/addons', ['item_id' => $i, 'name' => 'Tarê', 'price_cents' => 0, 'active' => true]));
@@ -74,7 +74,7 @@ it('audits every mutation as the acting user', function (): void {
 
     expect(lastAudit())->toMatchArray([
         'user_id' => $admin->id, 'entity' => 'item', 'entity_id' => (string) $i, 'action' => 'set_active', 'note' => 'acabou salmão',
-        'summary' => ['category_id' => DB::table('items')->value('category_id'), 'name' => 'Philadelphia', 'note' => null, 'active' => false],
+        'summary' => ['category_id' => DB::table('items')->value('category_id'), 'name' => 'Philadelphia', 'note' => null, 'active' => false, 'sort' => 0],
     ])->and(DB::table('audit_log')->pluck('action', 'entity')->all())->toMatchArray(['category' => 'create', 'variant' => 'create']);
 });
 
@@ -107,6 +107,7 @@ it('forbids waitresses from changing the menu', function (string $method, string
     ['PUT', '/api/addons/1'],
     ['PUT', '/api/categories/order'],
     ['PUT', '/api/items/{i}/variants/order'],
+    ['PUT', '/api/categories/1/items/order'],
 ]);
 
 it('ignores availability on edits so a kitchen toggle sticks', function (): void {
@@ -129,6 +130,7 @@ it('answers 404 for ids too large for the database', function (string $method, s
     ['PUT', '/api/items/99999999999999999999/active'],
     ['POST', '/api/items/99999999999999999999/variants'],
     ['PUT', '/api/items/99999999999999999999/variants/order'],
+    ['PUT', '/api/categories/99999999999999999999/items/order'],
 ]);
 
 it('reorders categories, audits once and keeps sort on later edits', function (): void {
@@ -156,6 +158,38 @@ it('reorders an item variants, leaving deleted ones out', function (): void {
         ->and(lastAudit())->toMatchArray(['entity' => 'item', 'entity_id' => (string) $i, 'action' => 'reorder', 'summary' => ['ids' => [$half, $v]]]);
     putJson("/api/items/{$i}/variants/order", ['ids' => [$half, $v, $gone]])->assertStatus(422)
         ->assertExactJson(['code' => 'menu.invalid_order', 'message' => 'The order must list every row exactly once.']);
+});
+
+it('puts new items last in their category and keeps their place on edits', function (): void {
+    ['category' => $c, 'item' => $a] = seedMenu();
+    $b = createdId(postJson('/api/items', ['category_id' => $c, 'name' => 'Atum', 'active' => true, 'price_cents' => 2000])->assertCreated()
+        ->assertJsonPath('sort', 1));
+
+    putJson("/api/items/{$a}", ['category_id' => $c, 'name' => 'Zebra'])->assertOk()->assertJsonPath('sort', 0);
+
+    expect(getJson('/api/menu')->json('categories.0.items.*.id'))->toBe([$a, $b]);
+});
+
+it('puts an item last when it moves to another category', function (): void {
+    ['category' => $c, 'item' => $a] = seedMenu();
+    $other = createdId(postJson('/api/categories', ['name' => 'Hots', 'sort' => 2, 'active' => true]));
+    createdId(postJson('/api/items', ['category_id' => $other, 'name' => 'Hot roll', 'active' => true, 'price_cents' => 2000]));
+
+    putJson("/api/items/{$a}", ['category_id' => $other, 'name' => 'Philadelphia'])->assertOk()->assertJsonPath('sort', 1);
+});
+
+it('reorders a category items and audits once', function (): void {
+    ['category' => $c, 'item' => $a] = seedMenu();
+    $b = createdId(postJson('/api/items', ['category_id' => $c, 'name' => 'Atum', 'active' => true, 'price_cents' => 2000]));
+    $audits = DB::table('audit_log')->count();
+
+    putJson("/api/categories/{$c}/items/order", ['ids' => [$b, $a]])->assertNoContent();
+
+    expect(getJson('/api/menu')->json('categories.0.items.*.id'))->toBe([$b, $a])
+        ->and(DB::table('audit_log')->count())->toBe($audits + 1)
+        ->and(lastAudit())->toMatchArray(['entity' => 'category', 'entity_id' => (string) $c, 'action' => 'reorder_items', 'summary' => ['ids' => [$b, $a]]]);
+    putJson("/api/categories/{$c}/items/order", ['ids' => [$b]])->assertStatus(422)->assertJsonPath('code', 'menu.invalid_order');
+    putJson('/api/categories/999999/items/order', ['ids' => [$b, $a]])->assertNotFound()->assertJsonPath('code', 'menu.not_found');
 });
 
 it('refuses an order that is not the full set of categories and changes nothing', function (): void {

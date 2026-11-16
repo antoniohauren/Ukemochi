@@ -31,6 +31,9 @@ final class InMemoryMenuRepository implements MenuRepository
     /** @var list<int> */
     public array $lockedItems = [];
 
+    /** @var list<int> */
+    public array $lockedCategories = [];
+
     private int $nextId = 1;
 
     public function menu(): Menu
@@ -73,7 +76,7 @@ final class InMemoryMenuRepository implements MenuRepository
 
         $active = isset($this->items[$item->id]) ? $this->items[$item->id]->active : $item->active;
 
-        return $this->items[$id] = new Item($id, $item->categoryId, $item->name, $item->note, $active);
+        return $this->items[$id] = new Item($id, $item->categoryId, $item->name, $item->note, $active, $item->sort);
     }
 
     public function saveVariant(Variant $variant): Variant
@@ -96,7 +99,7 @@ final class InMemoryMenuRepository implements MenuRepository
     {
         $i = $this->findItem($id);
 
-        return $i === null ? null : $this->items[$id] = new Item($id, $i->categoryId, $i->name, $i->note, $active);
+        return $i === null ? null : $this->items[$id] = new Item($id, $i->categoryId, $i->name, $i->note, $active, $i->sort);
     }
 
     public function setVariantAvailable(int $id, bool $available): ?Variant
@@ -136,6 +139,31 @@ final class InMemoryMenuRepository implements MenuRepository
         foreach ($sorts as $id => $sort) {
             $c = $this->categories[$id];
             $this->categories[$id] = new Category($id, $c->name, $sort, $c->active);
+        }
+    }
+
+    public function lockCategory(int $id): void
+    {
+        $this->lockedCategories[] = $id;
+    }
+
+    public function nextItemSort(int $categoryId): int
+    {
+        $sorts = array_map(fn (Item $i): int => $i->sort, array_filter($this->items, fn (Item $i): bool => $i->categoryId === $categoryId));
+
+        return $sorts === [] ? 0 : max($sorts) + 1;
+    }
+
+    public function itemIds(int $categoryId): array
+    {
+        return array_values(array_map(fn (Item $i): int => $i->id, array_filter($this->items, fn (Item $i): bool => $i->categoryId === $categoryId)));
+    }
+
+    public function setItemSorts(array $sorts): void
+    {
+        foreach ($sorts as $id => $sort) {
+            $i = $this->items[$id];
+            $this->items[$id] = new Item($id, $i->categoryId, $i->name, $i->note, $i->active, $sort);
         }
     }
 

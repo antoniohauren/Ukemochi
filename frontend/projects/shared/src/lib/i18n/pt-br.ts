@@ -55,6 +55,7 @@ export const ptBR = {
   'menu.active': 'Ativo',
   'menu.available': 'Disponível',
   'menu.inactive': 'Inativo',
+  'menu.unavailable': 'Indisponível',
   'menu.saved': 'Salvo.',
   'menu.empty': 'Nada aqui ainda.',
   'menu.pick_category': 'Escolha uma categoria.',

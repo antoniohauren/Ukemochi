@@ -56,6 +56,7 @@ export const en: Dictionary = {
   'menu.active': 'Active',
   'menu.available': 'Available',
   'menu.inactive': 'Inactive',
+  'menu.unavailable': 'Unavailable',
   'menu.saved': 'Saved.',
   'menu.empty': 'Nothing here yet.',
   'menu.pick_category': 'Pick a category.',

@@ -13,6 +13,8 @@ export interface Item {
   name: string;
   note: string | null;
   active: boolean;
+  /** Position in the category; the API puts new items last and keeps it on edits. */
+  sort: number;
 }
 
 /** `VariantResource`. `name` is `''` for an item's default variant. Price in cents. */
@@ -47,7 +49,7 @@ export interface Menu {
 export type CategoryInput = Omit<Category, 'id'>;
 
 /** Body of `PUT /api/items/{id}`. `active` changes only through `PUT /api/items/{id}/active`. */
-export type ItemInput = Omit<Item, 'id' | 'active'>;
+export type ItemInput = Omit<Item, 'id' | 'active' | 'sort'>;
 
 /** Body of `POST /api/items`: also the price of the default variant it creates. */
 export type NewItemInput = ItemInput & { active: boolean; price_cents: number };

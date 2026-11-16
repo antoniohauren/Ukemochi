@@ -36,6 +36,10 @@ describe('MenuApi', () => {
     expect(http.expectOne({ method: 'PUT', url: '/api/categories/order' }).request.body).toEqual({
       ids: [2, 1],
     });
+    menu.reorderItems(3, { ids: [11, 10] }).subscribe();
+    const items = http.expectOne({ method: 'PUT', url: '/api/categories/3/items/order' });
+    expect(items.request.body).toEqual({ ids: [11, 10] });
+
     menu.reorderVariants(10, { ids: [101, 100] }).subscribe();
     const req = http.expectOne({ method: 'PUT', url: '/api/items/10/variants/order' });
     expect(req.request.body).toEqual({ ids: [101, 100] });

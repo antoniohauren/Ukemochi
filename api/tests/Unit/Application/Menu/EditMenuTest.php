@@ -90,7 +90,7 @@ it('audits summaries with snake_case keys', function (): void {
     $item = $edit->createItem($edit->createCategory('Uramaki', 0, true)->id, 'Salmão', null, true, 3000);
 
     expect(array_column($audit->entries, 'summary', 'entity'))->toMatchArray([
-        'item' => ['category_id' => $item->categoryId, 'name' => 'Salmão', 'note' => null, 'active' => true],
+        'item' => ['category_id' => $item->categoryId, 'name' => 'Salmão', 'note' => null, 'active' => true, 'sort' => 0],
         'variant' => ['item_id' => $item->id, 'name' => '', 'price_cents' => 3000, 'available' => true, 'sort' => 0],
     ]);
 });
@@ -169,6 +169,31 @@ it('refuses a variant order that is not the full set and audits nothing', functi
     } finally {
         expect($audit->entries)->toHaveCount($before);
     }
+})->throws(InvalidOrder::class);
+
+it('reorders a category items under the category lock', function (): void {
+    [$edit, $repo, $audit] = editMenu();
+    $category = $edit->createCategory('Uramaki', 0, true)->id;
+    $a = $edit->createItem($category, 'Salmão', null, true, 3000);
+    $b = $edit->createItem($category, 'Atum', null, true, 2000);
+
+    $edit->reorderItems($category, [$b->id, $a->id]);
+
+    expect($repo->items[$b->id]->sort)->toBe(0)
+        ->and($repo->items[$a->id]->sort)->toBe(1)
+        ->and($repo->lockedCategories)->toBe([$category])
+        ->and(end($audit->entries))->toMatchArray([
+            'entity' => 'category', 'entityId' => $category, 'action' => 'reorder_items', 'summary' => ['ids' => [$b->id, $a->id]],
+        ]);
+});
+
+it('refuses an item order that is not the full set', function (): void {
+    [$edit] = editMenu();
+    $category = $edit->createCategory('Uramaki', 0, true)->id;
+    $a = $edit->createItem($category, 'Salmão', null, true, 3000);
+    $edit->createItem($category, 'Atum', null, true, 2000);
+
+    $edit->reorderItems($category, [$a->id]);
 })->throws(InvalidOrder::class);
 
 it('refuses to reorder the variants of a missing item', function (): void {

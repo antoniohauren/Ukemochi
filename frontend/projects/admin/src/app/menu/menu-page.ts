@@ -1,4 +1,5 @@
 import { CdkDrag, CdkDragHandle, CdkDropList } from '@angular/cdk/drag-drop';
+import { NgTemplateOutlet } from '@angular/common';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import {
   afterNextRender,
@@ -12,9 +13,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIcon } from '@angular/material/icon';
-import { MatListItem, MatListItemLine, MatListItemTitle, MatNavList } from '@angular/material/list';
 import { MatMenu, MatMenuContent, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
-import { MatSlideToggle, type MatSlideToggleChange } from '@angular/material/slide-toggle';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
   type Addon,
@@ -46,15 +45,11 @@ import { MenuStore } from './menu-store';
     MatButton,
     MatIcon,
     MatIconButton,
-    MatListItem,
-    MatListItemLine,
-    MatListItemTitle,
     MatMenu,
     MatMenuContent,
     MatMenuItem,
     MatMenuTrigger,
-    MatNavList,
-    MatSlideToggle,
+    NgTemplateOutlet,
     RouterLink,
     TPipe,
   ],
@@ -101,7 +96,7 @@ export class MenuPage {
   protected editItem(categoryId: number, item: Item | null): void {
     this.open({
       title: item ? 'menu.item.edit' : 'menu.item.new',
-      // active changes through the inline switch; price through the variants
+      // active changes through the row menu toggle; price through the variants
       fields: item ? ['name', 'note'] : ['name', 'note', 'price_cents', 'flag'],
       flagLabel: 'menu.active',
       value: item ? { name: item.name, note: item.note ?? '' } : {},
@@ -130,21 +125,6 @@ export class MenuPage {
     });
   }
 
-  protected async setItemActive(item: Item, event: MatSlideToggleChange): Promise<void> {
-    if (!(await this.store.setItemActive(item.id, event.checked))) {
-      event.source.checked = !event.checked;
-    }
-  }
-
-  protected async setVariantAvailable(
-    variant: Variant,
-    event: MatSlideToggleChange,
-  ): Promise<void> {
-    if (!(await this.store.setVariantAvailable(variant.id, event.checked))) {
-      event.source.checked = !event.checked;
-    }
-  }
-
   protected async deleteVariant(variant: Variant): Promise<void> {
     const data: ConfirmData = { message: 'menu.variant.delete.confirm', confirm: 'common.remove' };
     const ref = this.dialog.open<ConfirmDialog, ConfirmData, boolean>(ConfirmDialog, { data });
@@ -157,6 +137,11 @@ export class MenuPage {
   protected moveCategory(event: Event, index: number, step: number): void {
     this.keepFocus(event);
     void this.store.moveCategory(index, index + step);
+  }
+
+  protected moveItem(event: Event, categoryId: number, index: number, step: number): void {
+    this.keepFocus(event);
+    void this.store.moveItem(categoryId, index, index + step);
   }
 
   protected moveVariant(event: Event, itemId: number, index: number, step: number): void {

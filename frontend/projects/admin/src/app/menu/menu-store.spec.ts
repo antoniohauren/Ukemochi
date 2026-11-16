@@ -20,6 +20,7 @@ const MENU: Menu = {
           name: 'Carne',
           note: null,
           active: true,
+          sort: 0,
           variants: [
             { id: 100, item_id: 10, name: '', price_cents: 1250, available: true, sort: 0 },
           ],
@@ -44,6 +45,7 @@ const TWO: Menu = {
             { id: 101, item_id: 10, name: 'G', price_cents: 1500, available: true, sort: 1 },
           ],
         },
+        { ...CARNE, id: 11, name: 'Queijo', sort: 1, variants: [] },
       ],
     },
     { id: 2, name: 'Bebidas', sort: 1, active: true, addons: [], items: [] },
@@ -171,6 +173,43 @@ describe('MenuStore', () => {
     expect(api['setVariantAvailable']).toHaveBeenCalledWith(100, false);
     api['setItemActive'] = fail('forbidden');
     expect(await store.setItemActive(10, false)).toBe(false);
+  });
+
+  it('toggles a category and an add-on through their full update bodies', async () => {
+    await store.setCategoryActive(MENU.categories[0], false);
+    expect(api['updateCategory']).toHaveBeenCalledWith(1, {
+      name: 'Pastéis',
+      sort: 0,
+      active: false,
+    });
+    const addon = {
+      id: 5,
+      item_id: 10,
+      category_id: null,
+      name: 'Bacon',
+      price_cents: 300,
+      active: true,
+    };
+    await store.setAddonActive(addon, false);
+    expect(api['updateAddon']).toHaveBeenCalledWith(5, {
+      item_id: 10,
+      category_id: null,
+      name: 'Bacon',
+      price_cents: 300,
+      active: false,
+    });
+  });
+
+  it('shows an item move at once and sends the new order', async () => {
+    api['menu'] = vi.fn(() => of(TWO));
+    await store.load();
+    api['reorderItems'] = vi.fn(() => of(null));
+    expect(await store.moveItem(1, 1, 0)).toBe(true);
+    expect(store.categories()[0].items.map((i) => [i.id, i.sort])).toEqual([
+      [11, 0],
+      [10, 1],
+    ]);
+    expect(api['reorderItems']).toHaveBeenCalledWith(1, { ids: [11, 10] });
   });
 
   it('creates a category last and updates one keeping its sort', async () => {

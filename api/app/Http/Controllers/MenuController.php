@@ -50,6 +50,13 @@ final readonly class MenuController
         return response()->noContent();
     }
 
+    public function reorderItems(ReorderRequest $r, int $id): Response
+    {
+        $this->edit->reorderItems($id, $r->ids());
+
+        return response()->noContent();
+    }
+
     public function storeItem(ItemRequest $r): JsonResponse
     {
         return self::created(new ItemResource($this->edit->createItem(

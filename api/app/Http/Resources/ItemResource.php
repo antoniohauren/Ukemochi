@@ -18,6 +18,6 @@ final class ItemResource extends JsonResource
     {
         $r = $this->resource;
 
-        return ['id' => $r->id, 'category_id' => $r->categoryId, 'name' => $r->name, 'note' => $r->note, 'active' => $r->active];
+        return ['id' => $r->id, 'category_id' => $r->categoryId, 'name' => $r->name, 'note' => $r->note, 'active' => $r->active, 'sort' => $r->sort];
     }
 }

@@ -17,7 +17,7 @@ final class EloquentMenuRepository implements MenuRepository
     {
         return new Menu(
             array_values(EloquentCategory::query()->orderBy('sort')->orderBy('id')->get()->map(fn (EloquentCategory $c) => $c->toDomain())->all()),
-            array_values(EloquentItem::query()->orderBy('name')->orderBy('id')->get()->map(fn (EloquentItem $i) => $i->toDomain())->all()),
+            array_values(EloquentItem::query()->orderBy('sort')->orderBy('id')->get()->map(fn (EloquentItem $i) => $i->toDomain())->all()),
             array_values(EloquentVariant::query()->orderBy('sort')->orderBy('id')->get()->map(fn (EloquentVariant $v) => $v->toDomain())->all()),
             array_values(EloquentAddon::query()->orderBy('name')->orderBy('id')->get()->map(fn (EloquentAddon $a) => $a->toDomain())->all()),
         );
@@ -54,7 +54,7 @@ final class EloquentMenuRepository implements MenuRepository
     public function saveItem(Item $item): Item
     {
         $model = $item->id === 0 ? new EloquentItem : EloquentItem::query()->findOrFail($item->id);
-        $model->forceFill(['category_id' => $item->categoryId, 'name' => $item->name, 'note' => $item->note]);
+        $model->forceFill(['category_id' => $item->categoryId, 'name' => $item->name, 'note' => $item->note, 'sort' => $item->sort]);
         if ($item->id === 0) {
             $model->active = $item->active;
         }
@@ -132,6 +132,30 @@ final class EloquentMenuRepository implements MenuRepository
     {
         foreach ($sorts as $id => $sort) {
             EloquentCategory::query()->whereKey($id)->update(['sort' => $sort]);
+        }
+    }
+
+    public function lockCategory(int $id): void
+    {
+        EloquentCategory::query()->whereKey($id)->lockForUpdate()->first();
+    }
+
+    public function nextItemSort(int $categoryId): int
+    {
+        $max = EloquentItem::query()->where('category_id', $categoryId)->max('sort');
+
+        return is_numeric($max) ? (int) $max + 1 : 0;
+    }
+
+    public function itemIds(int $categoryId): array
+    {
+        return array_values(EloquentItem::query()->where('category_id', $categoryId)->orderBy('id')->get(['id'])->map(fn (EloquentItem $i): int => $i->id)->all());
+    }
+
+    public function setItemSorts(array $sorts): void
+    {
+        foreach ($sorts as $id => $sort) {
+            EloquentItem::query()->whereKey($id)->update(['sort' => $sort]);
         }
     }
 

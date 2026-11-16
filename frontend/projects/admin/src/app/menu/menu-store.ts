@@ -5,6 +5,7 @@ import { firstValueFrom, type Observable } from 'rxjs';
 import {
   type Addon,
   type ApiError,
+  type Category,
   errorKey,
   LanguageService,
   type Menu,
@@ -26,7 +27,7 @@ export class MenuStore {
   /** Selected ids; 0 means none (ids start at 1). */
   readonly categoryId = signal(0);
   readonly itemId = signal(0);
-  /** Switches with a request in flight, as `item:<id>` / `variant:<id>`. */
+  /** Toggles with a request in flight, as `category:<id>` / `item:<id>` / `variant:<id>` / `addon:<id>`. */
   readonly pending = signal<ReadonlySet<string>>(new Set());
   private loads = 0;
 
@@ -92,7 +93,18 @@ export class MenuStore {
     return this.write(id === null ? this.api.createAddon(body) : this.api.updateAddon(id, body));
   }
 
-  /** Resolves false on failure, so the caller can flip the switch back. */
+  /** Toggles resolve false on failure; the API error goes to a snackbar. */
+  setCategoryActive(c: Category, active: boolean): Promise<boolean> {
+    const body = { name: c.name, sort: c.sort, active };
+    return this.toggle(`category:${c.id}`, this.api.updateCategory(c.id, body));
+  }
+
+  setAddonActive(a: Addon, active: boolean): Promise<boolean> {
+    const { item_id, category_id, name, price_cents } = a;
+    const body = { item_id, category_id, name, price_cents, active };
+    return this.toggle(`addon:${a.id}`, this.api.updateAddon(a.id, body));
+  }
+
   setItemActive(id: number, active: boolean): Promise<boolean> {
     return this.toggle(`item:${id}`, this.api.setItemActive(id, active));
   }
@@ -116,6 +128,18 @@ export class MenuStore {
       { categories: resorted(categories, ids) },
       this.api.reorderCategories({ ids }),
     );
+  }
+
+  moveItem(categoryId: number, from: number, to: number): Promise<boolean> {
+    const items = this.categories().find((c) => c.id === categoryId)?.items ?? [];
+    const ids = moved(items, from, to);
+    if (!ids) {
+      return Promise.resolve(true);
+    }
+    const categories = this.categories().map((c) =>
+      c.id === categoryId ? { ...c, items: resorted(c.items, ids) } : c,
+    );
+    return this.reorder({ categories }, this.api.reorderItems(categoryId, { ids }));
   }
 
   moveVariant(itemId: number, from: number, to: number): Promise<boolean> {

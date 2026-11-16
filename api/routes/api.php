@@ -33,6 +33,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/categories', [MenuController::class, 'storeCategory']);
         Route::put('/categories/order', [MenuController::class, 'reorderCategories']);
         Route::put('/categories/{id}', [MenuController::class, 'updateCategory']);
+        Route::put('/categories/{id}/items/order', [MenuController::class, 'reorderItems']);
         Route::post('/items', [MenuController::class, 'storeItem']);
         Route::put('/items/{id}', [MenuController::class, 'updateItem']);
         Route::post('/items/{itemId}/variants', [MenuController::class, 'storeVariant']);

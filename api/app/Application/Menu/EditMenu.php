@@ -41,27 +41,31 @@ final readonly class EditMenu
         ));
     }
 
-    /** A new item gets one unnamed default variant at `$priceCents`. */
+    /** A new item goes last in its category and gets one unnamed default variant at `$priceCents`. */
     public function createItem(int $categoryId, string $name, ?string $note, bool $active, int $priceCents): Item
     {
         $this->category($categoryId);
 
         return $this->transaction->run(function () use ($categoryId, $name, $note, $active, $priceCents): Item {
-            $item = $this->saved($this->menu->saveItem(new Item(0, $categoryId, $name, $note, $active)), 'item', 'create');
+            $item = new Item(0, $categoryId, $name, $note, $active, $this->menu->nextItemSort($categoryId));
+            $item = $this->saved($this->menu->saveItem($item), 'item', 'create');
             $this->saved($this->menu->saveVariant(new Variant(0, $item->id, '', $priceCents, true, 0)), 'variant', 'create');
 
             return $item;
         });
     }
 
-    /** `active` stays as it is: only setItemActive changes it. */
+    /** `active` stays as it is: only setItemActive changes it. Moving to another category puts the item last there. */
     public function updateItem(int $id, int $categoryId, string $name, ?string $note): Item
     {
         $this->category($categoryId);
 
-        return $this->transaction->run(fn () => $this->saved(
-            $this->menu->saveItem(new Item($id, $categoryId, $name, $note, $this->item($id)->active)), 'item', 'update',
-        ));
+        return $this->transaction->run(function () use ($id, $categoryId, $name, $note): Item {
+            $current = $this->item($id);
+            $sort = $current->categoryId === $categoryId ? $current->sort : $this->menu->nextItemSort($categoryId);
+
+            return $this->saved($this->menu->saveItem(new Item($id, $categoryId, $name, $note, $current->active, $sort)), 'item', 'update');
+        });
     }
 
     public function setItemActive(int $id, bool $active, ?string $note): Item
@@ -120,6 +124,22 @@ final readonly class EditMenu
         $this->transaction->run(function () use ($ids): void {
             $this->menu->setCategorySorts(MenuOrder::sorts($ids, $this->menu->lockCategoryIds()));
             $this->record('category', 'all', 'reorder', ['ids' => $ids], null);
+        });
+    }
+
+    /**
+     * Audited on the category, since the order belongs to its item list.
+     *
+     * @param  list<int>  $ids  every item of the category, in the new order
+     */
+    public function reorderItems(int $categoryId, array $ids): void
+    {
+        $this->category($categoryId);
+        $this->transaction->run(function () use ($categoryId, $ids): void {
+            // Locking the category serialises reorders of its items.
+            $this->menu->lockCategory($categoryId);
+            $this->menu->setItemSorts(MenuOrder::sorts($ids, $this->menu->itemIds($categoryId)));
+            $this->record('category', $categoryId, 'reorder_items', ['ids' => $ids], null);
         });
     }
 

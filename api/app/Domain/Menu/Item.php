@@ -13,5 +13,6 @@ final readonly class Item
         public string $name,
         public ?string $note,
         public bool $active,
+        public int $sort,
     ) {}
 }
