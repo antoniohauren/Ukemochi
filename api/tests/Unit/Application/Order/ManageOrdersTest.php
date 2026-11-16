@@ -20,6 +20,8 @@ use App\Domain\Order\OrderLine;
 use App\Domain\Order\OrderNotFound;
 use App\Domain\Order\OrderStatus;
 use App\Domain\Order\OrderType;
+use App\Domain\Order\PrintStatus;
+use App\Domain\Ticket\TicketKind;
 use Tests\Fakes\FixedClock;
 use Tests\Fakes\ImmediateTransaction;
 use Tests\Fakes\InMemoryAuditLog;
@@ -220,6 +222,29 @@ it('reopens a closed order with a version bump', function (): void {
         ->and($audit->entries[2])->toMatchArray(['action' => 'reopen', 'summary' => ['version' => 2], 'note' => 'faltou cobrar']);
 });
 
+it('records a kitchen print under lock, with audit and announcement', function (): void {
+    [$manage, $orders, $audit, , , $events] = manageOrders();
+    $order = $manage->create(dineIn(), [new LineInput(100, 1)]);
+
+    $printed = $manage->markPrinted($order->id, TicketKind::Kitchen, 1, 'reimpressão');
+
+    expect($printed->printedVersion)->toBe(1)
+        ->and($printed->printStatus())->toBeNull()
+        ->and($orders->locked)->toBe([1])
+        ->and($audit->entries[1])->toMatchArray(['action' => 'print', 'summary' => ['kind' => 'kitchen', 'version' => 1], 'note' => 'reimpressão'])
+        ->and($events->updated)->toHaveCount(2);
+});
+
+it('records a bill print without touching the kitchen print status', function (): void {
+    [$manage, , $audit] = manageOrders();
+    $order = $manage->create(dineIn(), [new LineInput(100, 1)]);
+
+    $printed = $manage->markPrinted($order->id, TicketKind::Bill, 1, null);
+
+    expect($printed->printStatus())->toBe(PrintStatus::NotPrinted)
+        ->and($audit->entries[1])->toMatchArray(['action' => 'print', 'summary' => ['kind' => 'bill', 'version' => 1]]);
+});
+
 it('reports a missing order', function (Closure $call): void {
     [$manage] = manageOrders();
 
@@ -229,6 +254,7 @@ it('reports a missing order', function (Closure $call): void {
     'status' => [fn (ManageOrders $m) => $m->changeStatus(5, OrderStatus::Ready, null)],
     'cancel' => [fn (ManageOrders $m) => $m->cancel(5, 'x', null)],
     'reopen' => [fn (ManageOrders $m) => $m->reopen(5, null)],
+    'print' => [fn (ManageOrders $m) => $m->markPrinted(5, TicketKind::Kitchen, 1, null)],
 ]);
 
 it('refuses to change an order without a session user, writing nothing', function (Closure $call): void {
@@ -246,6 +272,7 @@ it('refuses to change an order without a session user, writing nothing', functio
     'status' => [fn (ManageOrders $m, int $id) => $m->changeStatus($id, OrderStatus::Ready, null)],
     'cancel' => [fn (ManageOrders $m, int $id) => $m->cancel($id, 'x', null)],
     'reopen' => [fn (ManageOrders $m, int $id) => $m->reopen($id, null)],
+    'print' => [fn (ManageOrders $m, int $id) => $m->markPrinted($id, TicketKind::Kitchen, 1, null)],
 ]);
 
 it('announces each change with the order id and version', function (): void {

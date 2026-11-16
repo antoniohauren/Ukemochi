@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, LoginPage, PlaceholderPage } from 'shared';
+import { authGuard, LoginPage, PlaceholderPage, TicketPage } from 'shared';
 import { Layout } from './layout';
 import { roleGuard } from './role.guard';
 
@@ -18,7 +18,21 @@ export const routes: Routes = [
     canActivateChild: [roleGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'orders' },
-      { path: 'orders', component: PlaceholderPage, data: { title: 'nav.orders' } },
+      {
+        path: 'orders',
+        loadComponent: () => import('./orders/orders-page').then((m) => m.OrdersPage),
+        data: { title: 'nav.orders' },
+      },
+      {
+        path: 'orders/:id/print/kitchen',
+        component: TicketPage,
+        data: { title: 'ticket.kitchen', back: '/orders', kind: 'kitchen' },
+      },
+      {
+        path: 'orders/:id/print/bill',
+        component: TicketPage,
+        data: { title: 'ticket.bill', back: '/orders', kind: 'bill' },
+      },
       {
         path: 'menu',
         loadComponent: () => import('./menu/menu-page').then((m) => m.MenuPage),

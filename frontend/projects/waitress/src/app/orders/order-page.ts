@@ -9,11 +9,12 @@ import {
   LanguageService,
   type Order,
   OrderLines,
+  OrderStore,
   type PaymentMethod,
+  PrintBadge,
   TPipe,
 } from 'shared';
 import { CancelDialog, type CancelDialogData } from './cancel-dialog';
-import { OrderStore } from './orders-store';
 
 /** One order as the API computed it. Main action: edit; cancel sits in the overflow menu. */
 @Component({
@@ -27,6 +28,7 @@ import { OrderStore } from './orders-store';
     MatMenuItem,
     MatMenuTrigger,
     OrderLines,
+    PrintBadge,
     RouterLink,
     TPipe,
   ],
@@ -37,23 +39,32 @@ import { OrderStore } from './orders-store';
         <div class="who">
           <h2 class="name">#{{ o.id }} · {{ o.customer_name }}</h2>
           <p class="meta">{{ typeKey(o) | t }} · {{ statusKey(o) | t }}</p>
+          <lib-print-badge [status]="o.print_status" />
         </div>
-        @if (o.status !== 'cancelled') {
-          <button
-            mat-icon-button
-            type="button"
-            [matMenuTriggerFor]="options"
-            [attr.aria-label]="'nav.options' | t"
-          >
-            <mat-icon aria-hidden="true">more_vert</mat-icon>
-          </button>
-          <mat-menu #options="matMenu">
+        <button
+          mat-icon-button
+          type="button"
+          [matMenuTriggerFor]="options"
+          [attr.aria-label]="'nav.options' | t"
+        >
+          <mat-icon aria-hidden="true">more_vert</mat-icon>
+        </button>
+        <mat-menu #options="matMenu">
+          <a mat-menu-item [routerLink]="['/orders', o.id, 'print', 'kitchen']">
+            <mat-icon aria-hidden="true">print</mat-icon>
+            <span>{{ 'ticket.print.kitchen' | t }}</span>
+          </a>
+          <a mat-menu-item [routerLink]="['/orders', o.id, 'print', 'bill']">
+            <mat-icon aria-hidden="true">receipt_long</mat-icon>
+            <span>{{ 'ticket.print.bill' | t }}</span>
+          </a>
+          @if (o.status !== 'cancelled') {
             <button mat-menu-item type="button" (click)="cancel()">
               <mat-icon aria-hidden="true">cancel</mat-icon>
               <span>{{ 'order.cancel' | t }}</span>
             </button>
-          </mat-menu>
-        }
+          }
+        </mat-menu>
       </header>
       @if (o.cancel_reason) {
         <p class="error">{{ 'order.cancel.reason' | t }}: {{ o.cancel_reason }}</p>

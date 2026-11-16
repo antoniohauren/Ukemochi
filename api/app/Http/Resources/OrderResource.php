@@ -33,7 +33,7 @@ final class OrderResource extends JsonResource
             'subtotal_cents' => $o->subtotalCents(), 'total_cents' => $o->totalCents(),
             'created_by' => $o->createdBy, 'created_at' => $o->createdAt->format(DATE_ATOM),
             'closed_at' => $o->closedAt?->format(DATE_ATOM), 'cancel_reason' => $o->cancelReason,
-            'printed_version' => $o->printedVersion, 'version' => $o->version,
+            'printed_version' => $o->printedVersion, 'version' => $o->version, 'print_status' => $o->printStatus()?->value,
         ];
     }
 }

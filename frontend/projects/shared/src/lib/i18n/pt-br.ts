@@ -168,6 +168,20 @@ export const ptBR = {
   'error.order.cancel_reason_required': 'Informe o motivo.',
   'error.order.invalid_amount': 'Valor inválido.',
   'error.order.invalid_pay_method': 'Escolha a forma de pagamento; troco só em dinheiro.',
+  'error.order.invalid_print_version': 'O pedido mudou. Abra de novo para imprimir.',
+  'ticket.kitchen': 'Comanda da cozinha',
+  'ticket.bill': 'Conta',
+  'ticket.print': 'Imprimir',
+  'ticket.print.kitchen': 'Imprimir comanda',
+  'ticket.print.bill': 'Imprimir conta',
+  'ticket.printed': 'Impressão registrada.',
+  'ticket.updated': 'ATUALIZADO',
+  'ticket.cancelled': 'CANCELADO',
+  'ticket.change': 'Troco',
+  'ticket.not_fiscal': 'Não é documento fiscal',
+  'print.status.not_printed': 'Não impresso',
+  'print.status.changed': 'Alterado após impressão',
+  'print.status.cancel_not_printed': 'Cancelamento não impresso',
 };
 
 export type TranslationKey = keyof typeof ptBR;

@@ -147,8 +147,8 @@ Each step is one TDD vertical slice. Done = tests green + `make check` clean + r
 - [x] **11. Waitress ordering** — order list (live via Echo), new order (dine-in name / pickup / delivery), add/edit lines with variant, add-ons, notes (bottom sheets); cancel.
 
 ### Phase 4 — Printing
-- [ ] **12. Ticket content** — domain ticket builder (kitchen + bill), `GET /api/orders/{id}/ticket`.
-- [ ] **13. Browser print** — `TicketPrint` view (58/80mm `@page`), "Imprimir" in waitress + admin, `POST /api/orders/{id}/printed`, print badges.
+- [x] **12. Ticket content** — domain ticket builder (kitchen + bill), `GET /api/orders/{id}/ticket`.
+- [x] **13. Browser print** — `TicketPrint` view (58/80mm `@page`), "Imprimir" in waitress + admin, `POST /api/orders/{id}/printed`, print badges.
 
 ### Phase 5 — Money
 - [ ] **14. Cash shifts** — open with float, movements (withdrawal, deposit, staff_meal + staff name), close with count, expected cash + difference, totals per method.

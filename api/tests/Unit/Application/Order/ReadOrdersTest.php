@@ -9,6 +9,9 @@ use App\Domain\Order\OrderLine;
 use App\Domain\Order\OrderNotFound;
 use App\Domain\Order\OrderStatus;
 use App\Domain\Order\OrderType;
+use App\Domain\Ticket\Bill;
+use App\Domain\Ticket\KitchenTicket;
+use App\Domain\Ticket\TicketKind;
 use Tests\Fakes\InMemoryOrderRepository;
 
 function storedOrder(InMemoryOrderRepository $repo, int $id, OrderStatus $status): void
@@ -54,4 +57,14 @@ it('gets one order or reports it missing', function (): void {
 
     expect($read->get(3)->id)->toBe(3)
         ->and(fn () => $read->get(4))->toThrow(OrderNotFound::class);
+});
+
+it('builds the kitchen ticket or the bill of an order', function (): void {
+    $repo = new InMemoryOrderRepository;
+    storedOrder($repo, 3, OrderStatus::Open);
+    $read = new ReadOrders($repo);
+
+    expect($read->ticket(3, TicketKind::Kitchen))->toEqual(KitchenTicket::of($repo->orders[3]))
+        ->and($read->ticket(3, TicketKind::Bill))->toEqual(Bill::of($repo->orders[3]));
+    expect(fn () => $read->ticket(4, TicketKind::Bill))->toThrow(OrderNotFound::class);
 });

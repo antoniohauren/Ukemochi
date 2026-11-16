@@ -38,7 +38,6 @@ final class EloquentOrderRepository implements OrderRepository
         return EloquentOrder::query()->with('lines.addons')->lockForUpdate()->find($id)?->toDomain();
     }
 
-    /** `printed_version` is not written here: only printing changes it. */
     public function save(Order $order): Order
     {
         $d = $order->details;
@@ -49,7 +48,7 @@ final class EloquentOrderRepository implements OrderRepository
             'delivery_fee_cents' => $d->deliveryFeeCents, 'pay_on_delivery' => $d->payOnDelivery,
             'change_for_cents' => $d->changeForCents, 'pay_method' => $d->payMethod?->value, 'note' => $d->note, 'created_by' => $order->createdBy,
             'created_at' => $order->createdAt, 'closed_at' => $order->closedAt, 'cancel_reason' => $order->cancelReason,
-            'version' => $order->version,
+            'printed_version' => $order->printedVersion, 'version' => $order->version,
         ])->save();
 
         $kept = array_values(array_filter(array_map(fn ($line) => $line->id, $order->lines)));

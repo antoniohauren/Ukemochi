@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, LoginPage, PlaceholderPage } from 'shared';
+import { authGuard, LoginPage, PlaceholderPage, TicketPage } from 'shared';
 import { Layout } from './layout';
 import { MorePage } from './more-page';
 import { OrdersPage } from './orders/orders-page';
@@ -23,6 +23,16 @@ export const routes: Routes = [
         path: 'orders/:id/edit',
         loadComponent: () => import('./orders/order-editor-page').then((m) => m.OrderEditorPage),
         data: { title: 'order.edit', back: '/orders' },
+      },
+      {
+        path: 'orders/:id/print/kitchen',
+        component: TicketPage,
+        data: { title: 'ticket.kitchen', back: '/orders', kind: 'kitchen' },
+      },
+      {
+        path: 'orders/:id/print/bill',
+        component: TicketPage,
+        data: { title: 'ticket.bill', back: '/orders', kind: 'bill' },
       },
       {
         path: 'new',

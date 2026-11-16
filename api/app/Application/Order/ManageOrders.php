@@ -20,6 +20,7 @@ use App\Domain\Order\OrderDetails;
 use App\Domain\Order\OrderLine;
 use App\Domain\Order\OrderNotFound;
 use App\Domain\Order\OrderStatus;
+use App\Domain\Ticket\TicketKind;
 
 /**
  * Order mutations. Each one locks the order, writes it and its audit row in one transaction,
@@ -93,6 +94,16 @@ final readonly class ManageOrders
             $order->reopen();
 
             return ['version' => $order->version];
+        }, $note);
+    }
+
+    /** Records that a ticket showing `version` went to the printer; see Order::markPrinted(). */
+    public function markPrinted(int $id, TicketKind $kind, int $version, ?string $note): Order
+    {
+        return $this->mutate($id, 'print', function (Order $order) use ($kind, $version): array {
+            $order->markPrinted($kind, $version);
+
+            return ['kind' => $kind->value, 'version' => $version];
         }, $note);
     }
 

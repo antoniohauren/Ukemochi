@@ -6,11 +6,16 @@ namespace App\Http\Controllers;
 
 use App\Application\Order\ManageOrders;
 use App\Application\Order\ReadOrders;
+use App\Domain\Ticket\Bill;
 use App\Http\Requests\AuditNoteRequest;
 use App\Http\Requests\CancelOrderRequest;
 use App\Http\Requests\ListOrdersRequest;
 use App\Http\Requests\OrderRequest;
 use App\Http\Requests\OrderStatusRequest;
+use App\Http\Requests\PrintedRequest;
+use App\Http\Requests\TicketRequest;
+use App\Http\Resources\BillResource;
+use App\Http\Resources\KitchenTicketResource;
 use App\Http\Resources\OrderListResource;
 use App\Http\Resources\OrderResource;
 use Illuminate\Foundation\Http\FormRequest;
@@ -53,6 +58,18 @@ final readonly class OrderController
     public function reopen(AuditNoteRequest $r, int $id): OrderResource
     {
         return new OrderResource($this->manage->reopen($id, self::note($r)));
+    }
+
+    public function ticket(TicketRequest $r, int $id): KitchenTicketResource|BillResource
+    {
+        $ticket = $this->read->ticket($id, $r->kind());
+
+        return $ticket instanceof Bill ? new BillResource($ticket) : new KitchenTicketResource($ticket);
+    }
+
+    public function printed(PrintedRequest $r, int $id): OrderResource
+    {
+        return new OrderResource($this->manage->markPrinted($id, $r->kind(), $r->integer('version'), self::note($r)));
     }
 
     private static function note(FormRequest $r): ?string
