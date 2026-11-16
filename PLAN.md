@@ -8,7 +8,7 @@ ways, paid with mixed methods, and a cash shift close computes expected money.
 Runs on the restaurant's local network. UI in pt-BR and English (switchable).
 
 ## Decisions (from Q&A)
-- **Stack**: Bun monorepo (workspaces). API = Hono on Bun. DB = SQLite (`bun:sqlite`). Frontends = React (Vite) PWAs. No React Native.
+- **Stack**: Bun monorepo (workspaces). API = Hono on Bun. DB = SQLite (`bun:sqlite`). Frontends = React (Vite) PWAs. No React Native. UI = Material UI (MUI, https://next.mui.com/) instead of plain CSS.
 - **Apps**: `apps/waitress` (mobile PWA), `apps/admin` (web; includes `/kitchen` route), shared code in `packages/`.
 - **Hosting**: one server PC on LAN serves API + both built PWAs. OS undecided → print adapter for Linux and Windows.
 - **Auth**: user + 4-digit PIN per staff. Roles: admin, waitress, kitchen. Every change records user.
@@ -48,7 +48,7 @@ apps/api/                 # Hono + bun:sqlite, clean architecture (see AGENTS.md
 apps/waitress/            # Vite + React + vite-plugin-pwa
 apps/admin/               # Vite + React; routes: menu, staff, orders, cash, reports, settings, audit, /kitchen
 packages/shared/          # types, zod schemas, money (integer cents), split math, ticket layout, i18n dicts
-packages/ui/              # shared React components (Button, NumPad, MoneyInput, OrderLines, LangSwitch...)
+packages/ui/              # MUI theme + shared React components on MUI (NumPad, MoneyInput, OrderLines, LangSwitch...)
 ```
 Frontends call the API with Hono's typed RPC client (`hono/client` `hc<AppType>`), no extra fetch layer.
 Validation: `zod` + `@hono/zod-validator`. i18n: plain dictionary objects + `t()` hook, no library.
@@ -102,11 +102,11 @@ Unallocated remainder always visible. Covered by `bun test` (rounding, fractions
 Each step is one TDD vertical slice. Done = tests green + `bun run check` clean + review subagent findings fixed (workflow in AGENTS.md). One commit per step.
 
 ### Phase 1 — Foundation
-- [ ] **1. Monorepo scaffold** — bun workspaces, `tsconfig.base.json` (strict), Biome lint/format, root scripts `dev`/`test`/`check`, empty `apps/*` + `packages/*`.
+- [x] **1. Monorepo scaffold** — bun workspaces, `tsconfig.base.json` (strict), Biome lint/format, root scripts `dev`/`test`/`check`, empty `apps/*` + `packages/*`.
 - [ ] **2. Shared basics** — `packages/shared`: money (cents, parse, format pt-BR/en), i18n dictionaries + `t()`, base zod schemas.
 - [ ] **3. API skeleton** — Hono app, `/health`, error handler, SQLite open (WAL) + migration runner, test helper with in-memory DB.
 - [ ] **4. Auth** — users table, PIN hash (`Bun.password`), sessions, login/logout/me, role middleware, seed first admin.
-- [ ] **5. Frontend scaffold** — `packages/ui` base components, `apps/admin` + `apps/waitress` (Vite, React, PWA manifest), `hc<AppType>` client, login screen, language switch.
+- [ ] **5. Frontend scaffold** — `packages/ui` MUI theme + base components, `apps/admin` + `apps/waitress` (Vite, React, PWA manifest), `hc<AppType>` client, login screen, language switch.
 
 ### Phase 2 — Menu, staff, settings
 - [ ] **6. Menu API** — categories, items, variants (own price), add-ons, availability toggles.
