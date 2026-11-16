@@ -3,7 +3,8 @@ export type DomainErrorCode =
 	| "invalid"
 	| "conflict"
 	| "unauthorized"
-	| "forbidden";
+	| "forbidden"
+	| "rate_limited";
 
 /** Expected business failure; the HTTP layer maps `code` to a status. */
 export class DomainError extends Error {

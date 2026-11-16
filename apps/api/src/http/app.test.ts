@@ -2,11 +2,11 @@ import { describe, expect, test } from "bun:test";
 import { HTTPException } from "hono/http-exception";
 import { DomainError } from "../domain/errors";
 import { createTestDb } from "../infrastructure/test-db";
-import { createApp } from "./app";
+import { createTestApp } from "../test-app";
 
 describe("app", () => {
 	test("GET /health returns ok", async () => {
-		const app = createApp();
+		const app = createTestApp().app;
 		const res = await app.request("/health");
 		expect(res.status).toBe(200);
 		expect(await res.json()).toEqual({ status: "ok" });
@@ -27,11 +27,12 @@ describe("error handler", () => {
 		["conflict", 409],
 		["unauthorized", 401],
 		["forbidden", 403],
+		["rate_limited", 429],
 	] as const;
 
 	for (const [code, status] of cases) {
 		test(`maps DomainError ${code} to ${status}`, async () => {
-			const app = createApp().get("/boom", () => {
+			const app = createTestApp().app.get("/boom", () => {
 				throw new DomainError(code, "nope");
 			});
 			const res = await app.request("/boom");
@@ -41,7 +42,7 @@ describe("error handler", () => {
 	}
 
 	test("keeps HTTPException status", async () => {
-		const app = createApp().get("/boom", () => {
+		const app = createTestApp().app.get("/boom", () => {
 			throw new HTTPException(418, { message: "teapot" });
 		});
 		const res = await app.request("/boom");
@@ -50,7 +51,7 @@ describe("error handler", () => {
 	});
 
 	test("hides unknown errors as 500", async () => {
-		const app = createApp().get("/boom", () => {
+		const app = createTestApp().app.get("/boom", () => {
 			throw new Error("secret detail");
 		});
 		const original = console.error;
@@ -65,7 +66,7 @@ describe("error handler", () => {
 	});
 
 	test("unknown route returns 404 json", async () => {
-		const res = await createApp().request("/nope");
+		const res = await createTestApp().app.request("/nope");
 		expect(res.status).toBe(404);
 		expect(await res.json()).toEqual({ error: "not_found" });
 	});

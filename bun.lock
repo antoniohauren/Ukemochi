@@ -22,8 +22,10 @@
       "name": "@ukemochi/api",
       "version": "0.0.0",
       "dependencies": {
+        "@hono/zod-validator": "^0.9.1",
         "@ukemochi/shared": "workspace:*",
         "hono": "^4.13.18",
+        "zod": "^4.6.7",
       },
     },
     "apps/waitress": {
@@ -68,6 +70,8 @@
     "@biomejs/cli-win32-arm64": ["@biomejs/cli-win32-arm64@2.6.8", "", { "os": "win32", "cpu": "arm64" }, "sha512-ezjCEZzHIWE2pdh83a7zLVcAAcDaERcTcvfA7uWlxqz/1CuDxgtfO19pDg9B6YY4wKYIDvYBw2QCMnqIshSwmw=="],
 
     "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@2.6.8", "", { "os": "win32", "cpu": "x64" }, "sha512-cD6HvGczZUiAYsY8s2TxxXj2AHFzEdMomvVJfEjzOjBM45nGqIDfBpbtvwGQzDCN8X2yKKk9u1jnDZisT2nxIg=="],
+
+    "@hono/zod-validator": ["@hono/zod-validator@0.9.1", "", { "peerDependencies": { "hono": ">=4.11.2", "zod": "^3.25.0 || ^4.0.0" } }, "sha512-iiv6w0qrIc0arfvCtUqBWsvl4fXjzaTcQcCJTTtCnkawF9HHGE+KjEl0ox3gQJ6rKZEgE3mLExlQCF72M+mNuw=="],
 
     "@types/bun": ["@types/bun@1.4.4", "", { "dependencies": { "bun-types": "1.4.4" } }, "sha512-9wkRDXUXK124pEnAutE6n/l18j+i9GC5IAHK8TmX/2nlySETmky0OU6yL5U8pW1AoKh++AN9auDCr647BfurjQ=="],
 
