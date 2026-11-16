@@ -32,6 +32,15 @@ test("only the default variant at item creation may have an empty name", () => {
 		variantCreateSchema.safeParse({ name: " ", priceCents: 100 }).success,
 	).toBe(false);
 	expect(variantPatchSchema.safeParse({ name: "" }).success).toBe(false);
+	const item = (names: string[]) =>
+		itemCreateSchema.safeParse({
+			categoryId: 1,
+			name: "Uramaki",
+			variants: names.map((name) => ({ name, priceCents: 100 })),
+		}).success;
+	expect(item(["", "4un"])).toBe(false);
+	expect(item(["", ""])).toBe(false);
+	expect(item(["8un", "4un"])).toBe(true);
 });
 
 test("empty or null note clears to null", () => {

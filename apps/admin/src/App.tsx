@@ -1,6 +1,5 @@
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
-import Typography from "@mui/material/Typography";
 import {
 	AppShell,
 	createApiClient,
@@ -8,6 +7,7 @@ import {
 	useI18n,
 	useSession,
 } from "@ukemochi/ui";
+import { MenuScreen } from "./menu/MenuScreen";
 
 const api = createApiClient(`${location.origin}/api`);
 const TITLE = "Ukemochi Admin";
@@ -26,7 +26,7 @@ export function App() {
 		return <LoginScreen title={TITLE} onLogin={login} />;
 	return (
 		<AppShell title={TITLE} onLogout={logout}>
-			<Typography>{t("auth.welcome", { name: session.user.name })}</Typography>
+			<MenuScreen api={api} />
 		</AppShell>
 	);
 }

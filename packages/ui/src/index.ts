@@ -3,6 +3,7 @@ export * from "./i18n";
 export * from "./LangSwitch";
 export * from "./LoginForm";
 export * from "./LoginScreen";
+export * from "./MoneyInput";
 export * from "./session";
 export * from "./theme";
 export * from "./UiProvider";

@@ -110,7 +110,7 @@ Each step is one TDD vertical slice. Done = tests green + `bun run check` clean 
 
 ### Phase 2 — Menu, staff, settings
 - [x] **6. Menu API** — categories, items, variants (own price), add-ons, availability toggles.
-- [ ] **7. Admin menu screens** — CRUD UI for step 6.
+- [x] **7. Admin menu screens** — CRUD UI for step 6.
 - [ ] **8. Staff + settings** — staff CRUD with PIN reset; settings (restaurant name, language, paper width, printer mode, delivery fee on/off + value). API + admin screens.
 
 ### Phase 3 — Orders
@@ -155,6 +155,7 @@ Decisions left open by earlier steps. Resolve before or during the step named.
 - **Menu audit backfill** (from step 6, resolve in step 10): menu writes (categories, items, variants, add-ons) write no `audit_log` row yet. Step 10 adds the table; backfill menu mutations there too.
 - **Variant delete vs order lines** (from step 6, resolve in step 9): `DELETE /menu/variants/:id` is a hard delete (refused for an item's last variant). Once `order_lines.variant_id` references variants, make it `ON DELETE SET NULL` (lines keep snapshots) or switch to a soft delete.
 - **Who toggles availability** (from step 6): only admins can mark a variant unavailable. Kitchen or waitress may need it when an item runs out mid-shift.
+- **Non-admins in the admin app** (from step 7, resolve in step 8): any staff can log in to `apps/admin`; the menu screen shows write controls and the API answers 403 ("Only admins can do this."). Option: refuse non-admin sessions in the admin app, or hide write controls by role.
 - **Logout revoke not retried** (from step 5): if the server is unreachable at logout, the token is dropped locally but stays valid on the server until it expires.
 
 ## Verification

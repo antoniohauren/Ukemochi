@@ -42,7 +42,10 @@ export const itemCreateSchema = z.object({
 	variants: z
 		.array(variantCreateSchema.extend({ name: z.string().trim().max(100) }))
 		.min(1)
-		.max(50),
+		.max(50)
+		.refine((vs) => vs.length === 1 || vs.every((v) => v.name !== ""), {
+			message: "only a single default variant may have an empty name",
+		}),
 });
 
 export const itemPatchSchema = z.object({
