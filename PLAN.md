@@ -141,7 +141,7 @@ Each step is one TDD vertical slice. Done = tests green + `make check` clean + r
 - [x] **8. Staff + settings** — staff CRUD with PIN reset; settings (restaurant name, language, paper width, delivery fee on/off + value). API + admin screens.
 
 ### Phase 3 — Orders
-- [ ] **9. Order domain** — gapless sequential number, line snapshots (name/price), add-ons, notes, totals incl. delivery fee, status transitions, cancel with reason, reopen + version bump.
+- [x] **9. Order domain** — gapless sequential number, line snapshots (name/price), add-ons, notes, totals incl. delivery fee, status transitions, cancel with reason, reopen + version bump.
 - [ ] **10. Orders API** — create/edit/cancel/status, audit log writes, Reverb `order.updated` broadcast + channel auth.
 - [ ] **11. Waitress ordering** — order list (live via Echo), new order (dine-in name / pickup / delivery), add/edit lines with variant, add-ons, notes (bottom sheets); cancel.
 
