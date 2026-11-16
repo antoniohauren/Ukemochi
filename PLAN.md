@@ -123,7 +123,8 @@ Unallocated remainder always visible.
 - Printer PC: Chrome with `--kiosk-printing` skips the dialog.
 
 ## Realtime
-Reverb private channel `orders` broadcasts `order.updated {id, version}` (`ShouldBroadcastNow`). Kitchen screen and waitress order list refetch on event. Channel auth through the session cookie.
+Reverb private channel `orders` broadcasts `order.updated {id, version}` (`ShouldBroadcastNow`). Kitchen screen and waitress order list refetch on event (and after a reconnect). Channel auth through the session cookie.
+Echo gets the public app key from `GET /api/realtime`, so `REVERB_APP_KEY` in `api/.env` is the only copy.
 
 ## Steps
 Each step is one TDD vertical slice. Done = tests green + `make check` clean + review findings fixed (workflow in AGENTS.md). One commit per step.
@@ -143,7 +144,7 @@ Each step is one TDD vertical slice. Done = tests green + `make check` clean + r
 ### Phase 3 — Orders
 - [x] **9. Order domain** — gapless sequential number, line snapshots (name/price), add-ons, notes, totals incl. delivery fee, status transitions, cancel with reason, reopen + version bump.
 - [x] **10. Orders API** — create/edit/cancel/status, audit log writes, Reverb `order.updated` broadcast + channel auth.
-- [ ] **11. Waitress ordering** — order list (live via Echo), new order (dine-in name / pickup / delivery), add/edit lines with variant, add-ons, notes (bottom sheets); cancel.
+- [x] **11. Waitress ordering** — order list (live via Echo), new order (dine-in name / pickup / delivery), add/edit lines with variant, add-ons, notes (bottom sheets); cancel.
 
 ### Phase 4 — Printing
 - [ ] **12. Ticket content** — domain ticket builder (kitchen + bill), `GET /api/orders/{id}/ticket`.

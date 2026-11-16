@@ -21,6 +21,7 @@
           "builder": "@angular/build:application",
           "options": {
             "browser": "projects/waitress/src/main.ts",
+            "allowedCommonJsDependencies": ["pusher-js"],
             "tsConfig": "projects/waitress/tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -102,6 +103,7 @@
           "builder": "@angular/build:application",
           "options": {
             "browser": "projects/admin/src/main.ts",
+            "allowedCommonJsDependencies": ["pusher-js"],
             "tsConfig": "projects/admin/tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [

@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\RealtimeController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\StaffController;
 use Illuminate\Support\Facades\Route;
@@ -24,6 +25,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     Route::get('/menu', [MenuController::class, 'show']);
     Route::get('/settings', [SettingsController::class, 'show']);
+    Route::get('/realtime', RealtimeController::class);
 
     // Orders: any staff reads, edits, moves status and reopens (PLAN: any staff can edit/reopen closed orders).
     Route::get('/orders', [OrderController::class, 'index']);
