@@ -3,10 +3,10 @@
 Guide for AI agents and humans working in this repo. Product scope and step list live in `PLAN.md`.
 
 ## Stack
-- API: **Laravel** (PHP 8.4+), **PostgreSQL**, auth with **Sanctum** tokens, realtime with **Reverb**.
+- API: **Laravel** (PHP 8.4+), **PostgreSQL**, auth with **Sanctum** SPA cookie sessions, realtime with **Reverb**.
 - Frontends: **Angular** PWAs in one workspace (`frontend/projects/admin`, `frontend/projects/waitress`), shared library `frontend/projects/shared`.
 - UI: **Angular Material** (docs: https://material.angular.dev/) for components, layout and theming.
-- Everything runs in **Docker Compose**. No PHP, Node or Postgres needed on the host besides Docker.
+- Everything runs in **Docker Compose**. No PHP, Node or Postgres needed on the host besides Docker. Only exception: the host print agent in `print-agent/`.
 - Lint/format: **Pint** + **Larastan** (PHPStan, max level) for PHP; **ESLint** (angular-eslint) + **Prettier** for TS. TypeScript `strict: true`, no `any`. PHP `declare(strict_types=1)` in every file.
 
 ## Commands
@@ -44,6 +44,7 @@ Rules:
 - Tests use **Pest** on the API, Angular's default unit test runner on the frontends.
 - Domain and application: unit tests (`tests/Unit/...`, mirroring `app/`) with in-memory fakes for ports. Cover edge cases (rounding, fractions, negative stock, reopen).
 - HTTP: feature tests (`tests/Feature/...`) through `$this->postJson()` etc. against the Postgres test database with `RefreshDatabase`. No SQLite: behavior must match production Postgres.
+- Every endpoint's feature test asserts the exact JSON shape, because the TS types in `shared` are hand-written to match it.
 - Infrastructure: repository tests against the test database; printer adapters against a temp file.
 - Angular: test services, pipes and logic; components only where behavior matters (`TestBed` + Angular CDK test harnesses for Material). Specs sit next to code: `foo.ts` + `foo.spec.ts`.
 - Name tests by behavior: `it('closes order when paid in full')`.
@@ -52,7 +53,7 @@ Rules:
 ## Laravel
 - Use what Laravel ships first: `Hash` (PIN hash), `RateLimiter`, Sanctum, Reverb, scheduler, `Storage`, `Process`. Do not add a package for something the framework already does.
 - Every route under `routes/api.php` (`/api/*`). Validate every body, query and route param with a FormRequest. The HTTP layer is the trust boundary.
-- Auth via `auth:sanctum`; role checks as middleware per route group.
+- Auth via `auth:sanctum` with SPA cookie sessions (no tokens in `localStorage`); role checks as middleware per route group.
 - Responses through API Resources only, so the JSON shape is defined in one place.
 - Broadcast events implement `ShouldBroadcastNow` (no queue worker). Channel auth in `routes/channels.php`.
 
@@ -66,7 +67,7 @@ Rules:
 - Standalone components, signals, `ChangeDetectionStrategy.OnPush`, built-in control flow (`@if`, `@for`), `inject()`.
 - Styling through Angular Material only: one shared theme in `shared` (Material tokens), component-scoped SCSS for small overrides that use theme tokens. No other CSS framework, no inline `style` attributes.
 - Prefer Material components (`mat-button`, `mat-form-field`, `mat-dialog`, `mat-list`...) over hand-rolled ones; wrap in `shared` only when adding app-specific behavior (NumPad, MoneyInput).
-- Server state through the typed `ApiClient` service in `shared` (`HttpClient` + auth interceptor). No NgRx unless needed.
+- Server state through the typed `ApiClient` service in `shared` (`HttpClient` with credentials + XSRF). API types are hand-written TS interfaces in `shared`; change them in the same commit as the API Resource. No NgRx unless needed.
 - Forms: typed reactive forms; validation mirrors the API's FormRequest rules, the API stays authoritative.
 - Mobile first for `waitress`: big touch targets, works at 360px width.
 - Accessibility: real `<button>`/`<label>`, visible focus, no click handlers on non-interactive elements.

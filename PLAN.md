@@ -11,19 +11,26 @@ Runs on the restaurant's local network. UI in pt-BR and English (switchable).
 ## Decisions (from Q&A)
 - **Stack**: API = **Laravel** (PHP 8.4+, latest stable Laravel). DB = **PostgreSQL**. Frontends = **Angular** PWAs (`@angular/pwa` service worker) in one Angular workspace. UI = **Angular Material** (https://material.angular.dev/).
 - **Realtime**: **Laravel Reverb** (first-party WebSocket server) + `laravel-echo` on the frontends.
-- **Runtime**: everything in **Docker Compose** — postgres, Laravel API, Reverb, scheduler, nginx serving the built Angular apps and proxying `/api` + the Reverb socket. One `docker compose up` on the server PC.
+- **Runtime**: everything in **Docker Compose** — postgres, Laravel API, Reverb, scheduler, nginx serving the built Angular apps and proxying `/api` + the Reverb socket. One `docker compose up` on the server PC. Only exception: the host print agent (see Printing).
+- **HTTPS**: nginx serves TLS with a certificate from a local CA (`mkcert`). The CA is installed once on each phone/PC. Needed for service workers (PWA install, offline shell) and so PINs never cross the Wi-Fi in clear text.
 - **Apps**: `frontend/projects/waitress` (mobile PWA), `frontend/projects/admin` (web; includes `/kitchen` route), shared library `frontend/projects/shared`.
-- **Hosting**: one server PC on LAN runs the compose stack. OS undecided → print adapter for Linux and Windows.
+- **Hosting**: v1 runs on one local PC on the LAN, Windows or Linux, printer attached over USB or Bluetooth.
 - **Auth**: user + 4-digit PIN per staff. Roles: admin, waitress, kitchen. Every change records user.
+  - Sessions: Sanctum SPA cookie auth (httpOnly, SameSite, same origin behind nginx, CSRF via `XSRF-TOKEN`). No token in `localStorage`.
+  - Idle timeout 12h (`SESSION_LIFETIME=720`): an active shift never gets logged out.
+  - Wrong PINs: growing delay per name (1s, 2s, 4s… capped at 30s), never a hard lock. Resets on success.
+  - Logout when the server is unreachable: app shows logged out; the server session dies on idle timeout. No retry.
+  - Admin app routes by role: admin sees everything, kitchen sees only `/kitchen`, waitress is refused with a message.
 - **Orders**: dine-in identified by customer name (no tables). Phone: pickup or delivery.
   Status: `open → ready → out_for_delivery (delivery only) → closed`; plus `cancelled` (reason note, excluded from revenue, prints CANCEL ticket).
   Any staff can edit/reopen closed orders.
-- **Order number**: global sequential, never resets. Printed on kitchen ticket and customer bill.
-- **Menu**: Category → Item → Variant (each variant own price; item with no variants has one default variant). Optional priced add-ons per item. Item/variant "unavailable" toggle.
+- **Order number**: global sequential, never resets, no gaps: taken from a locked counter row (`SELECT … FOR UPDATE`) inside the order transaction. Printed on kitchen ticket and customer bill.
+- **Menu**: Category → Item → Variant (each variant own price; item with no variants has one default variant). Optional priced add-ons per item. Item/variant "unavailable" toggle, by admin or kitchen (waitresses only see it).
+  Deleting a variant is a soft delete: hidden from the menu, still linked from old order lines, reports and stock history.
 - **Charges**: none by default. Settings: delivery fee on/off + fixed value (editable per order).
 - **Notes**: optional free-text note on every record (order, line, payment, customer, cash movement, edit).
 - **Audit**: light change log (who, when, entity, action, summary JSON, note). Admin can view. Built in the API skeleton so every mutation audits from day one.
-- **Printing**: one printer, USB on server, ESC/POS. Prints kitchen ticket + customer bill (non-fiscal).
+- **Printing**: one printer, USB or Bluetooth on the server PC, ESC/POS, reached through the host print agent. Prints kitchen ticket + customer bill (non-fiscal).
   Edit after print → reprint whole ticket marked "ATUALIZADO/UPDATED". Paper width configurable (58/80mm).
   Android waitress may print via Web Bluetooth; fallback = POST to server → USB.
 - **Payments**: cash, credit, debit, pix (record only), combined. Cash shows change (`troco`).
@@ -60,16 +67,18 @@ frontend/                 # Angular workspace
                           # presentational components (NumPad, MoneyInput, OrderLines, LangSwitch...)
 ```
 Frontends call the API through one typed `ApiClient` service in `shared` (Angular `HttpClient`), no other fetch layer.
+API types: TS interfaces in `shared` are hand-written to mirror the Laravel API Resources; API feature tests assert the exact JSON shape so drift fails a test.
 Validation: Laravel FormRequests on the API (trust boundary); typed reactive forms on the frontends.
 i18n: plain dictionary objects + `t` pipe/service, no library. Money: always integer cents, formatted with `Intl.NumberFormat`.
 
 ## Data model (PostgreSQL)
 Money columns are `bigint` cents. Timestamps are `timestamptz`. Enum-like columns are `text` + `CHECK`.
 - `users(id, name, pin_hash, role, active)`
-- `personal_access_tokens` (Sanctum) for sessions
+- `sessions` (Laravel database session driver, used by Sanctum SPA auth)
+- `counters(name PK, value)` — `order_number` row; source of gapless order numbers
 - `categories(id, name, sort, active)`
 - `items(id, category_id, name, note, active)`
-- `variants(id, item_id, name, price_cents, available, sort)` — e.g. "Inteiro 8un", "Meio 4un", "Coca Zero"
+- `variants(id, item_id, name, price_cents, available, sort, deleted_at)` — e.g. "Inteiro 8un", "Meio 4un", "Coca Zero"
 - `addons(id, item_id NULL, category_id NULL, name, price_cents, active)`
 - `customers(id, name, phone UNIQUE NULL, note)`; `addresses(id, customer_id, text, note)`
 - `orders(id = order number (identity), type dine_in|pickup|delivery, status, customer_id NULL, customer_name, address_text, delivery_fee_cents, pay_on_delivery, change_for_cents, note, created_by, created_at, closed_at, cancel_reason, printed_version, version)`
@@ -102,37 +111,40 @@ Unallocated remainder always visible. Covered by unit tests (rounding, fractions
 ## Printing
 - `app/Domain/Ticket`: builds text layout for kitchen ticket (no prices, item notes, add-ons, `#<number> · <name> · <type>`, "UPDATED vN"/"CANCELADO") and customer bill (prices, payments, change, balance). Width param (32/48 chars).
 - `app/Infrastructure/Printing/EscPos.php`: text → ESC/POS bytes (init, bold, cut). Few lines, no dependency.
-- Printer adapter by setting `printer.mode` = `linux_device` (path, device mapped into the api container) | `windows_share` (name) | `none` (writes to a file/log).
+- Docker on Windows cannot open a USB or Bluetooth printer, so a **host print agent** (`print-agent/`, runs on the PC outside Docker) owns the printer on both OSes.
+  The api `POST`s ESC/POS bytes to it (`printer.agent_url`, reached via `host.docker.internal`, shared-secret header).
+  Agent targets: Windows shared printer in RAW mode (`\\localhost\<share>`) or COM port (Bluetooth SPP); Linux `/dev/usb/lp0` or `/dev/rfcomm0`.
+- Setting `printer.mode` = `agent` | `none` (writes ticket text to a file/log, for dev and tests).
 - Auto print kitchen ticket when order is created/edited (lines changed) → full reprint with version.
 - Waitress app: "Imprimir" → Web Bluetooth (if supported + paired) else `POST /api/print/...`. Same bytes, fetched from API.
 
 ## Realtime
 Reverb private channel `orders`: broadcasts `order.updated {id, version}` (`ShouldBroadcastNow`, so no queue worker).
-Kitchen screen and waitress order list refetch on event. Channel auth through Sanctum token.
+Kitchen screen and waitress order list refetch on event. Channel auth through the session cookie.
 
 ## Steps
 Each step is one TDD vertical slice. Done = tests green + `make check` clean + review subagent findings fixed (workflow in AGENTS.md). One commit per step.
 
 ### Phase 1 — Foundation
-- [ ] **1. Repo scaffold** — Docker Compose (postgres, api, reverb, scheduler, web), Laravel app in `api/`, Angular workspace in `frontend/` (waitress, admin, shared), Pint + Larastan, ESLint + Prettier, TS strict, `Makefile` targets `dev`/`test`/`check`.
+- [ ] **1. Repo scaffold** — Docker Compose (postgres, api, reverb, scheduler, web), nginx TLS with a `mkcert` cert (script + README for installing the CA on phones), Laravel app in `api/`, Angular workspace in `frontend/` (waitress, admin, shared), Pint + Larastan, ESLint + Prettier, TS strict, `Makefile` targets `dev`/`test`/`check`.
 - [ ] **2. Shared basics** — API: `Money` value object (cents, parse, format). Frontend `shared`: money format/parse pt-BR/en, i18n dictionaries + `t` pipe, typed `ApiClient` skeleton.
 - [ ] **3. API skeleton** — `/api/health`, domain-error → HTTP mapping in the exception handler, Postgres connection, test DB setup, `audit_log` migration + `AuditLog` port.
-- [ ] **4. Auth** — users table, PIN hash (`Hash`), Sanctum tokens, login/logout/me, role middleware, seed first admin, login attempt limit (`RateLimiter`), audit on login/logout/seed.
-- [ ] **5. Frontend scaffold** — Material theme + base components in `shared`, admin + waitress apps (PWA manifest + service worker), auth interceptor, login screen, language switch.
+- [ ] **4. Auth** — users table, PIN hash (`Hash`), Sanctum SPA cookie sessions (12h idle), login/logout/me, role middleware, seed first admin, growing delay on wrong PINs, audit on login/logout/seed.
+- [ ] **5. Frontend scaffold** — Material theme + base components in `shared`, admin + waitress apps (PWA manifest + service worker), `ApiClient` with credentials + XSRF, login screen, language switch, admin route guards by role.
 
 ### Phase 2 — Menu, staff, settings
-- [ ] **6. Menu API** — categories, items, variants (own price), add-ons, availability toggles. Audited.
+- [ ] **6. Menu API** — categories, items, variants (own price, soft delete), add-ons, availability toggles (admin + kitchen). Audited.
 - [ ] **7. Admin menu screens** — master-detail CRUD UI for step 6.
 - [ ] **8. Staff + settings** — staff CRUD with PIN reset; settings (restaurant name, language, paper width, printer mode, delivery fee on/off + value). API + admin screens.
 
 ### Phase 3 — Orders
-- [ ] **9. Order domain** — sequential number, line snapshots (name/price), add-ons, notes, totals incl. delivery fee, status transitions, cancel with reason, reopen + version bump.
+- [ ] **9. Order domain** — gapless sequential number (counter row), line snapshots (name/price), add-ons, notes, totals incl. delivery fee, status transitions, cancel with reason, reopen + version bump.
 - [ ] **10. Orders API** — create/edit/cancel/status, audit log writes, Reverb `order.updated` broadcast + channel auth.
 - [ ] **11. Waitress ordering** — order list (live via Echo), new order (dine-in name / pickup / delivery), add/edit lines with variant, add-ons, notes; cancel.
 
 ### Phase 4 — Printing
 - [ ] **12. Ticket layouts** — kitchen ticket (no prices, `#N · name · type`, UPDATED vN / CANCELADO) and customer bill; 32/48 columns.
-- [ ] **13. Printer** — ESC/POS encoder, adapters (`linux_device`, `windows_share`, `none` → file), auto kitchen print on create/edit/cancel, `POST /api/print/...` reprint.
+- [ ] **13. Printer** — ESC/POS encoder, host print agent (Windows share/COM, Linux lp/rfcomm), `agent` + `none` → file modes, auto kitchen print on create/edit/cancel, `POST /api/print/...` reprint.
 
 ### Phase 5 — Money
 - [ ] **14. Cash shifts** — open with float, movements (withdrawal, deposit, staff_meal + staff name), close with count, expected cash + difference, totals per method.
@@ -155,18 +167,8 @@ Each step is one TDD vertical slice. Done = tests green + `make check` clean + r
 - [ ] **25. Bluetooth print** — Web Bluetooth on Android waitress app, fallback to server print.
 
 ## Open questions
-Decisions left open. Resolve before or during the step named. Carried over from the first attempt where they still apply.
-- **Login lockout vs "never block staff"** (step 4): a hard lock after N wrong PINs lets anyone on the LAN lock out a staff member. Option: a growing delay per attempt instead of a hard lock.
-- **Session length** (step 4): fixed expiry (e.g. 24h after login) vs idle timeout. Must fit shift length.
-- **Token storage** (step 5): bearer token in `localStorage` is readable by any XSS. Option: Sanctum SPA cookie auth (httpOnly, SameSite) since API and apps share one origin behind nginx.
-- **Logout revoke not retried** (step 5): if the server is unreachable at logout, the token is dropped locally but stays valid until it expires.
-- **HTTPS on the LAN** (step 5): service workers only run in a secure context, so phones on `http://<server-ip>` get no PWA install or offline shell, and PIN + token (and the Reverb socket) cross the Wi-Fi in plain text. Option: self-signed or local-CA TLS in nginx.
-- **API ↔ frontend types** (step 2): no shared language, so TS types in `shared` mirror Laravel API Resources by hand. Option: generate an OpenAPI spec (e.g. Scramble) and TS types from it.
-- **Who toggles availability** (step 6): admin only, or kitchen/waitress too when an item runs out mid-shift.
-- **Non-admins in the admin app** (step 7/8): refuse non-admin sessions in the admin app, or hide write controls by role.
-- **Variant delete vs order lines** (step 9): once `order_lines.variant_id` references variants, use `nullOnDelete` (lines keep snapshots) or soft delete.
-- **Order number gaps** (step 9): a Postgres identity skips a number when an insert's transaction rolls back. Accept gaps, or allocate the number from a locked counter row.
-- **Printer from Docker** (step 13): `linux_device` needs the USB device mapped into the api container (`devices:`). On a Windows host, Docker Desktop cannot reach a USB/shared printer easily; may need a small host-side print relay.
+Decisions left open. Resolve before or during the step named. Answered questions are folded into Decisions above.
+- **Print agent language** (step 13): it runs outside Docker on Windows and Linux, so it should need no runtime install. Options: a single Go binary, or a PowerShell (Windows) + shell (Linux) script pair.
 
 ## Verification
 - `make test`: Pest unit tests (split math, totals, shift expected cash, ticket layout widths) and feature tests through HTTP against a Postgres test database; Angular unit tests for services/pipes and components where behavior matters.
