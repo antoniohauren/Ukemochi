@@ -43,6 +43,11 @@ export class OrderEditorStore {
   readonly order = signal<Order | null>(null);
   /** Settings' delivery fee when it is on, else 0. */
   readonly defaultFeeCents = signal(0);
+  private readonly feeEnabled = signal(false);
+  /** Fee field shows when settings charge one, or a saved order already has one. */
+  readonly showFee = computed(
+    () => this.feeEnabled() || (this.order()?.delivery_fee_cents ?? 0) > 0,
+  );
   readonly lines = signal<DraftLine[]>([]);
   readonly views = computed(() => this.lines().map(lineView));
   readonly loadError = signal<TranslationKey | null>(null);
@@ -55,6 +60,7 @@ export class OrderEditorStore {
         firstValueFrom(this.settingsApi.get()),
         firstValueFrom(id === null ? of(null) : this.orders.get(id)),
       ]);
+      this.feeEnabled.set(settings.delivery_fee_enabled);
       this.defaultFeeCents.set(settings.delivery_fee_enabled ? settings.delivery_fee_cents : 0);
       if (order) {
         this.order.set(order);

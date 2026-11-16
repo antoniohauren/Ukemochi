@@ -55,7 +55,7 @@ type Item = Category['items'][number];
         @for (i of c.items; track i.id) {
           <button mat-list-item type="button" (click)="openItem(i)">
             <span matListItemTitle>{{ i.name }}</span>
-            @if (i.variants.length === 1) {
+            @if (samePrice(i)) {
               <span matListItemMeta>{{ money(i.variants[0].price_cents) }}</span>
             }
           </button>
@@ -111,6 +111,10 @@ export class MenuPickerSheet {
     } else {
       this.item.set(item);
     }
+  }
+
+  protected samePrice(item: Item): boolean {
+    return item.variants.every((v) => v.price_cents === item.variants[0].price_cents);
   }
 
   protected back(): void {

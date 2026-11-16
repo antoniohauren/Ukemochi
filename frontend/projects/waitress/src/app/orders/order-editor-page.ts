@@ -26,6 +26,7 @@ import {
   newLine,
   OrderLines,
   type OrderType,
+  type PaymentMethod,
   TPipe,
   type TranslationKey,
 } from 'shared';
@@ -35,6 +36,7 @@ import { OrderEditorStore } from './order-editor-store';
 import { feeCents, orderForm, orderFormValue } from './order-form';
 
 const TYPES: readonly OrderType[] = ['dine_in', 'pickup', 'delivery'];
+const METHODS: readonly PaymentMethod[] = ['cash', 'credit', 'debit', 'pix'];
 
 /** New order (Novo tab) or edit of a saved one (`/orders/:id/edit`). Lines are picked in bottom sheets. */
 @Component({
@@ -59,6 +61,7 @@ const TYPES: readonly OrderType[] = ['dine_in', 'pickup', 'delivery'];
     @if (store.menu()) {
       <form class="fields" [formGroup]="form" (ngSubmit)="submit()">
         <mat-button-toggle-group
+          hideSingleSelectionIndicator
           formControlName="type"
           class="types"
           [attr.aria-label]="'order.type' | t"
@@ -67,27 +70,46 @@ const TYPES: readonly OrderType[] = ['dine_in', 'pickup', 'delivery'];
             <mat-button-toggle [value]="type">{{ typeKey(type) | t }}</mat-button-toggle>
           }
         </mat-button-toggle-group>
-        <mat-form-field>
+        <mat-form-field subscriptSizing="dynamic">
           <mat-label>{{ 'order.customer_name' | t }}</mat-label>
           <input matInput formControlName="customer_name" maxlength="255" autocomplete="off" />
           <mat-error>{{ 'order.customer_name.required' | t }}</mat-error>
         </mat-form-field>
         @if (value().type === 'delivery') {
-          <mat-form-field>
+          <mat-form-field subscriptSizing="dynamic">
             <mat-label>{{ 'order.address' | t }}</mat-label>
             <textarea matInput formControlName="address_text" rows="2" maxlength="1000"></textarea>
             <mat-error>{{ 'order.address.required' | t }}</mat-error>
           </mat-form-field>
-          <mat-form-field>
-            <mat-label>{{ 'order.delivery_fee' | t }}</mat-label>
-            <input matInput formControlName="delivery_fee" inputmode="decimal" autocomplete="off" />
-            <mat-error>{{ 'menu.price.invalid' | t }}</mat-error>
-          </mat-form-field>
+          @if (store.showFee()) {
+            <mat-form-field subscriptSizing="dynamic">
+              <mat-label>{{ 'order.delivery_fee' | t }}</mat-label>
+              <input
+                matInput
+                formControlName="delivery_fee"
+                inputmode="decimal"
+                autocomplete="off"
+              />
+              <mat-error>{{ 'menu.price.invalid' | t }}</mat-error>
+            </mat-form-field>
+          }
           <mat-slide-toggle formControlName="pay_on_delivery">
             {{ 'order.pay_on_delivery' | t }}
           </mat-slide-toggle>
           @if (value().pay_on_delivery) {
-            <mat-form-field>
+            <mat-button-toggle-group
+              hideSingleSelectionIndicator
+              formControlName="pay_method"
+              class="methods"
+              [attr.aria-label]="'order.pay_method' | t"
+            >
+              @for (method of methods; track method) {
+                <mat-button-toggle [value]="method">{{ methodKey(method) | t }}</mat-button-toggle>
+              }
+            </mat-button-toggle-group>
+          }
+          @if (value().pay_on_delivery && value().pay_method === 'cash') {
+            <mat-form-field subscriptSizing="dynamic">
               <mat-label>{{ 'order.change_for' | t }}</mat-label>
               <input matInput formControlName="change_for" inputmode="decimal" autocomplete="off" />
               <mat-error>{{ 'menu.price.invalid' | t }}</mat-error>
@@ -102,7 +124,7 @@ const TYPES: readonly OrderType[] = ['dine_in', 'pickup', 'delivery'];
           {{ 'order.add_line' | t }}
         </button>
 
-        <mat-form-field>
+        <mat-form-field subscriptSizing="dynamic">
           <mat-label>{{ 'order.note' | t }}</mat-label>
           <textarea matInput formControlName="note" rows="2" maxlength="1000"></textarea>
           <mat-error>{{ 'menu.note.invalid' | t }}</mat-error>
@@ -140,14 +162,18 @@ const TYPES: readonly OrderType[] = ['dine_in', 'pickup', 'delivery'];
       display: flex;
       flex: 1;
       flex-direction: column;
-      gap: 8px;
+      gap: 12px;
       max-width: 600px;
     }
-    .types {
+    .types,
+    .methods {
       align-self: stretch;
       mat-button-toggle {
         flex: 1;
       }
+    }
+    .types {
+      margin-bottom: 12px;
     }
     .label {
       margin: 8px 0 0;
@@ -196,6 +222,7 @@ export class OrderEditorPage {
   private readonly sheet = inject(MatBottomSheet);
   private readonly lang = inject(LanguageService).lang;
   protected readonly types = TYPES;
+  protected readonly methods = METHODS;
   protected readonly id = ((id) => (id === null ? null : Number(id)))(
     inject(ActivatedRoute).snapshot.paramMap.get('id'),
   );
@@ -223,6 +250,10 @@ export class OrderEditorPage {
       }
     });
     void this.store.load(this.id);
+  }
+
+  protected methodKey(method: PaymentMethod) {
+    return `payment.method.${method}` as const;
   }
 
   protected typeKey(type: OrderType) {

@@ -10,6 +10,7 @@ const MENU: Menu = { categories: [] };
 const LINE: DraftLine = {
   id: null,
   variant_id: 100,
+  category_name: 'Uramaki',
   item_name: 'Philadelphia',
   variant_name: 'Inteiro',
   unit_price_cents: 3200,
@@ -61,6 +62,18 @@ describe('OrderEditorStore', () => {
     settings.delivery_fee_enabled = false;
     await store.load(null);
     expect(store.defaultFeeCents()).toBe(0);
+  });
+
+  it('shows the fee field when settings charge one or the saved order has one', async () => {
+    settings.delivery_fee_enabled = false;
+    await store.load(null);
+    expect(store.showFee()).toBe(false);
+    orders['get'].mockReturnValue(of({ ...SAVED, delivery_fee_cents: 500 }));
+    await store.load(12);
+    expect(store.showFee()).toBe(true);
+    settings.delivery_fee_enabled = true;
+    await store.load(null);
+    expect(store.showFee()).toBe(true);
   });
 
   it('adds, replaces and removes draft lines with preview totals', () => {

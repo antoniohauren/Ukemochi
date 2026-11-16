@@ -6,6 +6,7 @@ import { OrderLines } from './order-lines';
 
 const LINES: LineView[] = [
   {
+    category_name: 'Uramaki',
     item_name: 'Philadelphia',
     variant_name: 'Inteiro',
     qty: 2,
@@ -13,7 +14,15 @@ const LINES: LineView[] = [
     addons: [{ addon_id: 30, name: 'Cream cheese', price_cents: 300 }],
     total_cents: 7000,
   },
-  { item_name: 'Coca Zero', variant_name: '', qty: 1, note: null, addons: [], total_cents: 600 },
+  {
+    category_name: '',
+    item_name: 'Coca Zero',
+    variant_name: '',
+    qty: 1,
+    note: null,
+    addons: [],
+    total_cents: 600,
+  },
 ];
 
 describe('OrderLines', () => {
@@ -28,7 +37,7 @@ describe('OrderLines', () => {
   it('shows qty, names, add-ons, note and the line total', async () => {
     const { loader } = setup(false);
     const [first, second] = await loader.getAllHarnesses(MatListItemHarness);
-    expect(await first.getTitle()).toBe('2× Philadelphia · Inteiro');
+    expect(await first.getTitle()).toBe('2× Uramaki Philadelphia · Inteiro');
     const text = await first.getFullText();
     expect(text).toContain('+ Cream cheese');
     expect(text).toContain('sem cebola');

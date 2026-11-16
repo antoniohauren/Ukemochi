@@ -5,7 +5,7 @@ import { MatActionListItemHarness } from '@angular/material/list/testing';
 import type { Menu } from 'shared';
 import { MenuPickerSheet } from './menu-picker-sheet';
 
-const item = (id: number, name: string, variants: [number, string, boolean][]) => ({
+const item = (id: number, name: string, variants: [number, string, boolean, number?][]) => ({
   id,
   category_id: 1,
   name,
@@ -13,11 +13,11 @@ const item = (id: number, name: string, variants: [number, string, boolean][]) =
   active: true,
   sort: 0,
   addons: [],
-  variants: variants.map(([vid, vname, available]) => ({
+  variants: variants.map(([vid, vname, available, price = 1000]) => ({
     id: vid,
     item_id: id,
     name: vname,
-    price_cents: 1000,
+    price_cents: price,
     available,
     sort: 0,
   })),
@@ -37,6 +37,10 @@ const MENU: Menu = {
           [101, 'Meio', false],
         ]),
         item(11, 'Coca Zero', [[110, '', true]]),
+        item(12, 'Hot roll', [
+          [120, 'Inteiro', true, 3000],
+          [121, 'Meio', true, 1600],
+        ]),
       ],
     },
   ],
@@ -77,5 +81,14 @@ describe('MenuPickerSheet', () => {
     await tap(loader, /Uramaki/);
     await tap(loader, /Coca Zero/);
     expect(dismiss).toHaveBeenCalledWith(110);
+  });
+
+  it('shows the item price only when all its variants cost the same', async () => {
+    const loader = setup();
+    await tap(loader, /Uramaki/);
+    const text = async (name: RegExp) =>
+      (await loader.getHarness(MatActionListItemHarness.with({ text: name }))).getText();
+    expect(await text(/Philadelphia/)).toMatch(/10,00/);
+    expect(await text(/Hot roll/)).not.toMatch(/R\$/);
   });
 });

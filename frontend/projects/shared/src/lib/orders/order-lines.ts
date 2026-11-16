@@ -16,9 +16,9 @@ import {
 } from '@angular/material/list';
 import { LanguageService } from '../i18n/language';
 import { formatMoney } from '../money/money';
-import type { LineView } from './order-draft';
+import { lineName, type LineView } from './order-draft';
 
-/** Order lines: "2× Item · Variant", add-ons, note and line total. `selectable` makes each row a button. */
+/** Order lines: "2× Category Item · Variant", add-ons, note and line total. `selectable` makes each row a button. */
 @Component({
   selector: 'lib-order-lines',
   imports: [
@@ -73,7 +73,14 @@ import type { LineView } from './order-draft';
     }
     .total {
       align-self: center;
-      color: var(--mat-sys-on-surface);
+      /* Material's meta styles win over plain font/color: set its tokens instead. */
+      --mat-list-list-item-trailing-supporting-text-font: var(--mat-sys-title-medium-font);
+      --mat-list-list-item-trailing-supporting-text-size: var(--mat-sys-title-medium-size);
+      --mat-list-list-item-trailing-supporting-text-line-height: var(
+        --mat-sys-title-medium-line-height
+      );
+      --mat-list-list-item-trailing-supporting-text-weight: var(--mat-sys-title-medium-weight);
+      --mat-list-list-item-trailing-supporting-text-color: var(--mat-sys-on-surface);
     }
   `,
 })
@@ -86,8 +93,7 @@ export class OrderLines {
   private readonly lang = inject(LanguageService).lang;
 
   protected title(line: LineView): string {
-    const name = line.variant_name ? `${line.item_name} · ${line.variant_name}` : line.item_name;
-    return `${line.qty}× ${name}`;
+    return `${line.qty}× ${lineName(line)}`;
   }
 
   protected addons(line: LineView): string {

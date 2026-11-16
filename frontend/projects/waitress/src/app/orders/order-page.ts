@@ -4,7 +4,14 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatIcon } from '@angular/material/icon';
 import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { formatMoney, LanguageService, type Order, OrderLines, TPipe } from 'shared';
+import {
+  formatMoney,
+  LanguageService,
+  type Order,
+  OrderLines,
+  type PaymentMethod,
+  TPipe,
+} from 'shared';
 import { CancelDialog, type CancelDialogData } from './cancel-dialog';
 import { OrderStore } from './orders-store';
 
@@ -56,6 +63,9 @@ import { OrderStore } from './orders-store';
         @if (o.pay_on_delivery) {
           <p class="detail">
             {{ 'order.pay_on_delivery' | t }}
+            @if (o.pay_method) {
+              · {{ methodKey(o.pay_method) | t }}
+            }
             @if (o.change_for_cents !== null) {
               · {{ 'order.change_for' | t }} {{ money(o.change_for_cents) }}
             }
@@ -136,7 +146,7 @@ import { OrderStore } from './orders-store';
       text-align: end;
     }
     .total {
-      font: var(--mat-sys-title-medium);
+      font: var(--mat-sys-title-large);
     }
     .action-bar {
       position: sticky;
@@ -177,6 +187,10 @@ export class OrderPage {
       width: '480px',
       maxWidth: 'calc(100vw - 32px)',
     });
+  }
+
+  protected methodKey(method: PaymentMethod) {
+    return `payment.method.${method}` as const;
   }
 
   protected typeKey(o: Order) {
