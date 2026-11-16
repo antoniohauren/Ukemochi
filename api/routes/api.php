@@ -5,6 +5,8 @@ declare(strict_types=1);
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\MenuController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\RealtimeController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\StaffController;
 use Illuminate\Support\Facades\Route;
@@ -23,6 +25,20 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     Route::get('/menu', [MenuController::class, 'show']);
     Route::get('/settings', [SettingsController::class, 'show']);
+    Route::get('/realtime', RealtimeController::class);
+
+    // Orders: any staff reads, edits, moves status and reopens (PLAN: any staff can edit/reopen closed orders).
+    Route::get('/orders', [OrderController::class, 'index']);
+    Route::get('/orders/{id}', [OrderController::class, 'show']);
+    Route::put('/orders/{id}', [OrderController::class, 'update']);
+    Route::put('/orders/{id}/status', [OrderController::class, 'status']);
+    Route::post('/orders/{id}/reopen', [OrderController::class, 'reopen']);
+
+    // Taking and cancelling orders is front-of-house work; the kitchen only follows them.
+    Route::middleware('role:admin,waitress')->group(function (): void {
+        Route::post('/orders', [OrderController::class, 'store']);
+        Route::post('/orders/{id}/cancel', [OrderController::class, 'cancel']);
+    });
 
     Route::middleware('role:admin,kitchen')->group(function (): void {
         Route::put('/items/{id}/active', [MenuController::class, 'setItemActive']);

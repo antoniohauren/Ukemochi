@@ -14,7 +14,7 @@ const NAV: readonly NavItem[] = [
   imports: [AppShell, RouterOutlet, TPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <lib-app-shell [title]="title() | t" [navItems]="nav">
+    <lib-app-shell [title]="title() | t" [navItems]="nav" [backLink]="back()">
       <router-outlet />
     </lib-app-shell>
   `,
@@ -25,4 +25,5 @@ export class Layout {
   protected readonly title = computed(
     () => (this.data()['title'] as TranslationKey | undefined) ?? 'app.name',
   );
+  protected readonly back = computed(() => (this.data()['back'] as string | undefined) ?? null);
 }

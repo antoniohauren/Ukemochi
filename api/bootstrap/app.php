@@ -10,6 +10,9 @@ use App\Domain\Auth\UserNotFound;
 use App\Domain\DomainException;
 use App\Domain\Menu\LastVariant;
 use App\Domain\Menu\MenuNotFound;
+use App\Domain\Order\LineNotFound;
+use App\Domain\Order\OrderNotFound;
+use App\Domain\Realtime\RealtimeUnavailable;
 use App\Http\Middleware\EnsureRole;
 use App\Http\RenderApiException;
 use Illuminate\Foundation\Application;
@@ -24,6 +27,8 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    // Echo authorizes private channels at /api/broadcasting/auth with the Sanctum session cookie.
+    ->withBroadcasting(__DIR__.'/../routes/channels.php', ['prefix' => 'api', 'middleware' => ['api', 'auth:sanctum']])
     ->withMiddleware(function (Middleware $middleware): void {
         // nginx reaches php-fpm over the private Docker network and overwrites X-Forwarded-For.
         $middleware->trustProxies(at: ['10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16']);
@@ -43,6 +48,9 @@ return Application::configure(basePath: dirname(__DIR__))
             LastVariant::class => 409,
             UserNotFound::class => 404,
             LastAdmin::class => 409,
+            OrderNotFound::class => 404,
+            LineNotFound::class => 404,
+            RealtimeUnavailable::class => 503,
         ]));
         // Business rule violations are expected outcomes, not errors to log.
         $exceptions->dontReport(DomainException::class);
