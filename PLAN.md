@@ -38,13 +38,13 @@ Runs on the restaurant's local network. UI in pt-BR and English (switchable).
 ## Repo layout
 ```
 package.json              # bun workspaces: apps/*, packages/*
-apps/api/                 # Hono + bun:sqlite
-  src/index.ts            # app, static serving of built PWAs, routes mount
-  src/db.ts               # open DB, WAL, run migrations
+apps/api/                 # Hono + bun:sqlite, clean architecture (see AGENTS.md)
+  src/domain/             # entities + pure rules (totals, status, split, shift cash). No imports from other layers.
+  src/application/        # use cases + ports (repository/printer/clock interfaces)
+  src/infrastructure/     # sqlite repos, migrations runner, printer adapters, ESC/POS, backup
+  src/http/               # Hono routes, zod validators, auth middleware, SSE
+  src/main.ts             # composition root: wire infra into use cases, mount routes, serve built PWAs
   migrations/*.sql        # plain SQL, applied in order (table `_migrations`)
-  src/routes/{auth,menu,orders,payments,shifts,customers,reports,settings,print,audit}.ts
-  src/print/{escpos.ts,adapter.ts}   # adapter: linux (write /dev/usb/lp0) | windows (copy /b to shared printer)
-  src/events.ts           # SSE stream for order changes (kitchen screen, waitress lists)
 apps/waitress/            # Vite + React + vite-plugin-pwa
 apps/admin/               # Vite + React; routes: menu, staff, orders, cash, reports, settings, audit, /kitchen
 packages/shared/          # types, zod schemas, money (integer cents), split math, ticket layout, i18n dicts
@@ -98,15 +98,49 @@ Unallocated remainder always visible. Covered by `bun test` (rounding, fractions
 ## Realtime
 `GET /events` SSE: emits `order.updated {id, version}`. Kitchen screen and waitress order list refetch on event. No WebSocket lib.
 
-## Phases
-**Phase 1 — Core ordering + kitchen print**
-Monorepo scaffold, DB + migrations, PIN login, admin menu CRUD (categories/items/variants/add-ons), staff CRUD, settings, waitress: new order (dine-in name / pickup / delivery), add lines with variant/add-ons/notes, edit, cancel; kitchen ticket print (USB adapters), i18n switch, PWA install.
+## Steps
+Each step is one TDD vertical slice. Done = tests green + `bun run check` clean + review subagent findings fixed (workflow in AGENTS.md). One commit per step.
 
-**Phase 2 — Money**
-Shifts (open/float/movements incl. staff meal/close with count), payments (mixed methods, change calc, pay-on-delivery + troco para), split (4 modes), reopen/edit closed orders, customer bill print, status flow (ready/out for delivery), audit log + admin viewer.
+### Phase 1 — Foundation
+- [ ] **1. Monorepo scaffold** — bun workspaces, `tsconfig.base.json` (strict), Biome lint/format, root scripts `dev`/`test`/`check`, empty `apps/*` + `packages/*`.
+- [ ] **2. Shared basics** — `packages/shared`: money (cents, parse, format pt-BR/en), i18n dictionaries + `t()`, base zod schemas.
+- [ ] **3. API skeleton** — Hono app, `/health`, error handler, SQLite open (WAL) + migration runner, test helper with in-memory DB.
+- [ ] **4. Auth** — users table, PIN hash (`Bun.password`), sessions, login/logout/me, role middleware, seed first admin.
+- [ ] **5. Frontend scaffold** — `packages/ui` base components, `apps/admin` + `apps/waitress` (Vite, React, PWA manifest), `hc<AppType>` client, login screen, language switch.
 
-**Phase 3 — Extras**
-Customer profiles (phone lookup while taking phone orders, addresses, history), reports (period/item/method/waitress, shift report), backups (auto + download), stock (admin stock screen + alerts, purchases/adjustments, waitress low-stock badges), kitchen screen `/kitchen` (SSE, mark ready), Web Bluetooth printing.
+### Phase 2 — Menu, staff, settings
+- [ ] **6. Menu API** — categories, items, variants (own price), add-ons, availability toggles.
+- [ ] **7. Admin menu screens** — CRUD UI for step 6.
+- [ ] **8. Staff + settings** — staff CRUD with PIN reset; settings (restaurant name, language, paper width, printer mode, delivery fee on/off + value). API + admin screens.
+
+### Phase 3 — Orders
+- [ ] **9. Order domain** — sequential number, line snapshots (name/price), add-ons, notes, totals incl. delivery fee, status transitions, cancel with reason, reopen + version bump.
+- [ ] **10. Orders API** — create/edit/cancel/status, audit log writes, SSE `order.updated`.
+- [ ] **11. Waitress ordering** — order list (live via SSE), new order (dine-in name / pickup / delivery), add/edit lines with variant, add-ons, notes; cancel.
+
+### Phase 4 — Printing
+- [ ] **12. Ticket layouts** — kitchen ticket (no prices, `#N · name · type`, UPDATED vN / CANCELADO) and customer bill; 32/48 columns.
+- [ ] **13. Printer** — ESC/POS encoder, adapters (`linux_device`, `windows_share`, `none` → file), auto kitchen print on create/edit/cancel, `POST /print/...` reprint.
+
+### Phase 5 — Money
+- [ ] **14. Cash shifts** — open with float, movements (withdrawal, deposit, staff_meal + staff name), close with count, expected cash + difference, totals per method.
+- [ ] **15. Payments** — cash/credit/debit/pix, mixed, change calc, void, auto-close when paid, pay upfront or on delivery (`troco para`), payment requires open shift.
+- [ ] **16. Split math** — equal N, by amount, by item units (fractions), by goods; remainder visible.
+- [ ] **17. Waitress payment UI** — pay screen, split flows, change display, bill print.
+- [ ] **18. Admin cash + audit** — shift screens, movement entry, order status board (ready / out for delivery), audit log viewer, edit closed orders.
+
+### Phase 6 — Customers
+- [ ] **19. Customers** — profile (name, phone key, addresses, note), phone lookup while creating phone orders, order history.
+
+### Phase 7 — Stock
+- [ ] **20. Stock domain + API** — opt-in per variant, movements (sale auto, purchase, adjust), edit/cancel restore, optional minimum.
+- [ ] **21. Stock UI** — admin stock screen (expected qty, sold today, alerts); waitress low/zero badges. Never blocks sales.
+
+### Phase 8 — Reports & ops
+- [ ] **22. Reports** — by period, item, payment method, waitress; shift report.
+- [ ] **23. Backups** — DB copy on shift close + daily, keep last N, admin download.
+- [ ] **24. Kitchen screen** — `/kitchen` in admin, live via SSE, mark ready.
+- [ ] **25. Bluetooth print** — Web Bluetooth on Android waitress app, fallback to server print.
 
 ## Verification
 - `bun test` in `packages/shared` (split math, totals, shift expected cash, ticket layout widths) and API route tests via `app.request()` against an in-memory SQLite.
