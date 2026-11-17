@@ -10,7 +10,7 @@ use App\Domain\Order\OrderStatus;
 use App\Domain\Order\OrderType;
 
 /**
- * What the kitchen reads: lines without prices, then the same totals footer as the bill. `updatedVersion` is set when the kitchen already holds
+ * What the kitchen reads: the same content as the bill, plus the UPDATED/CANCEL flags. `updatedVersion` is set when the kitchen already holds
  * an older print ("UPDATED vN"); a cancelled order prints as a CANCEL ticket.
  */
 final readonly class KitchenTicket

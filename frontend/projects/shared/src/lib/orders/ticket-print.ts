@@ -15,7 +15,7 @@ import {
   ViewEncapsulation,
 } from '@angular/core';
 import { DomPortalOutlet, TemplatePortal } from '@angular/cdk/portal';
-import type { KitchenTicketLine, OrderLine, OrderType, PaymentMethod, Ticket } from '../api/order';
+import type { OrderType, PaymentMethod, Ticket } from '../api/order';
 import type { PaperWidth } from '../api/settings';
 import { LanguageService } from '../i18n/language';
 import { TPipe } from '../i18n/t.pipe';
@@ -65,7 +65,7 @@ const FEED_MM = 10;
           <p>{{ 'order.cancel.reason' | t }}: {{ t.cancel_reason }}</p>
         }
         <hr />
-        <!-- Same line layout on both tickets; the bill adds the line total below. -->
+        <!-- Same content on both tickets, for now. -->
         @for (row of rows(); track $index) {
           <div class="lib-ticket-item">
             <p class="lib-ticket-item-title">{{ row.title }}</p>
@@ -75,9 +75,7 @@ const FEED_MM = 10;
             @if (row.note) {
               <p class="lib-ticket-sub">» {{ row.note }}</p>
             }
-            @if (row.totalCents !== null) {
-              <p class="lib-ticket-price">{{ money(row.totalCents) }}</p>
-            }
+            <p class="lib-ticket-price">{{ money(row.totalCents) }}</p>
           </div>
         }
         <hr />
@@ -109,7 +107,7 @@ const FEED_MM = 10;
           <p>{{ 'order.note' | t }}: {{ t.note }}</p>
         }
         <p class="lib-ticket-center">
-          {{ (t.kind === 'bill' ? 'ticket.thanks' : 'ticket.kitchen') | t }}
+          {{ 'ticket.thanks' | t }}
         </p>
       </div>
     </ng-template>
@@ -255,15 +253,14 @@ export class TicketPrint {
     this.page.textContent = `@page { size: ${width}mm ${height}mm; margin: 0 ${(width - PRINTABLE[width]) / 2}mm; }`;
   }
 
-  /** "01x Name", add-on names, note; `totalCents` only on the bill. */
+  /** "01x Name", add-on names, note and line total. */
   protected readonly rows = computed(() => {
     const t = this.ticket();
-    const lines: (KitchenTicketLine | OrderLine)[] = t.lines;
-    return lines.map((line) => ({
+    return t.lines.map((line) => ({
       title: `${String(line.qty).padStart(2, '0')}x ${line.print_name ?? lineName(line)}`,
-      addons: line.addons.map((a) => (typeof a === 'string' ? a : a.name)),
+      addons: line.addons.map((a) => a.name),
       note: line.note,
-      totalCents: 'total_cents' in line ? line.total_cents : null,
+      totalCents: line.total_cents,
     }));
   });
 

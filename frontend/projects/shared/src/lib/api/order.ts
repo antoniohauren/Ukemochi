@@ -104,17 +104,6 @@ export interface OrderEditInput extends OrderInput {
 
 export type TicketKind = 'kitchen' | 'bill';
 
-/** Kitchen ticket line: no prices. `addons` are names. */
-export interface KitchenTicketLine {
-  qty: number;
-  category_name: string;
-  item_name: string;
-  variant_name: string;
-  print_name: string | null;
-  addons: string[];
-  note: string | null;
-}
-
 /**
  * Footer shared by both tickets. `change_cents` = "troco para" − total; null without "troco para"
  * or when it does not cover the total.
@@ -130,7 +119,7 @@ export interface TicketTotals {
 }
 
 /**
- * `KitchenTicketResource`: body of `GET /api/orders/{id}/ticket?kind=kitchen`: lines without prices, totals footer.
+ * `KitchenTicketResource`: body of `GET /api/orders/{id}/ticket?kind=kitchen`: same content as the bill plus the UPDATED/CANCEL flags.
  * `updated_version` is set when the kitchen already has an older print ("UPDATED vN").
  */
 export interface KitchenTicket extends TicketTotals {
@@ -145,7 +134,8 @@ export interface KitchenTicket extends TicketTotals {
   cancelled: boolean;
   cancel_reason: string | null;
   note: string | null;
-  lines: KitchenTicketLine[];
+  /** Same lines as the bill, for now. */
+  lines: OrderLine[];
 }
 
 /** `BillResource`: body of `GET /api/orders/{id}/ticket?kind=bill` (non-fiscal). */

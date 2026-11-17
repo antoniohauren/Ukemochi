@@ -362,20 +362,18 @@ describe('realtime', function (): void {
     });
 });
 
-it('answers the kitchen ticket in the exact shape, without line prices', function (): void {
+it('answers the kitchen ticket in the exact shape, same lines as the bill', function (): void {
     ['variant' => $v, 'addon' => $a] = orderApiMenu();
     actAs(Role::Waitress);
-    $id = createdId(placeOrder($v, ['note' => 'mesa da janela', 'lines' => [['variant_id' => $v, 'qty' => 2, 'note' => 'sem cebolinha', 'addon_ids' => [$a]]]]));
+    $placed = placeOrder($v, ['note' => 'mesa da janela', 'lines' => [['variant_id' => $v, 'qty' => 2, 'note' => 'sem cebolinha', 'addon_ids' => [$a]]]]);
+    $id = createdId($placed);
     actAs(Role::Kitchen);
 
     getJson("/api/orders/{$id}/ticket?kind=kitchen")->assertOk()->assertExactJson([
         'kind' => 'kitchen', 'number' => $id, 'type' => 'dine_in', 'customer_name' => 'Amanda', 'address_text' => null,
         'created_at' => '2026-11-16T12:00:00+00:00', 'version' => 1, 'updated_version' => null,
         'cancelled' => false, 'cancel_reason' => null, 'note' => 'mesa da janela',
-        'lines' => [[
-            'qty' => 2, 'category_name' => 'Uramaki', 'item_name' => 'Philadelphia', 'variant_name' => 'Inteiro', 'print_name' => null,
-            'addons' => ['Cream cheese'], 'note' => 'sem cebolinha',
-        ]],
+        'lines' => $placed->json('lines'),
         'subtotal_cents' => 7000, 'delivery_fee_cents' => 0, 'total_cents' => 7000,
         'pay_on_delivery' => false, 'pay_method' => null, 'change_for_cents' => null, 'change_cents' => null,
     ]);
