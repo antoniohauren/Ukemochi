@@ -83,6 +83,12 @@ const FEED_MM = 10;
         <hr />
         @if (t.pay_on_delivery && t.pay_method) {
           <p class="lib-ticket-center">{{ methodKey(t.pay_method) | t }}</p>
+          <!-- Only cash has a "troco para". -->
+          @if (t.change_for_cents !== null) {
+            <p class="lib-ticket-center">
+              {{ 'order.change_for' | t }} {{ money(t.change_for_cents) }}
+            </p>
+          }
           <hr />
         }
         @if (t.delivery_fee_cents > 0) {

@@ -121,7 +121,7 @@ describe('TicketPrint', () => {
     const preview = text(setup(BILL).nativeElement.querySelector('.lib-ticket'));
 
     expect(preview).toContain('Ukemochi');
-    expect(preview).toMatch(/01x Phila lata.*Dinheiro.*Total/);
+    expect(preview).toMatch(/01x Phila lata.*Dinheiro\s*Troco para\s?R\$\s?50,00.*Total/);
     expect(preview).not.toContain('Rua A, 1');
     expect(preview).toContain('01x Phila lata');
     expect(preview).toMatch(/01x Phila lata\s?R\$\s?32,00/);
