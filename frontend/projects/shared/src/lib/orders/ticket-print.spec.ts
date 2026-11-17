@@ -117,17 +117,16 @@ describe('TicketPrint', () => {
     expect(preview).not.toContain('ATUALIZADO');
   });
 
-  it('prints the bill with the API totals and the change to take', () => {
+  it('prints the bill with the API totals and only the payment type, no address', () => {
     const preview = text(setup(BILL).nativeElement.querySelector('.lib-ticket'));
 
     expect(preview).toContain('Ukemochi');
-    expect(preview).toMatch(/01x Phila lata.*Endereço: Rua A, 1.*Troco\s?R\$\s?11,00.*Total/);
+    expect(preview).toMatch(/01x Phila lata.*Dinheiro.*Total/);
+    expect(preview).not.toContain('Rua A, 1');
     expect(preview).toContain('01x Phila lata');
     expect(preview).toMatch(/01x Phila lata\s?R\$\s?32,00/);
     expect(preview).not.toContain('Uramaki');
     expect(preview).toMatch(/Total\s?R\$\s?39,00/);
-    expect(preview).toMatch(/Troco para\s?R\$\s?50,00/);
-    expect(preview).toMatch(/Troco\s?R\$\s?11,00/);
     expect(preview).toContain('Obrigado pela preferência');
   });
 

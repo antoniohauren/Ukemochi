@@ -81,23 +81,8 @@ const FEED_MM = 10;
           </div>
         }
         <hr />
-        @if (t.address_text || (t.pay_on_delivery && t.pay_method) || t.change_for_cents !== null) {
-          @if (t.address_text) {
-            <p>{{ 'order.address' | t }}: {{ t.address_text }}</p>
-          }
-          @if (t.pay_on_delivery && t.pay_method) {
-            <p>{{ 'order.pay_on_delivery' | t }}: {{ methodKey(t.pay_method) | t }}</p>
-          }
-          @if (t.change_for_cents !== null) {
-            <p class="lib-ticket-row">
-              <span>{{ 'order.change_for' | t }}</span><span>{{ money(t.change_for_cents) }}</span>
-            </p>
-          }
-          @if (t.change_cents !== null) {
-            <p class="lib-ticket-row lib-ticket-big">
-              <span>{{ 'ticket.change' | t }}</span><span>{{ money(t.change_cents) }}</span>
-            </p>
-          }
+        @if (t.pay_on_delivery && t.pay_method) {
+          <p class="lib-ticket-center">{{ methodKey(t.pay_method) | t }}</p>
           <hr />
         }
         @if (t.delivery_fee_cents > 0) {
