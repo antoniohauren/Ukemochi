@@ -138,6 +138,7 @@ export interface KitchenTicket extends TicketTotals {
   number: number;
   type: OrderType;
   customer_name: string;
+  address_text: string | null;
   created_at: string;
   version: number;
   updated_version: number | null;

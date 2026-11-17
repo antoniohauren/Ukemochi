@@ -21,7 +21,7 @@ final class KitchenTicketResource extends JsonResource
         $t = $this->resource;
 
         return [
-            'kind' => 'kitchen', 'number' => $t->number, 'type' => $t->type->value, 'customer_name' => $t->customerName,
+            'kind' => 'kitchen', 'number' => $t->number, 'type' => $t->type->value, 'customer_name' => $t->customerName, 'address_text' => $t->addressText,
             'created_at' => $t->createdAt->format(DATE_ATOM), 'version' => $t->version, 'updated_version' => $t->updatedVersion,
             'cancelled' => $t->cancelled, 'cancel_reason' => $t->cancelReason, 'note' => $t->note,
             'lines' => array_map(fn (OrderLine $l) => [

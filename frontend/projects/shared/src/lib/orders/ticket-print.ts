@@ -64,9 +64,6 @@ const FEED_MM = 10;
         @if (t.kind === 'kitchen' && t.cancel_reason) {
           <p>{{ 'order.cancel.reason' | t }}: {{ t.cancel_reason }}</p>
         }
-        @if (t.kind === 'bill' && t.address_text) {
-          <p>{{ t.address_text }}</p>
-        }
         <hr />
         <!-- Same line layout on both tickets; the bill adds the line total below. -->
         @for (row of rows(); track $index) {
@@ -84,6 +81,25 @@ const FEED_MM = 10;
           </div>
         }
         <hr />
+        @if (t.address_text || (t.pay_on_delivery && t.pay_method) || t.change_for_cents !== null) {
+          @if (t.address_text) {
+            <p>{{ 'order.address' | t }}: {{ t.address_text }}</p>
+          }
+          @if (t.pay_on_delivery && t.pay_method) {
+            <p>{{ 'order.pay_on_delivery' | t }}: {{ methodKey(t.pay_method) | t }}</p>
+          }
+          @if (t.change_for_cents !== null) {
+            <p class="lib-ticket-row">
+              <span>{{ 'order.change_for' | t }}</span><span>{{ money(t.change_for_cents) }}</span>
+            </p>
+          }
+          @if (t.change_cents !== null) {
+            <p class="lib-ticket-row lib-ticket-big">
+              <span>{{ 'ticket.change' | t }}</span><span>{{ money(t.change_cents) }}</span>
+            </p>
+          }
+          <hr />
+        }
         @if (t.delivery_fee_cents > 0) {
           <p class="lib-ticket-row">
             <span>{{ 'order.subtotal' | t }}</span><span>{{ money(t.subtotal_cents) }}</span>
@@ -97,19 +113,6 @@ const FEED_MM = 10;
         <p class="lib-ticket-row lib-ticket-big">
           <span>{{ 'order.total' | t }}</span><span>{{ money(t.total_cents) }}</span>
         </p>
-        @if (t.pay_on_delivery && t.pay_method) {
-          <p>{{ 'order.pay_on_delivery' | t }}: {{ methodKey(t.pay_method) | t }}</p>
-        }
-        @if (t.change_for_cents !== null) {
-          <p class="lib-ticket-row">
-            <span>{{ 'order.change_for' | t }}</span><span>{{ money(t.change_for_cents) }}</span>
-          </p>
-        }
-        @if (t.change_cents !== null) {
-          <p class="lib-ticket-row lib-ticket-big">
-            <span>{{ 'ticket.change' | t }}</span><span>{{ money(t.change_cents) }}</span>
-          </p>
-        }
         @if (t.note) {
           <hr />
           <p>{{ 'order.note' | t }}: {{ t.note }}</p>

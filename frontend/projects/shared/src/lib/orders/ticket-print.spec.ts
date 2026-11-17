@@ -7,6 +7,7 @@ const KITCHEN: KitchenTicket = {
   number: 42,
   type: 'dine_in',
   customer_name: 'Amanda',
+  address_text: null,
   created_at: '2026-11-16T12:00:00+00:00',
   version: 2,
   updated_version: 2,
@@ -120,7 +121,7 @@ describe('TicketPrint', () => {
     const preview = text(setup(BILL).nativeElement.querySelector('.lib-ticket'));
 
     expect(preview).toContain('Ukemochi');
-    expect(preview).toContain('Rua A, 1');
+    expect(preview).toMatch(/01x Phila lata.*Endereço: Rua A, 1.*Troco\s?R\$\s?11,00.*Total/);
     expect(preview).toContain('01x Phila lata');
     expect(preview).toMatch(/01x Phila lata\s?R\$\s?32,00/);
     expect(preview).not.toContain('Uramaki');

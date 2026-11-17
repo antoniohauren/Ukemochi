@@ -69,10 +69,11 @@ it('builds the bill with domain totals and the delivery details', function (): v
         ->and($bill->totals->changeCents)->toBe(2300);
 });
 
-it('gives the kitchen ticket the same totals footer as the bill', function (): void {
+it('gives the kitchen ticket the address and the same totals footer as the bill', function (): void {
     $order = ticketOrder(cashDelivery(10000));
 
-    expect(KitchenTicket::of($order)->totals)->toEqual(Bill::of($order)->totals);
+    expect(KitchenTicket::of($order)->totals)->toEqual(Bill::of($order)->totals)
+        ->and(KitchenTicket::of($order)->addressText)->toBe('Rua A, 1');
 });
 
 it('shows no change when there is no troco para, or it does not cover the total', function (?int $changeFor): void {

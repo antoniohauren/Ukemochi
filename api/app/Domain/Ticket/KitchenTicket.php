@@ -20,6 +20,7 @@ final readonly class KitchenTicket
         public int $number,
         public OrderType $type,
         public string $customerName,
+        public ?string $addressText,
         public \DateTimeImmutable $createdAt,
         public int $version,
         public ?int $updatedVersion,
@@ -35,7 +36,7 @@ final readonly class KitchenTicket
         $updated = $order->printedVersion > 0 && $order->version > $order->printedVersion;
 
         return new self(
-            $order->id, $order->details->type, $order->details->customerName, $order->createdAt, $order->version,
+            $order->id, $order->details->type, $order->details->customerName, $order->details->addressText, $order->createdAt, $order->version,
             $updated ? $order->version : null, $order->status === OrderStatus::Cancelled, $order->cancelReason,
             $order->details->note, $order->lines, Totals::of($order),
         );

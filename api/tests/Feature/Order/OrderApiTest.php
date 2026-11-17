@@ -369,7 +369,7 @@ it('answers the kitchen ticket in the exact shape, without line prices', functio
     actAs(Role::Kitchen);
 
     getJson("/api/orders/{$id}/ticket?kind=kitchen")->assertOk()->assertExactJson([
-        'kind' => 'kitchen', 'number' => $id, 'type' => 'dine_in', 'customer_name' => 'Amanda',
+        'kind' => 'kitchen', 'number' => $id, 'type' => 'dine_in', 'customer_name' => 'Amanda', 'address_text' => null,
         'created_at' => '2026-11-16T12:00:00+00:00', 'version' => 1, 'updated_version' => null,
         'cancelled' => false, 'cancel_reason' => null, 'note' => 'mesa da janela',
         'lines' => [[
