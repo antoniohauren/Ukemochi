@@ -10,7 +10,7 @@ use App\Domain\Order\OrderStatus;
 use App\Domain\Order\OrderType;
 
 /**
- * What the kitchen reads: no prices. `updatedVersion` is set when the kitchen already holds
+ * What the kitchen reads: lines without prices, then the same totals footer as the bill. `updatedVersion` is set when the kitchen already holds
  * an older print ("UPDATED vN"); a cancelled order prints as a CANCEL ticket.
  */
 final readonly class KitchenTicket
@@ -27,6 +27,7 @@ final readonly class KitchenTicket
         public ?string $cancelReason,
         public ?string $note,
         public array $lines,
+        public Totals $totals,
     ) {}
 
     public static function of(Order $order): self
@@ -36,7 +37,7 @@ final readonly class KitchenTicket
         return new self(
             $order->id, $order->details->type, $order->details->customerName, $order->createdAt, $order->version,
             $updated ? $order->version : null, $order->status === OrderStatus::Cancelled, $order->cancelReason,
-            $order->details->note, $order->lines,
+            $order->details->note, $order->lines, Totals::of($order),
         );
     }
 }

@@ -59,16 +59,22 @@ it('prints a cancelled order as a cancel ticket with the reason', function (): v
 it('builds the bill with domain totals and the delivery details', function (): void {
     $bill = Bill::of(ticketOrder(cashDelivery(10000)));
 
-    expect($bill->subtotalCents)->toBe(7000)
-        ->and($bill->deliveryFeeCents)->toBe(700)
-        ->and($bill->totalCents)->toBe(7700)
+    expect($bill->totals->subtotalCents)->toBe(7000)
+        ->and($bill->totals->deliveryFeeCents)->toBe(700)
+        ->and($bill->totals->totalCents)->toBe(7700)
         ->and($bill->addressText)->toBe('Rua A, 1')
-        ->and($bill->payOnDelivery)->toBeTrue()
-        ->and($bill->payMethod)->toBe(PaymentMethod::Cash)
-        ->and($bill->changeForCents)->toBe(10000)
-        ->and($bill->changeCents)->toBe(2300);
+        ->and($bill->totals->payOnDelivery)->toBeTrue()
+        ->and($bill->totals->payMethod)->toBe(PaymentMethod::Cash)
+        ->and($bill->totals->changeForCents)->toBe(10000)
+        ->and($bill->totals->changeCents)->toBe(2300);
+});
+
+it('gives the kitchen ticket the same totals footer as the bill', function (): void {
+    $order = ticketOrder(cashDelivery(10000));
+
+    expect(KitchenTicket::of($order)->totals)->toEqual(Bill::of($order)->totals);
 });
 
 it('shows no change when there is no troco para, or it does not cover the total', function (?int $changeFor): void {
-    expect(Bill::of(ticketOrder(cashDelivery($changeFor)))->changeCents)->toBeNull();
+    expect(Bill::of(ticketOrder(cashDelivery($changeFor)))->totals->changeCents)->toBeNull();
 })->with([null, 5000]);

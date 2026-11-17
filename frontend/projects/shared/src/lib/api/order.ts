@@ -116,10 +116,24 @@ export interface KitchenTicketLine {
 }
 
 /**
- * `KitchenTicketResource`: body of `GET /api/orders/{id}/ticket?kind=kitchen`.
+ * Footer shared by both tickets. `change_cents` = "troco para" − total; null without "troco para"
+ * or when it does not cover the total.
+ */
+export interface TicketTotals {
+  subtotal_cents: number;
+  delivery_fee_cents: number;
+  total_cents: number;
+  pay_on_delivery: boolean;
+  pay_method: PaymentMethod | null;
+  change_for_cents: number | null;
+  change_cents: number | null;
+}
+
+/**
+ * `KitchenTicketResource`: body of `GET /api/orders/{id}/ticket?kind=kitchen`: lines without prices, totals footer.
  * `updated_version` is set when the kitchen already has an older print ("UPDATED vN").
  */
-export interface KitchenTicket {
+export interface KitchenTicket extends TicketTotals {
   kind: 'kitchen';
   number: number;
   type: OrderType;
@@ -133,11 +147,8 @@ export interface KitchenTicket {
   lines: KitchenTicketLine[];
 }
 
-/**
- * `BillResource`: body of `GET /api/orders/{id}/ticket?kind=bill` (non-fiscal).
- * `change_cents` = "troco para" − total; null without "troco para" or when it does not cover the total.
- */
-export interface Bill {
+/** `BillResource`: body of `GET /api/orders/{id}/ticket?kind=bill` (non-fiscal). */
+export interface Bill extends TicketTotals {
   kind: 'bill';
   number: number;
   type: OrderType;
@@ -148,13 +159,6 @@ export interface Bill {
   cancelled: boolean;
   note: string | null;
   lines: OrderLine[];
-  subtotal_cents: number;
-  delivery_fee_cents: number;
-  total_cents: number;
-  pay_on_delivery: boolean;
-  pay_method: PaymentMethod | null;
-  change_for_cents: number | null;
-  change_cents: number | null;
 }
 
 export type Ticket = KitchenTicket | Bill;

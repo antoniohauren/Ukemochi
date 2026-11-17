@@ -115,7 +115,7 @@ Pure functions returning `{payer_label, amount_cents, allocations?}` suggestions
 Unallocated remainder always visible.
 
 ## Printing
-- `app/Domain/Ticket` builds ticket content. Kitchen: no prices, item notes, add-ons, `#<number> · <name> · <type>`, "UPDATED vN"/"CANCELADO". Bill: prices, payments, change, balance.
+- `app/Domain/Ticket` builds ticket content. Kitchen: no line prices, item notes, add-ons, totals footer + "Comanda da cozinha", `#<number> · <name> · <type>`, "UPDATED vN"/"CANCELADO". Bill: prices, payments, change, balance.
   `GET /api/orders/{id}/ticket?kind=kitchen|bill`.
 - `TicketPrint` (`shared`) renders it: `@media print` + `@page` from the paper width setting, monospace.
 - "Imprimir" → print view → `window.print()` → `POST /api/orders/{id}/printed {kind, version}` (stores `printed_version`, writes audit).

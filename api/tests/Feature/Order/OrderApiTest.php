@@ -362,7 +362,7 @@ describe('realtime', function (): void {
     });
 });
 
-it('answers the kitchen ticket in the exact shape, without prices', function (): void {
+it('answers the kitchen ticket in the exact shape, without line prices', function (): void {
     ['variant' => $v, 'addon' => $a] = orderApiMenu();
     actAs(Role::Waitress);
     $id = createdId(placeOrder($v, ['note' => 'mesa da janela', 'lines' => [['variant_id' => $v, 'qty' => 2, 'note' => 'sem cebolinha', 'addon_ids' => [$a]]]]));
@@ -376,6 +376,8 @@ it('answers the kitchen ticket in the exact shape, without prices', function ():
             'qty' => 2, 'category_name' => 'Uramaki', 'item_name' => 'Philadelphia', 'variant_name' => 'Inteiro', 'print_name' => null,
             'addons' => ['Cream cheese'], 'note' => 'sem cebolinha',
         ]],
+        'subtotal_cents' => 7000, 'delivery_fee_cents' => 0, 'total_cents' => 7000,
+        'pay_on_delivery' => false, 'pay_method' => null, 'change_for_cents' => null, 'change_cents' => null,
     ]);
 });
 

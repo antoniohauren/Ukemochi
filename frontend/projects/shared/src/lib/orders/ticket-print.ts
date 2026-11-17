@@ -50,7 +50,8 @@ const FEED_MM = 10;
         @let t = ticket();
         <header class="lib-ticket-center">
           <p class="lib-ticket-big">{{ restaurantName() }} #{{ t.number }}</p>
-          <p class="lib-ticket-big">{{ t.customer_name }}</p>
+          <!-- shortcut: "0000" stands in for the phone's last 4 digits; print them with customers (PLAN step 19). -->
+          <p class="lib-ticket-big">{{ t.customer_name }} - 0000</p>
           <p>{{ typeKey(t.type) | t }}</p>
           <p class="lib-ticket-nowrap">{{ when(t.created_at) }}</p>
         </header>
@@ -82,42 +83,40 @@ const FEED_MM = 10;
             }
           </div>
         }
-        @if (t.kind === 'bill') {
-          <hr />
-          @if (t.delivery_fee_cents > 0) {
-            <p class="lib-ticket-row">
-              <span>{{ 'order.subtotal' | t }}</span><span>{{ money(t.subtotal_cents) }}</span>
-            </p>
-            <p class="lib-ticket-row">
-              <span>{{ 'order.delivery_fee' | t }}</span><span>{{
-                money(t.delivery_fee_cents)
-              }}</span>
-            </p>
-          }
-          <p class="lib-ticket-row lib-ticket-big">
-            <span>{{ 'order.total' | t }}</span><span>{{ money(t.total_cents) }}</span>
+        <hr />
+        @if (t.delivery_fee_cents > 0) {
+          <p class="lib-ticket-row">
+            <span>{{ 'order.subtotal' | t }}</span><span>{{ money(t.subtotal_cents) }}</span>
           </p>
-          @if (t.pay_on_delivery && t.pay_method) {
-            <p>{{ 'order.pay_on_delivery' | t }}: {{ methodKey(t.pay_method) | t }}</p>
-          }
-          @if (t.change_for_cents !== null) {
-            <p class="lib-ticket-row">
-              <span>{{ 'order.change_for' | t }}</span><span>{{ money(t.change_for_cents) }}</span>
-            </p>
-          }
-          @if (t.change_cents !== null) {
-            <p class="lib-ticket-row lib-ticket-big">
-              <span>{{ 'ticket.change' | t }}</span><span>{{ money(t.change_cents) }}</span>
-            </p>
-          }
+          <p class="lib-ticket-row">
+            <span>{{ 'order.delivery_fee' | t }}</span><span>{{
+              money(t.delivery_fee_cents)
+            }}</span>
+          </p>
+        }
+        <p class="lib-ticket-row lib-ticket-big">
+          <span>{{ 'order.total' | t }}</span><span>{{ money(t.total_cents) }}</span>
+        </p>
+        @if (t.pay_on_delivery && t.pay_method) {
+          <p>{{ 'order.pay_on_delivery' | t }}: {{ methodKey(t.pay_method) | t }}</p>
+        }
+        @if (t.change_for_cents !== null) {
+          <p class="lib-ticket-row">
+            <span>{{ 'order.change_for' | t }}</span><span>{{ money(t.change_for_cents) }}</span>
+          </p>
+        }
+        @if (t.change_cents !== null) {
+          <p class="lib-ticket-row lib-ticket-big">
+            <span>{{ 'ticket.change' | t }}</span><span>{{ money(t.change_cents) }}</span>
+          </p>
         }
         @if (t.note) {
           <hr />
           <p>{{ 'order.note' | t }}: {{ t.note }}</p>
         }
-        @if (t.kind === 'bill') {
-          <p class="lib-ticket-center">{{ 'ticket.not_fiscal' | t }}</p>
-        }
+        <p class="lib-ticket-center">
+          {{ (t.kind === 'bill' ? 'ticket.not_fiscal' : 'ticket.kitchen') | t }}
+        </p>
       </div>
     </ng-template>
     <div #preview class="lib-ticket-preview">

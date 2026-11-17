@@ -13,6 +13,13 @@ const KITCHEN: KitchenTicket = {
   cancelled: false,
   cancel_reason: null,
   note: 'mesa da janela',
+  subtotal_cents: 7000,
+  delivery_fee_cents: 0,
+  total_cents: 7000,
+  pay_on_delivery: false,
+  pay_method: null,
+  change_for_cents: null,
+  change_cents: null,
   lines: [
     {
       qty: 2,
@@ -76,18 +83,22 @@ describe('TicketPrint', () => {
 
   afterEach(() => TestBed.resetTestingModule());
 
-  it('prints the kitchen ticket without prices, flagged as updated', () => {
-    const preview = text(setup(KITCHEN).nativeElement.querySelector('.lib-ticket'));
+  it('prints the kitchen ticket without line prices, with the totals footer, flagged as updated', () => {
+    const el: HTMLElement = setup(KITCHEN).nativeElement;
+    const preview = text(el.querySelector('.lib-ticket'));
 
     expect(preview).toContain('ATUALIZADO v2');
     expect(preview).toContain('Ukemochi #42');
-    expect(preview).toContain('Amanda');
+    expect(preview).toContain('Amanda - 0000');
     expect(preview).toContain('No salão');
     expect(preview).toContain('02x Uramaki Philadelphia · Inteiro');
     expect(preview).toContain('+ Cream cheese');
     expect(preview).toContain('» sem cebolinha');
     expect(preview).toContain('mesa da janela');
-    expect(preview).not.toContain('R$');
+    expect(el.querySelector('.lib-ticket-price')).toBeNull();
+    expect(preview).toMatch(/Total\s?R\$\s?70,00/);
+    expect(preview).toContain('Comanda da cozinha');
+    expect(preview).not.toContain('Não é documento fiscal');
   });
 
   it('prints a cancel ticket with its reason', () => {

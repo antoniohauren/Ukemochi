@@ -24,9 +24,7 @@ final class BillResource extends JsonResource
             'address_text' => $b->addressText, 'created_at' => $b->createdAt->format(DATE_ATOM), 'version' => $b->version,
             'cancelled' => $b->cancelled, 'note' => $b->note,
             'lines' => array_map(fn (OrderLine $l) => (new OrderLineResource($l))->toArray($request), $b->lines),
-            'subtotal_cents' => $b->subtotalCents, 'delivery_fee_cents' => $b->deliveryFeeCents, 'total_cents' => $b->totalCents,
-            'pay_on_delivery' => $b->payOnDelivery, 'pay_method' => $b->payMethod?->value,
-            'change_for_cents' => $b->changeForCents, 'change_cents' => $b->changeCents,
+            ...TotalsJson::of($b->totals),
         ];
     }
 }

@@ -29,6 +29,7 @@ final class KitchenTicketResource extends JsonResource
                 'print_name' => $l->printName,
                 'addons' => array_map(fn (LineAddon $a) => $a->name, $l->addons), 'note' => $l->note,
             ], $t->lines),
+            ...TotalsJson::of($t->totals),
         ];
     }
 }
