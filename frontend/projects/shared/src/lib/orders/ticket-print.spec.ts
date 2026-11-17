@@ -19,6 +19,7 @@ const KITCHEN: KitchenTicket = {
       category_name: 'Uramaki',
       item_name: 'Philadelphia',
       variant_name: 'Inteiro',
+      print_name: null,
       addons: ['Cream cheese'],
       note: 'sem cebolinha',
     },
@@ -42,6 +43,7 @@ const BILL: Bill = {
       category_name: 'Uramaki',
       item_name: 'Philadelphia',
       variant_name: 'Inteiro',
+      print_name: 'Phila lata',
       unit_price_cents: 3200,
       qty: 1,
       note: null,
@@ -107,6 +109,8 @@ describe('TicketPrint', () => {
 
     expect(preview).toContain('Ukemochi');
     expect(preview).toContain('Rua A, 1');
+    expect(preview).toContain('1× Phila lata');
+    expect(preview).not.toContain('Uramaki');
     expect(preview).toMatch(/Total\s?R\$\s?39,00/);
     expect(preview).toMatch(/Troco para\s?R\$\s?50,00/);
     expect(preview).toMatch(/Troco\s?R\$\s?11,00/);

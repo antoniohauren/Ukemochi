@@ -68,7 +68,7 @@ final class EloquentMenuRepository implements MenuRepository
         $model = $variant->id === 0 ? new EloquentVariant : EloquentVariant::query()->findOrFail($variant->id);
         $model->forceFill([
             'item_id' => $variant->itemId, 'name' => $variant->name, 'price_cents' => $variant->priceCents,
-            'sort' => $variant->sort,
+            'sort' => $variant->sort, 'print_name' => $variant->printName,
         ]);
         if ($variant->id === 0) {
             $model->available = $variant->available;

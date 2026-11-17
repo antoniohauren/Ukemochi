@@ -26,6 +26,7 @@ final class KitchenTicketResource extends JsonResource
             'cancelled' => $t->cancelled, 'cancel_reason' => $t->cancelReason, 'note' => $t->note,
             'lines' => array_map(fn (OrderLine $l) => [
                 'qty' => $l->qty, 'category_name' => $l->categoryName, 'item_name' => $l->itemName, 'variant_name' => $l->variantName,
+                'print_name' => $l->printName,
                 'addons' => array_map(fn (LineAddon $a) => $a->name, $l->addons), 'note' => $l->note,
             ], $t->lines),
         ];

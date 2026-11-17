@@ -6,7 +6,7 @@ namespace App\Domain\Order;
 
 use App\Domain\Money\Money;
 
-/** Category, item and variant names and prices are snapshotted at the time of sale. `id` is 0 until stored. */
+/** Category, item, variant and print names and prices are snapshotted at the time of sale. `id` is 0 until stored. */
 final readonly class OrderLine
 {
     /** @param  list<LineAddon>  $addons */
@@ -20,6 +20,7 @@ final readonly class OrderLine
         public ?string $note,
         public array $addons = [],
         public string $categoryName = '',
+        public ?string $printName = null,
     ) {
         if ($unitPriceCents < 0) {
             throw new InvalidAmount;

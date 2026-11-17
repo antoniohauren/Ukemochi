@@ -20,7 +20,7 @@ final class OrderLineResource extends JsonResource
         $r = $this->resource;
 
         return [
-            'id' => $r->id, 'variant_id' => $r->variantId, 'category_name' => $r->categoryName, 'item_name' => $r->itemName, 'variant_name' => $r->variantName,
+            'id' => $r->id, 'variant_id' => $r->variantId, 'category_name' => $r->categoryName, 'item_name' => $r->itemName, 'variant_name' => $r->variantName, 'print_name' => $r->printName,
             'unit_price_cents' => $r->unitPriceCents, 'qty' => $r->qty, 'note' => $r->note,
             'addons' => array_map(fn (LineAddon $a) => (new LineAddonResource($a))->toArray($request), $r->addons),
             'total_cents' => $r->totalCents(),

@@ -91,7 +91,7 @@ it('audits summaries with snake_case keys', function (): void {
 
     expect(array_column($audit->entries, 'summary', 'entity'))->toMatchArray([
         'item' => ['category_id' => $item->categoryId, 'name' => 'Salmão', 'note' => null, 'active' => true, 'sort' => 0],
-        'variant' => ['item_id' => $item->id, 'name' => '', 'price_cents' => 3000, 'available' => true, 'sort' => 0],
+        'variant' => ['item_id' => $item->id, 'name' => '', 'price_cents' => 3000, 'available' => true, 'sort' => 0, 'print_name' => null],
     ]);
 });
 

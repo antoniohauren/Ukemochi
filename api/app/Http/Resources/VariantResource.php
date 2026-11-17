@@ -18,6 +18,6 @@ final class VariantResource extends JsonResource
     {
         $r = $this->resource;
 
-        return ['id' => $r->id, 'item_id' => $r->itemId, 'name' => $r->name, 'price_cents' => $r->priceCents, 'available' => $r->available, 'sort' => $r->sort];
+        return ['id' => $r->id, 'item_id' => $r->itemId, 'name' => $r->name, 'price_cents' => $r->priceCents, 'available' => $r->available, 'sort' => $r->sort, 'print_name' => $r->printName];
     }
 }

@@ -59,6 +59,7 @@ final class EloquentOrderRepository implements OrderRepository
             $lineModel->forceFill([
                 'order_id' => $order->id, 'variant_id' => $line->variantId, 'category_name' => $line->categoryName, 'item_name' => $line->itemName,
                 'variant_name' => $line->variantName, 'unit_price_cents' => $line->unitPriceCents, 'qty' => $line->qty, 'note' => $line->note,
+                'print_name' => $line->printName,
             ])->save();
 
             // Add-on snapshots are owned by the line and nothing points at them: rewrite them.

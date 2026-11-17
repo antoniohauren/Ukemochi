@@ -19,6 +19,8 @@ export interface OrderLine {
   category_name: string;
   item_name: string;
   variant_name: string;
+  /** Variant print name snapshot; tickets print it in place of "category item · variant". */
+  print_name: string | null;
   unit_price_cents: number;
   qty: number;
   note: string | null;
@@ -108,6 +110,7 @@ export interface KitchenTicketLine {
   category_name: string;
   item_name: string;
   variant_name: string;
+  print_name: string | null;
   addons: string[];
   note: string | null;
 }

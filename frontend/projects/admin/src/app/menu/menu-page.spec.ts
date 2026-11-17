@@ -25,7 +25,15 @@ const MENU: Menu = {
           active: true,
           sort: 0,
           variants: [
-            { id: 100, item_id: 10, name: '', price_cents: 1250, available: true, sort: 0 },
+            {
+              id: 100,
+              item_id: 10,
+              name: '',
+              price_cents: 1250,
+              available: true,
+              sort: 0,
+              print_name: null,
+            },
           ],
           addons: [],
         },

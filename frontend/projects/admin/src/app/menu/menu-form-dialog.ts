@@ -8,7 +8,7 @@ import {
   MatDialogContent,
   MatDialogRef,
 } from '@angular/material/dialog';
-import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatError, MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
 import {
@@ -28,6 +28,8 @@ export interface MenuForm {
   name: string;
   note: string;
   price_cents: number;
+  /** Variants: name on tickets; '' prints "category item · variant". */
+  print_name: string;
   flag: boolean;
 }
 
@@ -45,10 +47,11 @@ export interface MenuFormData {
 }
 
 /** API field name (FormRequest key) to form control. */
-const API_FIELDS: Partial<Record<string, 'name' | 'note' | 'price'>> = {
+const API_FIELDS: Partial<Record<string, 'name' | 'note' | 'price' | 'print_name'>> = {
   name: 'name',
   note: 'note',
   price_cents: 'price',
+  print_name: 'print_name',
 };
 
 /** Create/edit form for categories, items, variants and add-ons. Rules mirror the API FormRequests. */
@@ -62,6 +65,7 @@ const API_FIELDS: Partial<Record<string, 'name' | 'note' | 'price'>> = {
     FormDialogTitle,
     MatError,
     MatFormField,
+    MatHint,
     MatInput,
     MatLabel,
     MatSlideToggle,
@@ -92,6 +96,14 @@ const API_FIELDS: Partial<Record<string, 'name' | 'note' | 'price'>> = {
             <mat-label>{{ 'menu.price' | t }}</mat-label>
             <input matInput formControlName="price" inputmode="decimal" autocomplete="off" />
             <mat-error>{{ 'menu.price.invalid' | t }}</mat-error>
+          </mat-form-field>
+        }
+        @if (has('print_name')) {
+          <mat-form-field>
+            <mat-label>{{ 'menu.print_name' | t }}</mat-label>
+            <input matInput formControlName="print_name" maxlength="60" />
+            <mat-hint>{{ 'menu.print_name.hint' | t }}</mat-hint>
+            <mat-error>{{ 'menu.print_name.invalid' | t }}</mat-error>
           </mat-form-field>
         }
         @if (has('flag') && data.flagLabel) {
@@ -137,15 +149,17 @@ export class MenuFormDialog {
     }),
     note: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(1000)] }),
     price: new FormControl('', { nonNullable: true, validators: [moneyValidator] }),
+    print_name: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(60)] }),
     flag: new FormControl(true, { nonNullable: true }),
   });
   protected readonly busy = signal(false);
   protected readonly error = signal<TranslationKey | null>(null);
 
   constructor() {
-    const { price_cents, ...rest } = this.data.value ?? {};
+    const { price_cents, print_name, ...rest } = this.data.value ?? {};
     this.form.patchValue({
       ...rest,
+      print_name: print_name ?? '',
       ...(price_cents !== undefined && { price: formatMoney(price_cents, this.lang()) }),
     });
     if (!this.has('price_cents')) {
@@ -167,11 +181,12 @@ export class MenuFormDialog {
     }
     this.busy.set(true);
     this.error.set(null);
-    const { name, note, price, flag } = this.form.getRawValue();
+    const { name, note, price, print_name, flag } = this.form.getRawValue();
     const error = await this.data.save({
       name: name.trim(),
       note: note.trim(),
       price_cents: parseMoney(price) ?? 0,
+      print_name: print_name.trim(),
       flag,
     });
     this.busy.set(false);

@@ -83,7 +83,7 @@ it('creates an order and answers it in the exact shape with domain totals', func
         'pay_method' => 'cash', 'note' => 'portão azul',
         'lines' => [[
             'id' => lineId($response), 'variant_id' => $v, 'category_name' => 'Uramaki', 'item_name' => 'Philadelphia',
-            'variant_name' => 'Inteiro', 'unit_price_cents' => 3200, 'qty' => 2, 'note' => 'sem cebolinha',
+            'variant_name' => 'Inteiro', 'print_name' => null, 'unit_price_cents' => 3200, 'qty' => 2, 'note' => 'sem cebolinha',
             'addons' => [['addon_id' => $a, 'name' => 'Cream cheese', 'price_cents' => 300]], 'total_cents' => 7000,
         ]],
         'subtotal_cents' => 7000, 'total_cents' => 7700,
@@ -373,7 +373,7 @@ it('answers the kitchen ticket in the exact shape, without prices', function ():
         'created_at' => '2026-11-16T12:00:00+00:00', 'version' => 1, 'updated_version' => null,
         'cancelled' => false, 'cancel_reason' => null, 'note' => 'mesa da janela',
         'lines' => [[
-            'qty' => 2, 'category_name' => 'Uramaki', 'item_name' => 'Philadelphia', 'variant_name' => 'Inteiro',
+            'qty' => 2, 'category_name' => 'Uramaki', 'item_name' => 'Philadelphia', 'variant_name' => 'Inteiro', 'print_name' => null,
             'addons' => ['Cream cheese'], 'note' => 'sem cebolinha',
         ]],
     ]);
@@ -455,4 +455,15 @@ it('lets a cancelled order print its cancel ticket', function (): void {
 
     getJson("/api/orders/{$id}/ticket?kind=kitchen")->assertOk()->assertJson(['cancelled' => true, 'cancel_reason' => 'desistiu', 'updated_version' => 2]);
     postJson("/api/orders/{$id}/printed", ['kind' => 'kitchen', 'version' => 2])->assertOk()->assertJson(['print_status' => null]);
+});
+
+it('snapshots the variant print name on the line and prints it on both tickets', function (): void {
+    actAs(Role::Admin);
+    ['variant' => $v] = orderApiMenu();
+    putJson("/api/variants/{$v}", ['name' => 'Inteiro', 'price_cents' => 3200, 'sort' => 0, 'print_name' => 'Phila lata'])->assertOk();
+    $id = createdId(placeOrder($v));
+    putJson("/api/variants/{$v}", ['name' => 'Inteiro', 'price_cents' => 3200, 'sort' => 0, 'print_name' => 'Outro'])->assertOk();
+
+    expect(getJson("/api/orders/{$id}/ticket?kind=kitchen")->json('lines.0.print_name'))->toBe('Phila lata')
+        ->and(getJson("/api/orders/{$id}/ticket?kind=bill")->json('lines.0.print_name'))->toBe('Phila lata');
 });

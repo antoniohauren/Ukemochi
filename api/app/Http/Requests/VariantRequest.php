@@ -14,6 +14,7 @@ final class VariantRequest extends FormRequest
     {
         return [
             'name' => ['nullable', 'string', 'max:255'],
+            'print_name' => ['nullable', 'string', 'max:60'],
             'price_cents' => ['required', 'integer', 'min:0'],
             'sort' => ['required', 'integer', 'min:0', 'max:100000'],
             ...($this->isMethod('POST') ? ['available' => ['required', 'boolean']] : []),

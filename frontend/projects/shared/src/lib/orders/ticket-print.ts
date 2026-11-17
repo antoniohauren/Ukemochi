@@ -252,8 +252,13 @@ export class TicketPrint {
     this.page.textContent = `@page { size: ${width}mm ${height}mm; margin: 0 ${(width - PRINTABLE[width]) / 2}mm; }`;
   }
 
-  protected name(line: { category_name: string; item_name: string; variant_name: string }): string {
-    return lineName(line);
+  protected name(line: {
+    category_name: string;
+    item_name: string;
+    variant_name: string;
+    print_name: string | null;
+  }): string {
+    return line.print_name ?? lineName(line);
   }
 
   protected typeKey(type: OrderType) {
