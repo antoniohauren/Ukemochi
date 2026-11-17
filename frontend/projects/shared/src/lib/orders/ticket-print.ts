@@ -58,9 +58,6 @@ const FEED_MM = 10;
         @if (t.cancelled) {
           <p class="lib-ticket-flag">{{ 'ticket.cancelled' | t }}</p>
         }
-        @if (t.kind === 'kitchen' && t.updated_version !== null) {
-          <p class="lib-ticket-flag">{{ 'ticket.updated' | t }} v{{ t.updated_version }}</p>
-        }
         @if (t.kind === 'kitchen' && t.cancel_reason) {
           <p>{{ 'order.cancel.reason' | t }}: {{ t.cancel_reason }}</p>
         }
@@ -109,6 +106,10 @@ const FEED_MM = 10;
         <p class="lib-ticket-center">
           {{ (t.kind === 'bill' ? 'ticket.thanks' : 'ticket.kitchen') | t }}
         </p>
+        @if (t.kind === 'kitchen' && t.updated_version !== null) {
+          <hr />
+          <p class="lib-ticket-center">{{ 'ticket.updated' | t }} v{{ t.updated_version }}</p>
+        }
       </div>
     </ng-template>
     <div #preview class="lib-ticket-preview">

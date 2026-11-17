@@ -92,7 +92,7 @@ describe('TicketPrint', () => {
     const el: HTMLElement = setup(KITCHEN).nativeElement;
     const preview = text(el.querySelector('.lib-ticket'));
 
-    expect(preview).toContain('ATUALIZADO v2');
+    expect(preview).toMatch(/Comanda da cozinha\s*ATUALIZADO v2\s*$/);
     expect(preview).toContain('Ukemochi #42');
     expect(preview).toContain('Amanda - 0000');
     expect(preview).toContain('No salão');
