@@ -81,7 +81,7 @@ describe('TicketPrint', () => {
 
     expect(preview).toContain('ATUALIZADO v2');
     expect(preview).toContain('#42 · Amanda · No salão');
-    expect(preview).toContain('2× Uramaki Philadelphia · Inteiro');
+    expect(preview).toContain('02x Uramaki Philadelphia · Inteiro');
     expect(preview).toContain('+ Cream cheese');
     expect(preview).toContain('» sem cebolinha');
     expect(preview).toContain('mesa da janela');
@@ -109,7 +109,8 @@ describe('TicketPrint', () => {
 
     expect(preview).toContain('Ukemochi');
     expect(preview).toContain('Rua A, 1');
-    expect(preview).toContain('1× Phila lata');
+    expect(preview).toContain('01x Phila lata');
+    expect(preview).toMatch(/01x Phila lata\s?R\$\s?32,00/);
     expect(preview).not.toContain('Uramaki');
     expect(preview).toMatch(/Total\s?R\$\s?39,00/);
     expect(preview).toMatch(/Troco para\s?R\$\s?50,00/);

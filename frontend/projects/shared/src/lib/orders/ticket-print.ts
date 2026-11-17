@@ -3,6 +3,7 @@ import {
   afterNextRender,
   ChangeDetectionStrategy,
   Component,
+  computed,
   DestroyRef,
   DOCUMENT,
   type ElementRef,
@@ -14,7 +15,7 @@ import {
   ViewEncapsulation,
 } from '@angular/core';
 import { DomPortalOutlet, TemplatePortal } from '@angular/cdk/portal';
-import type { OrderType, PaymentMethod, Ticket } from '../api/order';
+import type { KitchenTicketLine, OrderLine, OrderType, PaymentMethod, Ticket } from '../api/order';
 import type { PaperWidth } from '../api/settings';
 import { LanguageService } from '../i18n/language';
 import { TPipe } from '../i18n/t.pipe';
@@ -67,26 +68,20 @@ const FEED_MM = 10;
           <p>{{ t.address_text }}</p>
         }
         <hr />
-        @if (t.kind === 'kitchen') {
-          @for (line of t.lines; track $index) {
-            <p class="lib-ticket-big">{{ line.qty }}× {{ name(line) }}</p>
-            @for (addon of line.addons; track $index) {
-              <p class="lib-ticket-sub">+ {{ addon }}</p>
-            }
-            @if (line.note) {
-              <p class="lib-ticket-sub">» {{ line.note }}</p>
-            }
+        <!-- Same line layout on both tickets; the bill adds the line total below. -->
+        @for (row of rows(); track $index) {
+          <p class="lib-ticket-big">{{ row.title }}</p>
+          @for (addon of row.addons; track $index) {
+            <p class="lib-ticket-sub">+ {{ addon }}</p>
           }
-        } @else {
-          @for (line of t.lines; track line.id) {
-            <p class="lib-ticket-row">
-              <span>{{ line.qty }}× {{ name(line) }}</span
-              ><span>{{ money(line.total_cents) }}</span>
-            </p>
-            @for (addon of line.addons; track addon.addon_id) {
-              <p class="lib-ticket-sub">+ {{ addon.name }} {{ money(addon.price_cents) }}</p>
-            }
+          @if (row.note) {
+            <p class="lib-ticket-sub">» {{ row.note }}</p>
           }
+          @if (row.totalCents !== null) {
+            <p class="lib-ticket-price">{{ money(row.totalCents) }}</p>
+          }
+        }
+        @if (t.kind === 'bill') {
           <hr />
           @if (t.delivery_fee_cents > 0) {
             <p class="lib-ticket-row">
@@ -156,6 +151,10 @@ const FEED_MM = 10;
     }
     .lib-ticket-sub {
       padding-inline-start: 2ch;
+    }
+    .lib-ticket-price {
+      text-align: end;
+      white-space: nowrap;
     }
     .lib-ticket-center {
       text-align: center;
@@ -252,14 +251,17 @@ export class TicketPrint {
     this.page.textContent = `@page { size: ${width}mm ${height}mm; margin: 0 ${(width - PRINTABLE[width]) / 2}mm; }`;
   }
 
-  protected name(line: {
-    category_name: string;
-    item_name: string;
-    variant_name: string;
-    print_name: string | null;
-  }): string {
-    return line.print_name ?? lineName(line);
-  }
+  /** "01x Name", add-on names, note; `totalCents` only on the bill. */
+  protected readonly rows = computed(() => {
+    const t = this.ticket();
+    const lines: (KitchenTicketLine | OrderLine)[] = t.lines;
+    return lines.map((line) => ({
+      title: `${String(line.qty).padStart(2, '0')}x ${line.print_name ?? lineName(line)}`,
+      addons: line.addons.map((a) => (typeof a === 'string' ? a : a.name)),
+      note: line.note,
+      totalCents: 'total_cents' in line ? line.total_cents : null,
+    }));
+  });
 
   protected typeKey(type: OrderType) {
     return `order.type.${type}` as const;
