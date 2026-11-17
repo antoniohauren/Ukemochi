@@ -32,6 +32,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property ?string $cancel_reason
  * @property int $printed_version
  * @property int $version
+ * @property int|string|null $paid_cents selected by the repository
  * @property-read Collection<int, EloquentOrderLine> $lines
  */
 final class EloquentOrder extends Model
@@ -67,6 +68,7 @@ final class EloquentOrder extends Model
             $this->cancel_reason,
             $this->printed_version,
             $this->version,
+            (int) $this->paid_cents,
         );
     }
 

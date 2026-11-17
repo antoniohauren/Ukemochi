@@ -6,14 +6,11 @@ import { MatCheckbox } from '@angular/material/checkbox';
 import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
-import {
-  type DraftLine,
-  formatMoney,
-  LanguageService,
-  type LineAddon,
-  lineName,
-  TPipe,
-} from 'shared';
+import { type LineAddon } from '../../api/order';
+import { LanguageService } from '../../i18n/language';
+import { TPipe } from '../../i18n/t.pipe';
+import { formatMoney } from '../../money/money';
+import { type DraftLine, lineName } from '../../orders/order-draft';
 
 export interface LineSheetData {
   line: DraftLine;
@@ -28,7 +25,7 @@ export type LineSheetResult = DraftLine | 'remove' | undefined;
 
 /** Qty, add-ons and note of one line. Rules mirror OrderRequest: qty 1–999, note ≤ 1000. */
 @Component({
-  selector: 'app-line-sheet',
+  selector: 'lib-line-sheet',
   imports: [
     MatButton,
     MatCheckbox,

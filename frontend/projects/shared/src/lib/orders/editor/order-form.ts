@@ -6,19 +6,10 @@ import {
   type ValidatorFn,
   Validators,
 } from '@angular/forms';
-import {
-  type DraftLine,
-  formatMoney,
-  type Lang,
-  lineInput,
-  maxMoney,
-  moneyValidator,
-  type Order,
-  type OrderInput,
-  type OrderType,
-  parseMoney,
-  type PaymentMethod,
-} from 'shared';
+import { type Order, type OrderInput, type OrderType, type PaymentMethod } from '../../api/order';
+import { type Lang } from '../../i18n/language';
+import { formatMoney, maxMoney, moneyValidator, parseMoney } from '../../money/money';
+import { type DraftLine, lineInput } from '../../orders/order-draft';
 
 // OrderRequest: cents max:100000000, text max:1000, customer_name max:255.
 const MAX_CENTS = 100_000_000;

@@ -7,11 +7,18 @@ use App\Domain\Auth\LoginThrottled;
 use App\Domain\Auth\NameTaken;
 use App\Domain\Auth\NotAuthenticated;
 use App\Domain\Auth\UserNotFound;
+use App\Domain\Cash\NoOpenShift;
+use App\Domain\Cash\ShiftAlreadyOpen;
+use App\Domain\Cash\ShiftClosed;
+use App\Domain\Cash\ShiftNotFound;
 use App\Domain\DomainException;
 use App\Domain\Menu\LastVariant;
 use App\Domain\Menu\MenuNotFound;
 use App\Domain\Order\LineNotFound;
 use App\Domain\Order\OrderNotFound;
+use App\Domain\Payment\PaymentNotFound;
+use App\Domain\Payment\PaymentShiftClosed;
+use App\Domain\Payment\PaymentVoided;
 use App\Domain\Realtime\RealtimeUnavailable;
 use App\Http\Middleware\EnsureRole;
 use App\Http\RenderApiException;
@@ -51,6 +58,13 @@ return Application::configure(basePath: dirname(__DIR__))
             OrderNotFound::class => 404,
             LineNotFound::class => 404,
             RealtimeUnavailable::class => 503,
+            ShiftNotFound::class => 404,
+            ShiftAlreadyOpen::class => 409,
+            NoOpenShift::class => 409,
+            ShiftClosed::class => 409,
+            PaymentNotFound::class => 404,
+            PaymentVoided::class => 409,
+            PaymentShiftClosed::class => 409,
         ]));
         // Business rule violations are expected outcomes, not errors to log.
         $exceptions->dontReport(DomainException::class);

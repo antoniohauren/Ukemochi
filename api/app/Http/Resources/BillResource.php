@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Domain\Order\OrderLine;
+use App\Domain\Payment\Payment;
 use App\Domain\Ticket\Bill;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -25,6 +26,11 @@ final class BillResource extends JsonResource
             'cancelled' => $b->cancelled, 'note' => $b->note,
             'lines' => array_map(fn (OrderLine $l) => (new OrderLineResource($l))->toArray($request), $b->lines),
             ...TotalsJson::of($b->totals),
+            'payments' => array_map(fn (Payment $p) => [
+                'method' => $p->method->value, 'amount_cents' => $p->amountCents, 'tendered_cents' => $p->tenderedCents,
+                'change_cents' => $p->changeCents(), 'payer_label' => $p->payerLabel,
+            ], $b->payments),
+            'paid_cents' => $b->paidCents, 'balance_cents' => $b->balanceCents,
         ];
     }
 }

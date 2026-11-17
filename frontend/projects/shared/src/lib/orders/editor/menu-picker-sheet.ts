@@ -9,7 +9,10 @@ import {
   MatListItemMeta,
   MatListItemTitle,
 } from '@angular/material/list';
-import { formatMoney, LanguageService, type Menu, TPipe } from 'shared';
+import { type Menu } from '../../api/menu';
+import { LanguageService } from '../../i18n/language';
+import { TPipe } from '../../i18n/t.pipe';
+import { formatMoney } from '../../money/money';
 
 type Category = Menu['categories'][number];
 type Item = Category['items'][number];
@@ -19,7 +22,7 @@ type Item = Category['items'][number];
  * that step. Unavailable variants stay pickable (staff are never blocked), with a hint.
  */
 @Component({
-  selector: 'app-menu-picker-sheet',
+  selector: 'lib-menu-picker-sheet',
   imports: [
     MatActionList,
     MatIcon,

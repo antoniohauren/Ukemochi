@@ -53,7 +53,7 @@ final class InMemoryOrderRepository implements OrderRepository
         ), $order->lines);
         $this->orders[$order->id] = new Order(
             $order->id, $order->details, $order->status, $lines, $order->createdBy, $order->createdAt,
-            $order->closedAt, $order->cancelReason, $order->printedVersion, $order->version,
+            $order->closedAt, $order->cancelReason, $order->printedVersion, $order->version, $order->paidCents,
         );
 
         return clone $this->orders[$order->id];

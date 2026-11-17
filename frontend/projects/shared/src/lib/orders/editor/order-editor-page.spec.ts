@@ -5,7 +5,10 @@ import { MatInputHarness } from '@angular/material/input/testing';
 import { MatSlideToggleHarness } from '@angular/material/slide-toggle/testing';
 import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
 import { of } from 'rxjs';
-import { MenuApi, type Order, OrdersApi, SettingsApi } from 'shared';
+import { MenuApi } from '../../api/menu-api';
+import { type Order } from '../../api/order';
+import { OrdersApi } from '../../api/orders-api';
+import { SettingsApi } from '../../api/settings-api';
 import { OrderEditorPage } from './order-editor-page';
 import { OrderEditorStore } from './order-editor-store';
 

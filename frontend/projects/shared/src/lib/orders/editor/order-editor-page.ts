@@ -18,18 +18,13 @@ import { MatInput } from '@angular/material/input';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
 import { ActivatedRoute } from '@angular/router';
 import { map } from 'rxjs';
-import {
-  addonOptions,
-  draftTotal,
-  formatMoney,
-  LanguageService,
-  newLine,
-  OrderLines,
-  type OrderType,
-  type PaymentMethod,
-  TPipe,
-  type TranslationKey,
-} from 'shared';
+import { type OrderType, type PaymentMethod } from '../../api/order';
+import { LanguageService } from '../../i18n/language';
+import { type TranslationKey } from '../../i18n/pt-br';
+import { TPipe } from '../../i18n/t.pipe';
+import { formatMoney } from '../../money/money';
+import { addonOptions, draftTotal, newLine } from '../../orders/order-draft';
+import { OrderLines } from '../../orders/order-lines';
 import { LineSheet, type LineSheetData, type LineSheetResult } from './line-sheet';
 import { MenuPickerSheet } from './menu-picker-sheet';
 import { OrderEditorStore } from './order-editor-store';
@@ -40,7 +35,7 @@ const METHODS: readonly PaymentMethod[] = ['cash', 'credit', 'debit', 'pix'];
 
 /** New order (Novo tab) or edit of a saved one (`/orders/:id/edit`). Lines are picked in bottom sheets. */
 @Component({
-  selector: 'app-order-editor-page',
+  selector: 'lib-order-editor-page',
   providers: [OrderEditorStore],
   imports: [
     MatButton,

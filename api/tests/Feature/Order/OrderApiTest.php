@@ -2,68 +2,20 @@
 
 declare(strict_types=1);
 
-use App\Application\Menu\MenuRepository;
 use App\Domain\Auth\Role;
-use App\Domain\Menu\Addon;
-use App\Domain\Menu\Category;
-use App\Domain\Menu\Item;
-use App\Domain\Menu\Variant;
 use App\Infrastructure\Auth\EloquentUser;
 use App\Infrastructure\Order\OrderUpdated;
 use Carbon\CarbonImmutable;
 use Illuminate\Broadcasting\BroadcastException;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Exceptions;
-use Illuminate\Testing\TestResponse;
 
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\json;
 use function Pest\Laravel\postJson;
 use function Pest\Laravel\putJson;
 use function Pest\Laravel\travelTo;
-
-/** @return array{variant: int, half: int, addon: int} Philadelphia: Inteiro R$32, Meio R$17; add-on Cream cheese R$3 */
-function orderApiMenu(): array
-{
-    $menu = app(MenuRepository::class);
-    $category = $menu->saveCategory(new Category(0, 'Uramaki', 0, true));
-    $item = $menu->saveItem(new Item(0, $category->id, 'Philadelphia', null, true, 0));
-
-    return [
-        'variant' => $menu->saveVariant(new Variant(0, $item->id, 'Inteiro', 3200, true, 0))->id,
-        'half' => $menu->saveVariant(new Variant(0, $item->id, 'Meio', 1700, true, 1))->id,
-        'addon' => $menu->saveAddon(new Addon(0, $item->id, null, 'Cream cheese', 300, true))->id,
-    ];
-}
-
-/**
- * @param  array<string, mixed>  $body
- * @return array<string, mixed>
- */
-function dineInBody(int $variant, array $body = []): array
-{
-    return ['type' => 'dine_in', 'customer_name' => 'Amanda', 'lines' => [['variant_id' => $variant, 'qty' => 1]], ...$body];
-}
-
-/**
- * @param  array<string, mixed>  $body
- * @return TestResponse<JsonResponse>
- */
-function placeOrder(int $variant, array $body = []): TestResponse
-{
-    return postJson('/api/orders', dineInBody($variant, $body))->assertCreated();
-}
-
-/** @param  TestResponse<JsonResponse>  $response */
-function lineId(TestResponse $response, int $index = 0): int
-{
-    $id = $response->json("lines.{$index}.id");
-    assert(is_int($id));
-
-    return $id;
-}
 
 beforeEach(fn () => travelTo(CarbonImmutable::parse('2026-11-16 12:00:00+00:00')));
 
@@ -86,7 +38,7 @@ it('creates an order and answers it in the exact shape with domain totals', func
             'variant_name' => 'Inteiro', 'print_name' => null, 'unit_price_cents' => 3200, 'qty' => 2, 'note' => 'sem cebolinha',
             'addons' => [['addon_id' => $a, 'name' => 'Cream cheese', 'price_cents' => 300]], 'total_cents' => 7000,
         ]],
-        'subtotal_cents' => 7000, 'total_cents' => 7700,
+        'subtotal_cents' => 7000, 'total_cents' => 7700, 'paid_cents' => 0, 'balance_cents' => 7700,
         'created_by' => $user->id, 'created_at' => '2026-11-16T12:00:00+00:00', 'closed_at' => null, 'cancel_reason' => null,
         'printed_version' => 0, 'version' => 1, 'print_status' => 'not_printed',
     ]);
@@ -395,6 +347,7 @@ it('answers the bill in the exact shape, with totals and the change to take', fu
         'lines' => $created->json('lines'),
         'subtotal_cents' => 3200, 'delivery_fee_cents' => 700, 'total_cents' => 3900,
         'pay_on_delivery' => true, 'pay_method' => 'cash', 'change_for_cents' => 5000, 'change_cents' => 1100,
+        'payments' => [], 'paid_cents' => 0, 'balance_cents' => 3900,
     ]);
 });
 

@@ -21,8 +21,13 @@ export const routes: Routes = [
       },
       {
         path: 'orders/:id/edit',
-        loadComponent: () => import('./orders/order-editor-page').then((m) => m.OrderEditorPage),
+        loadComponent: () => import('shared/order-editor').then((m) => m.OrderEditorPage),
         data: { title: 'order.edit', back: '/orders' },
+      },
+      {
+        path: 'orders/:id/pay',
+        loadComponent: () => import('./orders/pay-page').then((m) => m.PayPage),
+        data: { title: 'payment.pay', back: '/orders' },
       },
       {
         path: 'orders/:id/print/kitchen',
@@ -36,7 +41,7 @@ export const routes: Routes = [
       },
       {
         path: 'new',
-        loadComponent: () => import('./orders/order-editor-page').then((m) => m.OrderEditorPage),
+        loadComponent: () => import('shared/order-editor').then((m) => m.OrderEditorPage),
         data: { title: 'nav.new' },
       },
       { path: 'customers', component: PlaceholderPage, data: { title: 'nav.customers' } },

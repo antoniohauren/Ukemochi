@@ -99,6 +99,29 @@ const FEED_MM = 10;
         <p class="lib-ticket-row lib-ticket-big">
           <span>{{ 'order.total' | t }}</span><span>{{ money(t.total_cents) }}</span>
         </p>
+        @if (t.kind === 'bill' && t.payments.length > 0) {
+          <hr />
+          @for (p of t.payments; track $index) {
+            <p class="lib-ticket-row">
+              <span
+                >{{ methodKey(p.method) | t }}
+                @if (p.payer_label) {
+                  · {{ p.payer_label }}
+                }</span
+              ><span>{{ money(p.amount_cents) }}</span>
+            </p>
+            @if (p.change_cents !== null && p.change_cents > 0) {
+              <p class="lib-ticket-row">
+                <span>{{ 'ticket.change' | t }}</span><span>{{ money(p.change_cents) }}</span>
+              </p>
+            }
+          }
+          <p class="lib-ticket-row lib-ticket-big">
+            <span>{{
+              (t.balance_cents < 0 ? 'payment.overpaid' : 'payment.balance') | t
+            }}</span><span>{{ money(abs(t.balance_cents)) }}</span>
+          </p>
+        }
         @if (t.note) {
           <hr />
           <p>{{ 'order.note' | t }}: {{ t.note }}</p>
@@ -252,6 +275,10 @@ export class TicketPrint {
     const contentMm = (ticket?.scrollHeight ?? 0) / PX_PER_MM;
     const height = Math.ceil(contentMm + FEED_MM);
     this.page.textContent = `@page { size: ${width}mm ${height}mm; margin: 0 ${(width - PRINTABLE[width]) / 2}mm; }`;
+  }
+
+  protected abs(cents: number): number {
+    return Math.abs(cents);
   }
 
   /** "01x Name", add-on names, note and line total. */

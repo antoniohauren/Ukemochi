@@ -31,6 +31,7 @@ final class OrderResource extends JsonResource
             'change_for_cents' => $d->changeForCents, 'pay_method' => $d->payMethod?->value, 'note' => $d->note,
             'lines' => array_map(fn (OrderLine $l) => (new OrderLineResource($l))->toArray($request), $o->lines),
             'subtotal_cents' => $o->subtotalCents(), 'total_cents' => $o->totalCents(),
+            'paid_cents' => $o->paidCents, 'balance_cents' => $o->balanceCents(),
             'created_by' => $o->createdBy, 'created_at' => $o->createdAt->format(DATE_ATOM),
             'closed_at' => $o->closedAt?->format(DATE_ATOM), 'cancel_reason' => $o->cancelReason,
             'printed_version' => $o->printedVersion, 'version' => $o->version, 'print_status' => $o->printStatus()?->value,

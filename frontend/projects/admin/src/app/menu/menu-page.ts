@@ -18,6 +18,8 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
   type Addon,
   type Category,
+  type ConfirmData,
+  ConfirmDialog,
   formatMoney,
   type Item,
   LanguageService,
@@ -25,7 +27,6 @@ import {
   type Variant,
 } from 'shared';
 import { firstValueFrom } from 'rxjs';
-import { ConfirmDialog, type ConfirmData } from '../confirm-dialog';
 import { formDialogConfig } from '../form-dialog';
 import { MenuFormDialog, type MenuFormData } from './menu-form-dialog';
 import { MenuStore } from './menu-store';

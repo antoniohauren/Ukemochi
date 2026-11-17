@@ -2,7 +2,12 @@ import { TestBed } from '@angular/core/testing';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
-import { type DraftLine, type Menu, MenuApi, type Order, OrdersApi, SettingsApi } from 'shared';
+import { type Menu } from '../../api/menu';
+import { MenuApi } from '../../api/menu-api';
+import { type Order } from '../../api/order';
+import { OrdersApi } from '../../api/orders-api';
+import { SettingsApi } from '../../api/settings-api';
+import { type DraftLine } from '../../orders/order-draft';
 import { OrderEditorStore } from './order-editor-store';
 import { orderForm } from './order-form';
 

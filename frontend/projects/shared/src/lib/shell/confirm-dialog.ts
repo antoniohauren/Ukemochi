@@ -6,7 +6,8 @@ import {
   MatDialogClose,
   MatDialogContent,
 } from '@angular/material/dialog';
-import { TPipe, type TranslationKey } from 'shared';
+import { TPipe } from '../i18n/t.pipe';
+import type { TranslationKey } from '../i18n/pt-br';
 
 export interface ConfirmData {
   message: TranslationKey;
@@ -15,7 +16,7 @@ export interface ConfirmData {
 
 /** Asks before a destructive action; closes with `true` on confirm. */
 @Component({
-  selector: 'app-confirm-dialog',
+  selector: 'lib-confirm-dialog',
   imports: [MatButton, MatDialogActions, MatDialogClose, MatDialogContent, TPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `

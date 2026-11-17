@@ -13,6 +13,7 @@ use App\Domain\Ticket\Bill;
 use App\Domain\Ticket\KitchenTicket;
 use App\Domain\Ticket\TicketKind;
 use Tests\Fakes\InMemoryOrderRepository;
+use Tests\Fakes\InMemoryPaymentRepository;
 
 function storedOrder(InMemoryOrderRepository $repo, int $id, OrderStatus $status): void
 {
@@ -35,7 +36,7 @@ it('lists active orders newest first by default', function (): void {
         storedOrder($repo, $i + 1, $status);
     }
 
-    expect(orderIds((new ReadOrders($repo))->list(null)))->toBe([5, 3, 1]);
+    expect(orderIds((new ReadOrders($repo, new InMemoryPaymentRepository))->list(null)))->toBe([5, 3, 1]);
 });
 
 it('lists one status, newest first and capped', function (): void {
@@ -45,7 +46,7 @@ it('lists one status, newest first and capped', function (): void {
     }
     storedOrder($repo, 500, OrderStatus::Open);
 
-    $closed = orderIds((new ReadOrders($repo))->list(OrderStatus::Closed));
+    $closed = orderIds((new ReadOrders($repo, new InMemoryPaymentRepository))->list(OrderStatus::Closed));
 
     expect($closed)->toHaveCount(ReadOrders::LIMIT)->and($closed[0])->toBe(ReadOrders::LIMIT + 2);
 });
@@ -53,7 +54,7 @@ it('lists one status, newest first and capped', function (): void {
 it('gets one order or reports it missing', function (): void {
     $repo = new InMemoryOrderRepository;
     storedOrder($repo, 3, OrderStatus::Open);
-    $read = new ReadOrders($repo);
+    $read = new ReadOrders($repo, new InMemoryPaymentRepository);
 
     expect($read->get(3)->id)->toBe(3)
         ->and(fn () => $read->get(4))->toThrow(OrderNotFound::class);
@@ -62,7 +63,7 @@ it('gets one order or reports it missing', function (): void {
 it('builds the kitchen ticket or the bill of an order', function (): void {
     $repo = new InMemoryOrderRepository;
     storedOrder($repo, 3, OrderStatus::Open);
-    $read = new ReadOrders($repo);
+    $read = new ReadOrders($repo, new InMemoryPaymentRepository);
 
     expect($read->ticket(3, TicketKind::Kitchen))->toEqual(KitchenTicket::of($repo->orders[3]))
         ->and($read->ticket(3, TicketKind::Bill))->toEqual(Bill::of($repo->orders[3]));
