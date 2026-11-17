@@ -191,6 +191,10 @@ export const ptBR = {
   'error.cash.shift_already_open': 'Já existe um caixa aberto.',
   'error.cash.no_open_shift': 'Nenhum caixa aberto. Abra o caixa primeiro.',
   'error.cash.shift_not_found': 'Caixa não encontrado.',
+  'error.payment.invalid': 'Valor inválido; o valor recebido não pode ser menor que o pagamento.',
+  'error.payment.voided': 'Pagamento já estornado.',
+  'error.payment.shift_closed': 'O caixa deste pagamento já foi fechado; não dá para estornar.',
+  'error.payment.not_found': 'Pagamento não encontrado.',
 };
 
 export type TranslationKey = keyof typeof ptBR;

@@ -70,6 +70,9 @@ const BILL: Bill = {
   pay_method: 'cash',
   change_for_cents: 5000,
   change_cents: 1100,
+  payments: [],
+  paid_cents: 0,
+  balance_cents: 3900,
 };
 
 const text = (el: Element | null) => (el?.textContent ?? '').replace(/\s+/g, ' ');

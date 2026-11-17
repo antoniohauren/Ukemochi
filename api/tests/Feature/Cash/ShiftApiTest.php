@@ -63,7 +63,7 @@ it('closes with the difference, then lists and shows past shifts to admins', fun
     travelTo(CarbonImmutable::parse('2026-11-16 23:00:00+00:00'));
     $closing = postJson('/api/shifts/current/close', ['counted_cents' => 6500, 'note' => 'faltou'])->assertOk();
     $closed = $closing->assertJson(['closed_by' => $user->id, 'closed_at' => '2026-11-16T23:00:00+00:00', 'counted_cents' => 6500, 'note' => 'faltou',
-            'expected_cents' => 7000, 'difference_cents' => -500])->json();
+        'expected_cents' => 7000, 'difference_cents' => -500])->json();
 
     expect(lastAudit())->toMatchArray(['action' => 'close'])
         ->and(lastAudit()['summary'])->toBe(['counted_cents' => 6500, 'expected_cents' => 7000, 'difference_cents' => -500]);

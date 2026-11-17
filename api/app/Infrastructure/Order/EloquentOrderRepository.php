@@ -7,6 +7,7 @@ namespace App\Infrastructure\Order;
 use App\Application\Order\OrderRepository;
 use App\Domain\Order\Order;
 use App\Domain\Order\OrderStatus;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 final class EloquentOrderRepository implements OrderRepository
@@ -22,12 +23,12 @@ final class EloquentOrderRepository implements OrderRepository
 
     public function find(int $id): ?Order
     {
-        return EloquentOrder::query()->with('lines.addons')->find($id)?->toDomain();
+        return $this->query()->find($id)?->toDomain();
     }
 
     public function list(array $statuses, ?int $limit): array
     {
-        return array_values(EloquentOrder::query()->with('lines.addons')
+        return array_values($this->query()
             ->whereIn('status', array_map(fn (OrderStatus $s) => $s->value, $statuses))
             ->orderByDesc('id')->when($limit !== null, fn ($q) => $q->limit((int) $limit))->get()
             ->map(fn (EloquentOrder $o) => $o->toDomain())->all());
@@ -35,7 +36,7 @@ final class EloquentOrderRepository implements OrderRepository
 
     public function lock(int $id): ?Order
     {
-        return EloquentOrder::query()->with('lines.addons')->lockForUpdate()->find($id)?->toDomain();
+        return $this->query()->lockForUpdate()->find($id)?->toDomain();
     }
 
     public function save(Order $order): Order
@@ -72,5 +73,14 @@ final class EloquentOrderRepository implements OrderRepository
         }
 
         return $this->find($order->id) ?? throw new \LogicException("Order {$order->id} vanished after save.");
+    }
+
+    /** @return Builder<EloquentOrder> with lines and `paid_cents` (Σ non-voided payments) */
+    private function query(): Builder
+    {
+        return EloquentOrder::query()->with('lines.addons')->select('orders.*')->selectSub(
+            DB::table('payments')->selectRaw('COALESCE(SUM(amount_cents), 0)')->whereColumn('order_id', 'orders.id')->where('voided', false),
+            'paid_cents',
+        );
     }
 }

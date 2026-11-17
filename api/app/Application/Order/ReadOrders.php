@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Order;
 
+use App\Application\Payment\PaymentRepository;
 use App\Domain\Order\Order;
 use App\Domain\Order\OrderNotFound;
 use App\Domain\Order\OrderStatus;
@@ -16,7 +17,7 @@ final readonly class ReadOrders
     /** shortcut: one status lists only its newest LIMIT orders, no paging; add paging with the admin order history. */
     public const int LIMIT = 100;
 
-    public function __construct(private OrderRepository $orders) {}
+    public function __construct(private OrderRepository $orders, private PaymentRepository $payments) {}
 
     /**
      * Newest first. No status: the active orders (open, ready, out for delivery).
@@ -40,6 +41,6 @@ final readonly class ReadOrders
     {
         $order = $this->get($id);
 
-        return $kind === TicketKind::Kitchen ? KitchenTicket::of($order) : Bill::of($order);
+        return $kind === TicketKind::Kitchen ? KitchenTicket::of($order) : Bill::of($order, $this->payments->forOrder($id));
     }
 }

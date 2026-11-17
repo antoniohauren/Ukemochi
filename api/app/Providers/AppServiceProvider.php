@@ -16,6 +16,7 @@ use App\Application\Health\DatabaseProbe;
 use App\Application\Menu\MenuRepository;
 use App\Application\Order\OrderEvents;
 use App\Application\Order\OrderRepository;
+use App\Application\Payment\PaymentRepository;
 use App\Application\Settings\SettingsRepository;
 use App\Application\Transaction;
 use App\Infrastructure\Audit\DatabaseAuditLog;
@@ -30,6 +31,7 @@ use App\Infrastructure\Health\ConnectionDatabaseProbe;
 use App\Infrastructure\Menu\EloquentMenuRepository;
 use App\Infrastructure\Order\BroadcastOrderEvents;
 use App\Infrastructure\Order\EloquentOrderRepository;
+use App\Infrastructure\Payment\DatabasePaymentRepository;
 use App\Infrastructure\Settings\DatabaseSettingsRepository;
 use App\Infrastructure\SystemClock;
 use Illuminate\Auth\EloquentUserProvider;
@@ -52,6 +54,7 @@ class AppServiceProvider extends ServiceProvider
         MenuRepository::class => EloquentMenuRepository::class,
         OrderEvents::class => BroadcastOrderEvents::class,
         OrderRepository::class => EloquentOrderRepository::class,
+        PaymentRepository::class => DatabasePaymentRepository::class,
         PinHasher::class => HashPinHasher::class,
         SessionAuth::class => GuardSessionAuth::class,
         SessionRevoker::class => DatabaseSessionRevoker::class,

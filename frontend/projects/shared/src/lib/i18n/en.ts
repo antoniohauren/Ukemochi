@@ -192,4 +192,8 @@ export const en: Dictionary = {
   'error.cash.shift_already_open': 'A shift is already open.',
   'error.cash.no_open_shift': 'No shift is open. Open the cash shift first.',
   'error.cash.shift_not_found': 'Shift not found.',
+  'error.payment.invalid': 'Invalid amount; cash received cannot be less than the payment.',
+  'error.payment.voided': 'Payment already voided.',
+  'error.payment.shift_closed': "This payment's shift is closed; it cannot be voided.",
+  'error.payment.not_found': 'Payment not found.',
 };

@@ -83,8 +83,14 @@ final readonly class DatabaseShiftRepository implements ShiftRepository
 
     public function paymentTotals(int $shiftId): array
     {
-        // Payments arrive with step 15.
-        return [];
+        $totals = [];
+        foreach ($this->db->table('payments')->where('shift_id', $shiftId)->where('voided', false)
+            ->groupBy('method')->get(['method', $this->db->raw('SUM(amount_cents) AS cents')]) as $row) {
+            /** @var object{method: string, cents: int|string} $row */
+            $totals[$row->method] = (int) $row->cents;
+        }
+
+        return $totals;
     }
 
     private function shifts(): Builder

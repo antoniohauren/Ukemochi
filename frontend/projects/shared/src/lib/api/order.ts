@@ -55,6 +55,10 @@ export interface Order {
   lines: OrderLine[];
   subtotal_cents: number;
   total_cents: number;
+  /** Σ non-voided payments. */
+  paid_cents: number;
+  /** total − paid; negative when overpaid. */
+  balance_cents: number;
   created_by: number;
   /** ISO 8601 with offset. */
   created_at: string;
@@ -150,6 +154,19 @@ export interface Bill extends TicketTotals {
   cancelled: boolean;
   note: string | null;
   lines: OrderLine[];
+  /** Non-voided payments. */
+  payments: BillPayment[];
+  paid_cents: number;
+  /** Negative when overpaid. */
+  balance_cents: number;
+}
+
+export interface BillPayment {
+  method: PaymentMethod;
+  amount_cents: number;
+  tendered_cents: number | null;
+  change_cents: number | null;
+  payer_label: string | null;
 }
 
 export type Ticket = KitchenTicket | Bill;

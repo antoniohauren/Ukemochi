@@ -9,6 +9,8 @@ export * from './lib/api/menu';
 export * from './lib/api/menu-api';
 export * from './lib/api/order';
 export * from './lib/api/orders-api';
+export * from './lib/api/payment';
+export * from './lib/api/payments-api';
 export * from './lib/api/realtime';
 export * from './lib/api/settings';
 export * from './lib/api/settings-api';

@@ -11,7 +11,6 @@ use App\Domain\Payment\PaymentMethod;
 /**
  * Ticket footer, the same on the kitchen ticket and the bill. `changeCents` is the change to take on
  * a cash delivery: "troco para" − total, null without "troco para" or when it does not cover the total.
- * shortcut: no payments or balance yet; add them with payments (PLAN step 15).
  */
 final readonly class Totals
 {

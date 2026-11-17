@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\RealtimeController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ShiftController;
@@ -37,6 +38,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/orders/{id}/reopen', [OrderController::class, 'reopen']);
     Route::get('/orders/{id}/ticket', [OrderController::class, 'ticket']);
     Route::post('/orders/{id}/printed', [OrderController::class, 'printed']);
+    Route::get('/orders/{id}/payments', [PaymentController::class, 'index']);
 
     // Taking and cancelling orders is front-of-house work; the kitchen only follows them.
     Route::middleware('role:admin,waitress')->group(function (): void {
@@ -46,6 +48,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/shifts', [ShiftController::class, 'open']);
         Route::post('/shifts/current/movements', [ShiftController::class, 'movement']);
         Route::post('/shifts/current/close', [ShiftController::class, 'close']);
+        Route::post('/orders/{id}/payments', [PaymentController::class, 'store']);
+        Route::post('/payments/{id}/void', [PaymentController::class, 'void']);
     });
 
     Route::middleware('role:admin,kitchen')->group(function (): void {

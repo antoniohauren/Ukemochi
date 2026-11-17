@@ -11,6 +11,7 @@ use App\Domain\Ticket\TicketKind;
  * Order aggregate. `id` is the order number. `version` grows on every change to what the
  * tickets show (lines, details, cancel, reopen), so "changed since print" is `version > printedVersion`.
  * A cancelled order is final: it cannot be edited, moved or reopened.
+ * `paidCents` is the sum of its non-voided payments, which are stored apart from the order.
  */
 final class Order
 {
@@ -26,6 +27,7 @@ final class Order
         public private(set) ?string $cancelReason = null,
         public private(set) int $printedVersion = 0,
         public private(set) int $version = 1,
+        public private(set) int $paidCents = 0,
     ) {
         if ($lines === []) {
             throw new NoLines;
@@ -47,6 +49,40 @@ final class Order
     public function totalCents(): int
     {
         return Money::fromCents($this->subtotalCents())->add(Money::fromCents($this->details->deliveryFeeCents))->cents;
+    }
+
+    /** Negative when overpaid. */
+    public function balanceCents(): int
+    {
+        return Money::fromCents($this->totalCents())->subtract(Money::fromCents($this->paidCents))->cents;
+    }
+
+    /**
+     * Paid in full closes the order, except a phone order the customer does not have yet:
+     * pickup closes once ready, delivery once out for delivery; until then it stays active for the kitchen.
+     */
+    public function recordPayment(int $cents, \DateTimeImmutable $at): void
+    {
+        $this->refuseIfCancelled();
+        $this->paidCents += $cents;
+        $handedOver = match ($this->details->type) {
+            OrderType::DineIn => true,
+            OrderType::Pickup => $this->status === OrderStatus::Ready,
+            OrderType::Delivery => $this->status === OrderStatus::OutForDelivery,
+        };
+        if ($this->balanceCents() <= 0 && $handedOver && $this->status !== OrderStatus::Closed) {
+            $this->moveTo(OrderStatus::Closed, $at);
+        }
+    }
+
+    /** A void that leaves a balance reopens a closed order. The kitchen ticket is unchanged, so no new version. */
+    public function voidPayment(int $cents): void
+    {
+        $this->paidCents -= $cents;
+        if ($this->status === OrderStatus::Closed && $this->balanceCents() > 0) {
+            $this->status = OrderStatus::Open;
+            $this->closedAt = null;
+        }
     }
 
     /**
