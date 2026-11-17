@@ -48,9 +48,12 @@ const FEED_MM = 10;
         [attr.data-kind]="ticket().kind"
       >
         @let t = ticket();
-        <p class="lib-ticket-big">{{ restaurantName() }} #{{ t.number }}</p>
-        <p class="lib-ticket-big">{{ t.customer_name }}</p>
-        <p>{{ typeKey(t.type) | t }} · {{ when(t.created_at) }}</p>
+        <header class="lib-ticket-center">
+          <p class="lib-ticket-big">{{ restaurantName() }} #{{ t.number }}</p>
+          <p class="lib-ticket-big">{{ t.customer_name }}</p>
+          <p>{{ typeKey(t.type) | t }}</p>
+          <p class="lib-ticket-nowrap">{{ when(t.created_at) }}</p>
+        </header>
         @if (t.cancelled) {
           <p class="lib-ticket-flag">{{ 'ticket.cancelled' | t }}</p>
         }
@@ -113,7 +116,7 @@ const FEED_MM = 10;
           <p>{{ 'order.note' | t }}: {{ t.note }}</p>
         }
         @if (t.kind === 'bill') {
-          <p>{{ 'ticket.not_fiscal' | t }}</p>
+          <p class="lib-ticket-center">{{ 'ticket.not_fiscal' | t }}</p>
         }
       </div>
     </ng-template>
@@ -169,12 +172,23 @@ const FEED_MM = 10;
       font-weight: bold;
       border: 2px solid currentColor;
     }
+    .lib-ticket-center {
+      text-align: center;
+    }
+    .lib-ticket-nowrap {
+      white-space: nowrap;
+    }
     .lib-ticket-row {
       display: flex;
-      flex-wrap: wrap;
-      gap: 0 1ch;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 1ch;
+      > :first-child {
+        min-width: 0;
+      }
       /* The amount never splits ("R$ 36 / ,00"). */
       > :last-child {
+        flex-shrink: 0;
         white-space: nowrap;
       }
     }
@@ -269,9 +283,10 @@ export class TicketPrint {
   }
 
   protected when(iso: string): string {
-    return new Intl.DateTimeFormat(this.lang(), { dateStyle: 'short', timeStyle: 'short' }).format(
-      new Date(iso),
-    );
+    const at = new Date(iso);
+    const date = new Intl.DateTimeFormat(this.lang(), { dateStyle: 'short' }).format(at);
+    const time = new Intl.DateTimeFormat(this.lang(), { timeStyle: 'short' }).format(at);
+    return `${date} ${time}`;
   }
 
   protected money(cents: number): string {
