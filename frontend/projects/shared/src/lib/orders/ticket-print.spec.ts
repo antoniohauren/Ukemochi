@@ -80,13 +80,14 @@ describe('TicketPrint', () => {
     const preview = text(setup(KITCHEN).nativeElement.querySelector('.lib-ticket'));
 
     expect(preview).toContain('ATUALIZADO v2');
-    expect(preview).toContain('#42 · Amanda · No salão');
+    expect(preview).toContain('Ukemochi #42');
+    expect(preview).toContain('Amanda');
+    expect(preview).toContain('No salão');
     expect(preview).toContain('02x Uramaki Philadelphia · Inteiro');
     expect(preview).toContain('+ Cream cheese');
     expect(preview).toContain('» sem cebolinha');
     expect(preview).toContain('mesa da janela');
     expect(preview).not.toContain('R$');
-    expect(preview).not.toContain('Ukemochi');
   });
 
   it('prints a cancel ticket with its reason', () => {
@@ -123,7 +124,7 @@ describe('TicketPrint', () => {
     const sheet = document.body.querySelector(':scope > .lib-ticket-sheet .lib-ticket');
 
     expect(sheet?.classList).toContain('lib-ticket-58');
-    expect(text(sheet)).toContain('#42 · Amanda');
+    expect(text(sheet)).toContain('Ukemochi #42');
 
     fixture.destroy();
     expect(document.body.querySelector('.lib-ticket-sheet')).toBeNull();

@@ -48,19 +48,15 @@ const FEED_MM = 10;
         [attr.data-kind]="ticket().kind"
       >
         @let t = ticket();
-        @if (t.kind === 'bill' && restaurantName()) {
-          <p class="lib-ticket-center lib-ticket-big">{{ restaurantName() }}</p>
-        }
+        <p class="lib-ticket-big">{{ restaurantName() }} #{{ t.number }}</p>
+        <p class="lib-ticket-big">{{ t.customer_name }}</p>
+        <p>{{ typeKey(t.type) | t }} · {{ when(t.created_at) }}</p>
         @if (t.cancelled) {
           <p class="lib-ticket-flag">{{ 'ticket.cancelled' | t }}</p>
         }
         @if (t.kind === 'kitchen' && t.updated_version !== null) {
           <p class="lib-ticket-flag">{{ 'ticket.updated' | t }} v{{ t.updated_version }}</p>
         }
-        <p class="lib-ticket-big">
-          #{{ t.number }} · {{ t.customer_name }} · {{ typeKey(t.type) | t }}
-        </p>
-        <p>{{ when(t.created_at) }}</p>
         @if (t.kind === 'kitchen' && t.cancel_reason) {
           <p>{{ 'order.cancel.reason' | t }}: {{ t.cancel_reason }}</p>
         }
@@ -70,16 +66,18 @@ const FEED_MM = 10;
         <hr />
         <!-- Same line layout on both tickets; the bill adds the line total below. -->
         @for (row of rows(); track $index) {
-          <p class="lib-ticket-big">{{ row.title }}</p>
-          @for (addon of row.addons; track $index) {
-            <p class="lib-ticket-sub">+ {{ addon }}</p>
-          }
-          @if (row.note) {
-            <p class="lib-ticket-sub">» {{ row.note }}</p>
-          }
-          @if (row.totalCents !== null) {
-            <p class="lib-ticket-price">{{ money(row.totalCents) }}</p>
-          }
+          <div class="lib-ticket-item">
+            <p class="lib-ticket-item-title">{{ row.title }}</p>
+            @for (addon of row.addons; track $index) {
+              <p class="lib-ticket-sub">+ {{ addon }}</p>
+            }
+            @if (row.note) {
+              <p class="lib-ticket-sub">» {{ row.note }}</p>
+            }
+            @if (row.totalCents !== null) {
+              <p class="lib-ticket-price">{{ money(row.totalCents) }}</p>
+            }
+          </div>
         }
         @if (t.kind === 'bill') {
           <hr />
@@ -115,7 +113,7 @@ const FEED_MM = 10;
           <p>{{ 'order.note' | t }}: {{ t.note }}</p>
         }
         @if (t.kind === 'bill') {
-          <p class="lib-ticket-center">{{ 'ticket.not_fiscal' | t }}</p>
+          <p>{{ 'ticket.not_fiscal' | t }}</p>
         }
       </div>
     </ng-template>
@@ -130,7 +128,7 @@ const FEED_MM = 10;
       padding: 2mm 0;
       font-family: ui-monospace, 'DejaVu Sans Mono', 'Courier New', monospace;
       font-size: 12px;
-      line-height: 1.3;
+      line-height: 1.5;
       overflow-wrap: anywhere;
       p {
         margin: 0;
@@ -149,35 +147,34 @@ const FEED_MM = 10;
       font-size: 1.25em;
       font-weight: bold;
     }
+    .lib-ticket-item {
+      font-size: 10px;
+      & + & {
+        margin-top: 1.5mm;
+      }
+    }
+    .lib-ticket-item-title {
+      font-weight: bold;
+    }
     .lib-ticket-sub {
       padding-inline-start: 2ch;
     }
     .lib-ticket-price {
-      text-align: end;
       white-space: nowrap;
-    }
-    .lib-ticket-center {
-      text-align: center;
     }
     .lib-ticket-flag {
       margin: 1mm 0;
-      padding: 1mm 0;
-      text-align: center;
+      padding: 1mm;
       font-size: 1.5em;
       font-weight: bold;
       border: 2px solid currentColor;
     }
     .lib-ticket-row {
       display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      gap: 1ch;
-      > :first-child {
-        min-width: 0;
-      }
-      /* The name wraps; the amount never splits ("R$ 36 / ,00"). */
+      flex-wrap: wrap;
+      gap: 0 1ch;
+      /* The amount never splits ("R$ 36 / ,00"). */
       > :last-child {
-        flex-shrink: 0;
         white-space: nowrap;
       }
     }
