@@ -22,7 +22,7 @@ final readonly class PaymentController
     public function store(PaymentRequest $r, int $id): JsonResponse
     {
         $note = $r->filled('note') ? $r->string('note')->toString() : null;
-        $result = $this->payments->pay($id, $r->payMethod(), $r->integer('amount_cents'), $r->tendered(), $r->payerLabel(), $note);
+        $result = $this->payments->pay($id, $r->payMethod(), $r->integer('amount_cents'), $r->tendered(), $r->payerLabel(), $note, $r->allocations());
 
         return (new OrderPaymentsResource($result))->response()->setStatusCode(201);
     }

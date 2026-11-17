@@ -27,6 +27,7 @@ final class PaymentResource extends JsonResource
             'amount_cents' => $p->amountCents, 'tendered_cents' => $p->tenderedCents, 'change_cents' => $p->changeCents(),
             'payer_label' => $p->payerLabel, 'note' => $p->note, 'created_by' => $p->createdBy,
             'created_at' => $p->createdAt->format(DATE_ATOM), 'voided' => $p->voided,
+            'allocations' => SplitResource::picks($p->allocations),
         ];
     }
 }

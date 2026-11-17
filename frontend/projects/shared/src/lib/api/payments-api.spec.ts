@@ -25,6 +25,11 @@ describe('PaymentsApi', () => {
     expect(http.expectOne({ method: 'POST', url: '/api/orders/42/payments' }).request.body).toEqual(
       body,
     );
+    api.split(42, { mode: 'equal', n: 3 }).subscribe();
+    expect(http.expectOne({ method: 'POST', url: '/api/orders/42/split' }).request.body).toEqual({
+      mode: 'equal',
+      n: 3,
+    });
     api.void(7, 'errado').subscribe();
     expect(http.expectOne({ method: 'POST', url: '/api/payments/7/void' }).request.body).toEqual({
       note: 'errado',

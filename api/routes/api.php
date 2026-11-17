@@ -10,6 +10,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\RealtimeController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ShiftController;
+use App\Http\Controllers\SplitController;
 use App\Http\Controllers\StaffController;
 use Illuminate\Support\Facades\Route;
 
@@ -39,6 +40,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/orders/{id}/ticket', [OrderController::class, 'ticket']);
     Route::post('/orders/{id}/printed', [OrderController::class, 'printed']);
     Route::get('/orders/{id}/payments', [PaymentController::class, 'index']);
+    // Preview only: nothing is stored.
+    Route::post('/orders/{id}/split', SplitController::class);
 
     // Taking and cancelling orders is front-of-house work; the kitchen only follows them.
     Route::middleware('role:admin,waitress')->group(function (): void {

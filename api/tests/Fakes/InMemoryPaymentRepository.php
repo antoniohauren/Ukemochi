@@ -15,7 +15,7 @@ final class InMemoryPaymentRepository implements PaymentRepository
     public function add(Payment $p): Payment
     {
         $id = count($this->payments) + 1;
-        $this->payments[$id] = new Payment($id, $p->orderId, $p->shiftId, $p->method, $p->amountCents, $p->tenderedCents, $p->payerLabel, $p->note, $p->createdBy, $p->createdAt);
+        $this->payments[$id] = new Payment($id, $p->orderId, $p->shiftId, $p->method, $p->amountCents, $p->tenderedCents, $p->payerLabel, $p->note, $p->createdBy, $p->createdAt, false, $p->allocations);
 
         return clone $this->payments[$id];
     }

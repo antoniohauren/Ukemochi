@@ -195,6 +195,7 @@ export const ptBR = {
   'error.payment.voided': 'Pagamento já estornado.',
   'error.payment.shift_closed': 'O caixa deste pagamento já foi fechado; não dá para estornar.',
   'error.payment.not_found': 'Pagamento não encontrado.',
+  'error.split.invalid': 'Divisão inválida: confira as quantidades e os valores.',
 };
 
 export type TranslationKey = keyof typeof ptBR;

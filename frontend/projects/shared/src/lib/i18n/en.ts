@@ -196,4 +196,5 @@ export const en: Dictionary = {
   'error.payment.voided': 'Payment already voided.',
   'error.payment.shift_closed': "This payment's shift is closed; it cannot be voided.",
   'error.payment.not_found': 'Payment not found.',
+  'error.split.invalid': 'Invalid split: check the quantities and amounts.',
 };

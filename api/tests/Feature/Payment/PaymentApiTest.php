@@ -40,7 +40,7 @@ it('takes a cash payment with change and answers order + payments in the exact s
         ->and($response->json('payments'))->toBe([[
             'id' => $response->json('payments.0.id'), 'order_id' => $id, 'shift_id' => $shift, 'method' => 'cash',
             'amount_cents' => 2000, 'tendered_cents' => 5000, 'change_cents' => 3000, 'payer_label' => 'Ana', 'note' => 'nota de 50',
-            'created_by' => $user->id, 'created_at' => '2026-11-16T12:00:00+00:00', 'voided' => false,
+            'created_by' => $user->id, 'created_at' => '2026-11-16T12:00:00+00:00', 'voided' => false, 'allocations' => [],
         ]])
         ->and(lastAudit())->toMatchArray(['entity' => 'order', 'entity_id' => (string) $id, 'action' => 'payment', 'note' => 'nota de 50']);
     expect(getJson("/api/orders/{$id}/payments")->assertOk()->json())->toBe($response->json());

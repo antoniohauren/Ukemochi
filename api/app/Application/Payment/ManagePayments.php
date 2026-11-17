@@ -13,12 +13,15 @@ use App\Application\Order\OrderRepository;
 use App\Application\Transaction;
 use App\Domain\Auth\NotAuthenticated;
 use App\Domain\Cash\NoOpenShift;
+use App\Domain\Order\LineNotFound;
 use App\Domain\Order\Order;
+use App\Domain\Order\OrderLine;
 use App\Domain\Order\OrderNotFound;
 use App\Domain\Payment\Payment;
 use App\Domain\Payment\PaymentMethod;
 use App\Domain\Payment\PaymentNotFound;
 use App\Domain\Payment\PaymentShiftClosed;
+use App\Domain\Split\Pick;
 
 /**
  * Takes and voids payments. Each locks the order, then the open shift (so a shift cannot close
@@ -44,15 +47,22 @@ final readonly class ManagePayments
         return new OrderPayments($order, $this->payments->forOrder($orderId));
     }
 
-    public function pay(int $orderId, PaymentMethod $method, int $amountCents, ?int $tenderedCents, ?string $payerLabel, ?string $note): OrderPayments
+    /** @param  list<Pick>  $allocations  lines of this order the payment covers (split by units or goods) */
+    public function pay(int $orderId, PaymentMethod $method, int $amountCents, ?int $tenderedCents, ?string $payerLabel, ?string $note, array $allocations = []): OrderPayments
     {
         $userId = $this->userId();
 
-        return $this->announced($this->transaction->run(function () use ($orderId, $method, $amountCents, $tenderedCents, $payerLabel, $note, $userId): OrderPayments {
+        return $this->announced($this->transaction->run(function () use ($orderId, $method, $amountCents, $tenderedCents, $payerLabel, $note, $allocations, $userId): OrderPayments {
             $order = $this->orders->lock($orderId) ?? throw new OrderNotFound($orderId);
+            $lineIds = array_map(fn (OrderLine $l) => $l->id, $order->lines);
+            foreach ($allocations as $pick) {
+                if (! in_array($pick->lineId, $lineIds, true)) {
+                    throw new LineNotFound($pick->lineId);
+                }
+            }
             $shift = $this->shifts->lockCurrent() ?? throw new NoOpenShift;
             $now = $this->clock->now();
-            $payment = Payment::take($orderId, $shift->id, $method, $amountCents, $tenderedCents, $payerLabel, $note, $userId, $now);
+            $payment = Payment::take($orderId, $shift->id, $method, $amountCents, $tenderedCents, $payerLabel, $note, $userId, $now, $allocations);
             $order->recordPayment($amountCents, $now);
             $payment = $this->payments->add($payment);
             $order = $this->orders->save($order);
