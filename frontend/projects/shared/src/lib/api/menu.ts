@@ -25,6 +25,8 @@ export interface Variant {
   price_cents: number;
   available: boolean;
   sort: number;
+  /** Printed on tickets in place of "category item · variant"; null prints those. */
+  print_name: string | null;
 }
 
 /** `AddonResource`. Exactly one of `item_id` / `category_id` is set. */

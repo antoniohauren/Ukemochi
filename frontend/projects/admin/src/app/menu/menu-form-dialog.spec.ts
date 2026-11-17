@@ -39,6 +39,7 @@ describe('MenuFormDialog', () => {
       name: 'Carne',
       note: '',
       price_cents: 1250,
+      print_name: '',
       flag: true,
     });
     expect(close).toHaveBeenCalledWith(true);

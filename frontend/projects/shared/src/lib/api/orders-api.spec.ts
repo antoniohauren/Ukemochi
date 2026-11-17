@@ -61,4 +61,14 @@ describe('OrdersApi', () => {
       note: null,
     });
   });
+
+  it('fetches a ticket by kind and records a print', () => {
+    api.ticket(5, 'kitchen').subscribe();
+    http.expectOne({ method: 'GET', url: '/api/orders/5/ticket?kind=kitchen' });
+    api.printed(5, 'bill', 3).subscribe();
+    expect(http.expectOne({ method: 'POST', url: '/api/orders/5/printed' }).request.body).toEqual({
+      kind: 'bill',
+      version: 3,
+    });
+  });
 });

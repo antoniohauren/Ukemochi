@@ -107,10 +107,12 @@ export class MenuPage {
   protected editVariant(itemId: number, variant: Variant | null): void {
     this.open({
       title: variant ? 'menu.variant.edit' : 'menu.variant.new',
-      fields: variant ? ['name', 'price_cents'] : ['name', 'price_cents', 'flag'],
+      fields: variant
+        ? ['name', 'price_cents', 'print_name']
+        : ['name', 'price_cents', 'print_name', 'flag'],
       nameOptional: true,
       flagLabel: 'menu.available',
-      value: variant ?? {},
+      value: variant ? { ...variant, print_name: variant.print_name ?? '' } : {},
       save: (v) => this.store.saveVariant(itemId, variant?.id ?? null, v),
     });
   }

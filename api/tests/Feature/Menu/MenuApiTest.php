@@ -40,8 +40,8 @@ it('builds the menu tree with variants and add-ons for any role', function (): v
         'items' => [[
             'id' => $i, 'category_id' => $c, 'name' => 'Philadelphia', 'note' => null, 'active' => true, 'sort' => 0,
             'variants' => [
-                ['id' => $v, 'item_id' => $i, 'name' => '', 'price_cents' => 3200, 'available' => true, 'sort' => 0],
-                ['id' => $half, 'item_id' => $i, 'name' => 'Meio', 'price_cents' => 1700, 'available' => true, 'sort' => 1],
+                ['id' => $v, 'item_id' => $i, 'name' => '', 'price_cents' => 3200, 'available' => true, 'sort' => 0, 'print_name' => null],
+                ['id' => $half, 'item_id' => $i, 'name' => 'Meio', 'price_cents' => 1700, 'available' => true, 'sort' => 1, 'print_name' => null],
             ],
             'addons' => [['id' => $onItem, 'item_id' => $i, 'category_id' => null, 'name' => 'Cream cheese', 'price_cents' => 400, 'active' => true]],
         ]],
@@ -59,8 +59,8 @@ it('returns each saved record in its exact shape', function (): void {
         ->assertExactJson(['id' => $c, 'name' => 'Hot', 'sort' => 3, 'active' => false]);
     putJson("/api/items/{$i}", ['category_id' => $c, 'name' => 'Hot Philadelphia', 'note' => 'empanado'])->assertOk()
         ->assertExactJson(['id' => $i, 'category_id' => $c, 'name' => 'Hot Philadelphia', 'note' => 'empanado', 'active' => true, 'sort' => 0]);
-    putJson("/api/variants/{$v}", ['name' => 'Inteiro 8un', 'price_cents' => 3500, 'sort' => 0])->assertOk()
-        ->assertExactJson(['id' => $v, 'item_id' => $i, 'name' => 'Inteiro 8un', 'price_cents' => 3500, 'available' => true, 'sort' => 0]);
+    putJson("/api/variants/{$v}", ['name' => 'Inteiro 8un', 'price_cents' => 3500, 'sort' => 0, 'print_name' => 'Phila 8un'])->assertOk()
+        ->assertExactJson(['id' => $v, 'item_id' => $i, 'name' => 'Inteiro 8un', 'price_cents' => 3500, 'available' => true, 'sort' => 0, 'print_name' => 'Phila 8un']);
     $a = createdId(postJson('/api/addons', ['item_id' => $i, 'name' => 'Tarê', 'price_cents' => 0, 'active' => true]));
     putJson("/api/addons/{$a}", ['category_id' => $c, 'name' => 'Tarê extra', 'price_cents' => 200, 'active' => false])->assertOk()
         ->assertExactJson(['id' => $a, 'item_id' => null, 'category_id' => $c, 'name' => 'Tarê extra', 'price_cents' => 200, 'active' => false]);

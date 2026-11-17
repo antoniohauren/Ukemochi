@@ -15,6 +15,7 @@ use App\Domain\Order\OrderLine;
 use App\Domain\Order\OrderStatus;
 use App\Domain\Order\OrderType;
 use App\Domain\Payment\PaymentMethod;
+use App\Domain\Ticket\TicketKind;
 use App\Infrastructure\Auth\EloquentUser;
 use Illuminate\Support\Facades\DB;
 
@@ -96,6 +97,13 @@ it('updates status and version, keeps kept line ids, adds new lines and removes 
         ->and($saved->lines[0]->id)->toBe($kept->id)
         ->and($again)->toEqual($saved)
         ->and(DB::table('line_addons')->count())->toBe(0);
+});
+
+it('stores the printed version', function (): void {
+    [$repo, $draft] = orderRepoWithDraft();
+    $draft->markPrinted(TicketKind::Kitchen, 1);
+
+    expect($repo->save($draft)->printedVersion)->toBe(1);
 });
 
 it('stores closed_at as a timestamptz', function (): void {

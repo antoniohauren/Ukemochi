@@ -80,6 +80,7 @@ final readonly class MenuController
     {
         return self::created(new VariantResource($this->edit->createVariant(
             $itemId, self::nullableStr($r, 'name') ?? '', $r->integer('price_cents'), $r->boolean('available'), $r->integer('sort'),
+            self::nullableStr($r, 'print_name'),
         )));
     }
 
@@ -93,7 +94,7 @@ final readonly class MenuController
     public function updateVariant(VariantRequest $r, int $id): VariantResource
     {
         return new VariantResource($this->edit->updateVariant(
-            $id, self::nullableStr($r, 'name') ?? '', $r->integer('price_cents'), $r->integer('sort'),
+            $id, self::nullableStr($r, 'name') ?? '', $r->integer('price_cents'), $r->integer('sort'), self::nullableStr($r, 'print_name'),
         ));
     }
 

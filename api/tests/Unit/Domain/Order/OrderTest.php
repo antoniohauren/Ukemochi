@@ -8,6 +8,7 @@ use App\Domain\Order\CustomerNameRequired;
 use App\Domain\Order\InvalidAmount;
 use App\Domain\Order\InvalidDeliveryFee;
 use App\Domain\Order\InvalidPayMethod;
+use App\Domain\Order\InvalidPrintVersion;
 use App\Domain\Order\InvalidQty;
 use App\Domain\Order\InvalidTransition;
 use App\Domain\Order\LineAddon;
@@ -18,7 +19,9 @@ use App\Domain\Order\OrderDetails;
 use App\Domain\Order\OrderLine;
 use App\Domain\Order\OrderStatus;
 use App\Domain\Order\OrderType;
+use App\Domain\Order\PrintStatus;
 use App\Domain\Payment\PaymentMethod;
+use App\Domain\Ticket\TicketKind;
 
 function aLine(int $unit = 3200, int $qty = 1, int ...$addons): OrderLine
 {
@@ -200,3 +203,53 @@ it('refuses an edit that removes every line', function (): void {
     $order = anOrder();
     $order->edit($order->details, []);
 })->throws(NoLines::class);
+
+it('marks the kitchen ticket printed at a version, never going back', function (): void {
+    $order = anOrder();
+    $order->edit($order->details, [aLine()]);
+    $order->edit($order->details, [aLine()]);
+
+    $order->markPrinted(TicketKind::Kitchen, 3);
+    $order->markPrinted(TicketKind::Kitchen, 2);
+
+    expect($order->printedVersion)->toBe(3);
+});
+
+it('leaves the printed version alone when the bill is printed', function (): void {
+    $order = anOrder();
+
+    $order->markPrinted(TicketKind::Bill, 1);
+
+    expect($order->printedVersion)->toBe(0);
+});
+
+it('refuses a printed version the order never had', function (int $version): void {
+    $order = anOrder();
+
+    expect(fn () => $order->markPrinted(TicketKind::Kitchen, $version))->toThrow(InvalidPrintVersion::class);
+})->with([0, 2]);
+
+it('reports not printed, changed since print, and nothing once printed', function (): void {
+    $order = anOrder();
+    expect($order->printStatus())->toBe(PrintStatus::NotPrinted);
+
+    $order->markPrinted(TicketKind::Kitchen, 1);
+    expect($order->printStatus())->toBeNull();
+
+    $order->edit($order->details, [aLine(qty: 2)]);
+    expect($order->printStatus())->toBe(PrintStatus::Changed);
+});
+
+it('reports a cancel not printed only when the kitchen saw the order', function (): void {
+    $never = anOrder();
+    $never->cancel('desistiu');
+    $printed = anOrder();
+    $printed->markPrinted(TicketKind::Kitchen, 1);
+    $printed->cancel('desistiu');
+
+    expect($never->printStatus())->toBeNull()
+        ->and($printed->printStatus())->toBe(PrintStatus::CancelNotPrinted);
+
+    $printed->markPrinted(TicketKind::Kitchen, 2);
+    expect($printed->printStatus())->toBeNull();
+});

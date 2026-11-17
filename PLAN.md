@@ -115,7 +115,7 @@ Pure functions returning `{payer_label, amount_cents, allocations?}` suggestions
 Unallocated remainder always visible.
 
 ## Printing
-- `app/Domain/Ticket` builds ticket content. Kitchen: no prices, item notes, add-ons, `#<number> · <name> · <type>`, "UPDATED vN"/"CANCELADO". Bill: prices, payments, change, balance.
+- `app/Domain/Ticket` builds ticket content. Kitchen: same content as the bill; footer "Comanda da cozinha" instead of the thank-you line, `#<number> · <name> · <type>`, "UPDATED vN"/"CANCELADO". Bill: prices, payments, change, balance.
   `GET /api/orders/{id}/ticket?kind=kitchen|bill`.
 - `TicketPrint` (`shared`) renders it: `@media print` + `@page` from the paper width setting, monospace.
 - "Imprimir" → print view → `window.print()` → `POST /api/orders/{id}/printed {kind, version}` (stores `printed_version`, writes audit).
@@ -147,8 +147,8 @@ Each step is one TDD vertical slice. Done = tests green + `make check` clean + r
 - [x] **11. Waitress ordering** — order list (live via Echo), new order (dine-in name / pickup / delivery), add/edit lines with variant, add-ons, notes (bottom sheets); cancel.
 
 ### Phase 4 — Printing
-- [ ] **12. Ticket content** — domain ticket builder (kitchen + bill), `GET /api/orders/{id}/ticket`.
-- [ ] **13. Browser print** — `TicketPrint` view (58/80mm `@page`), "Imprimir" in waitress + admin, `POST /api/orders/{id}/printed`, print badges.
+- [x] **12. Ticket content** — domain ticket builder (kitchen + bill), `GET /api/orders/{id}/ticket`.
+- [x] **13. Browser print** — `TicketPrint` view (58/80mm `@page`), "Imprimir" in waitress + admin, `POST /api/orders/{id}/printed`, print badges.
 
 ### Phase 5 — Money
 - [ ] **14. Cash shifts** — open with float, movements (withdrawal, deposit, staff_meal + staff name), close with count, expected cash + difference, totals per method.

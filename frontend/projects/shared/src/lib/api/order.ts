@@ -19,6 +19,8 @@ export interface OrderLine {
   category_name: string;
   item_name: string;
   variant_name: string;
+  /** Variant print name snapshot; tickets print it in place of "category item · variant". */
+  print_name: string | null;
   unit_price_cents: number;
   qty: number;
   note: string | null;
@@ -27,8 +29,14 @@ export interface OrderLine {
 }
 
 /**
+ * What the kitchen ticket still needs: never printed, changed since the last print, or a cancel the
+ * kitchen has not got yet. Null: nothing to print.
+ */
+export type PrintStatus = 'not_printed' | 'changed' | 'cancel_not_printed';
+
+/**
  * `OrderResource`. `id` is the order number. Totals come from the API: show them as they are.
- * "Changed since print" is `version > printed_version`.
+ * `printed_version` is the last version whose kitchen ticket was printed.
  */
 export interface Order {
   id: number;
@@ -54,6 +62,7 @@ export interface Order {
   cancel_reason: string | null;
   printed_version: number;
   version: number;
+  print_status: PrintStatus | null;
 }
 
 /** `OrderListResource`: body of `GET /api/orders`, newest first. */
@@ -92,6 +101,58 @@ export interface OrderInput {
 export interface OrderEditInput extends OrderInput {
   edit_note?: string | null;
 }
+
+export type TicketKind = 'kitchen' | 'bill';
+
+/**
+ * Footer shared by both tickets. `change_cents` = "troco para" − total; null without "troco para"
+ * or when it does not cover the total.
+ */
+export interface TicketTotals {
+  subtotal_cents: number;
+  delivery_fee_cents: number;
+  total_cents: number;
+  pay_on_delivery: boolean;
+  pay_method: PaymentMethod | null;
+  change_for_cents: number | null;
+  change_cents: number | null;
+}
+
+/**
+ * `KitchenTicketResource`: body of `GET /api/orders/{id}/ticket?kind=kitchen`: same content as the bill plus the UPDATED/CANCEL flags.
+ * `updated_version` is set when the kitchen already has an older print ("UPDATED vN").
+ */
+export interface KitchenTicket extends TicketTotals {
+  kind: 'kitchen';
+  number: number;
+  type: OrderType;
+  customer_name: string;
+  address_text: string | null;
+  created_at: string;
+  version: number;
+  updated_version: number | null;
+  cancelled: boolean;
+  cancel_reason: string | null;
+  note: string | null;
+  /** Same lines as the bill, for now. */
+  lines: OrderLine[];
+}
+
+/** `BillResource`: body of `GET /api/orders/{id}/ticket?kind=bill` (non-fiscal). */
+export interface Bill extends TicketTotals {
+  kind: 'bill';
+  number: number;
+  type: OrderType;
+  customer_name: string;
+  address_text: string | null;
+  created_at: string;
+  version: number;
+  cancelled: boolean;
+  note: string | null;
+  lines: OrderLine[];
+}
+
+export type Ticket = KitchenTicket | Bill;
 
 /** Private channel and event the API broadcasts after each order change; refetch the order on it. */
 export const ORDERS_CHANNEL = 'orders';

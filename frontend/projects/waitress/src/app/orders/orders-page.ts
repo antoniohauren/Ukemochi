@@ -8,8 +8,7 @@ import {
   MatNavList,
 } from '@angular/material/list';
 import { RouterLink } from '@angular/router';
-import { formatMoney, LanguageService, type Order, TPipe } from 'shared';
-import { OrdersStore } from './orders-store';
+import { formatMoney, LanguageService, type Order, OrdersStore, PrintBadge, TPipe } from 'shared';
 
 /** Pedidos: active orders, newest first, live through Reverb. */
 @Component({
@@ -22,6 +21,7 @@ import { OrdersStore } from './orders-store';
     MatListItemMeta,
     MatListItemTitle,
     MatNavList,
+    PrintBadge,
     RouterLink,
     TPipe,
   ],
@@ -41,6 +41,9 @@ import { OrdersStore } from './orders-store';
             <span matListItemLine>
               {{ typeKey(o) | t }} · {{ statusKey(o) | t }} · {{ time(o.created_at) }}
             </span>
+            @if (o.print_status) {
+              <span matListItemLine><lib-print-badge [status]="o.print_status" /></span>
+            }
             <span matListItemMeta class="total">{{ money(o.total_cents) }}</span>
           </a>
         } @empty {

@@ -7,6 +7,9 @@ namespace App\Application\Order;
 use App\Domain\Order\Order;
 use App\Domain\Order\OrderNotFound;
 use App\Domain\Order\OrderStatus;
+use App\Domain\Ticket\Bill;
+use App\Domain\Ticket\KitchenTicket;
+use App\Domain\Ticket\TicketKind;
 
 final readonly class ReadOrders
 {
@@ -31,5 +34,12 @@ final readonly class ReadOrders
     public function get(int $id): Order
     {
         return $this->orders->find($id) ?? throw new OrderNotFound($id);
+    }
+
+    public function ticket(int $id, TicketKind $kind): KitchenTicket|Bill
+    {
+        $order = $this->get($id);
+
+        return $kind === TicketKind::Kitchen ? KitchenTicket::of($order) : Bill::of($order);
     }
 }

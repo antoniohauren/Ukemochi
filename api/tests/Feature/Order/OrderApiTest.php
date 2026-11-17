@@ -83,12 +83,12 @@ it('creates an order and answers it in the exact shape with domain totals', func
         'pay_method' => 'cash', 'note' => 'portão azul',
         'lines' => [[
             'id' => lineId($response), 'variant_id' => $v, 'category_name' => 'Uramaki', 'item_name' => 'Philadelphia',
-            'variant_name' => 'Inteiro', 'unit_price_cents' => 3200, 'qty' => 2, 'note' => 'sem cebolinha',
+            'variant_name' => 'Inteiro', 'print_name' => null, 'unit_price_cents' => 3200, 'qty' => 2, 'note' => 'sem cebolinha',
             'addons' => [['addon_id' => $a, 'name' => 'Cream cheese', 'price_cents' => 300]], 'total_cents' => 7000,
         ]],
         'subtotal_cents' => 7000, 'total_cents' => 7700,
         'created_by' => $user->id, 'created_at' => '2026-11-16T12:00:00+00:00', 'closed_at' => null, 'cancel_reason' => null,
-        'printed_version' => 0, 'version' => 1,
+        'printed_version' => 0, 'version' => 1, 'print_status' => 'not_printed',
     ]);
     expect(lastAudit())->toMatchArray(['user_id' => $user->id, 'entity' => 'order', 'entity_id' => '1', 'action' => 'create'])
         ->and(lastAudit()['summary'])->toMatchArray(['type' => 'delivery', 'total_cents' => 7700]);
@@ -225,7 +225,7 @@ it('requires a session', function (string $method, string $uri): void {
 })->with([
     ['GET', '/api/orders'], ['GET', '/api/orders/1'], ['POST', '/api/orders'], ['PUT', '/api/orders/1'],
     ['PUT', '/api/orders/1/status'], ['POST', '/api/orders/1/cancel'], ['POST', '/api/orders/1/reopen'],
-    ['POST', '/api/broadcasting/auth'],
+    ['GET', '/api/orders/1/ticket'], ['POST', '/api/orders/1/printed'], ['POST', '/api/broadcasting/auth'],
 ]);
 
 it('validates the order body', function (array $body, string $field): void {
@@ -360,4 +360,110 @@ describe('realtime', function (): void {
             postJson('/api/broadcasting/auth', ['channel_name' => 'private-orders', 'socket_id' => '1234.5678'])->assertForbidden();
         });
     });
+});
+
+it('answers the kitchen ticket in the exact shape, same lines as the bill', function (): void {
+    ['variant' => $v, 'addon' => $a] = orderApiMenu();
+    actAs(Role::Waitress);
+    $placed = placeOrder($v, ['note' => 'mesa da janela', 'lines' => [['variant_id' => $v, 'qty' => 2, 'note' => 'sem cebolinha', 'addon_ids' => [$a]]]]);
+    $id = createdId($placed);
+    actAs(Role::Kitchen);
+
+    getJson("/api/orders/{$id}/ticket?kind=kitchen")->assertOk()->assertExactJson([
+        'kind' => 'kitchen', 'number' => $id, 'type' => 'dine_in', 'customer_name' => 'Amanda', 'address_text' => null,
+        'created_at' => '2026-11-16T12:00:00+00:00', 'version' => 1, 'updated_version' => null,
+        'cancelled' => false, 'cancel_reason' => null, 'note' => 'mesa da janela',
+        'lines' => $placed->json('lines'),
+        'subtotal_cents' => 7000, 'delivery_fee_cents' => 0, 'total_cents' => 7000,
+        'pay_on_delivery' => false, 'pay_method' => null, 'change_for_cents' => null, 'change_cents' => null,
+    ]);
+});
+
+it('answers the bill in the exact shape, with totals and the change to take', function (): void {
+    actAs(Role::Waitress);
+    ['variant' => $v] = orderApiMenu();
+    $created = postJson('/api/orders', [
+        'type' => 'delivery', 'customer_name' => 'Ana', 'address_text' => 'Rua A, 1', 'delivery_fee_cents' => 700,
+        'pay_on_delivery' => true, 'pay_method' => 'cash', 'change_for_cents' => 5000,
+        'lines' => [['variant_id' => $v, 'qty' => 1]],
+    ])->assertCreated();
+    $id = createdId($created);
+
+    getJson("/api/orders/{$id}/ticket?kind=bill")->assertOk()->assertExactJson([
+        'kind' => 'bill', 'number' => $id, 'type' => 'delivery', 'customer_name' => 'Ana', 'address_text' => 'Rua A, 1',
+        'created_at' => '2026-11-16T12:00:00+00:00', 'version' => 1, 'cancelled' => false, 'note' => null,
+        'lines' => $created->json('lines'),
+        'subtotal_cents' => 3200, 'delivery_fee_cents' => 700, 'total_cents' => 3900,
+        'pay_on_delivery' => true, 'pay_method' => 'cash', 'change_for_cents' => 5000, 'change_cents' => 1100,
+    ]);
+});
+
+it('validates the ticket kind and answers 404 for a missing order', function (): void {
+    actAs(Role::Waitress);
+    ['variant' => $v] = orderApiMenu();
+    $id = createdId(placeOrder($v));
+
+    getJson("/api/orders/{$id}/ticket")->assertStatus(422)->assertJsonValidationErrors('kind');
+    getJson("/api/orders/{$id}/ticket?kind=receipt")->assertStatus(422)->assertJsonValidationErrors('kind');
+    getJson('/api/orders/999/ticket?kind=bill')->assertNotFound()->assertJson(['code' => 'order.not_found']);
+});
+
+it('records a kitchen print, clearing the badge until the next change, which prints as updated', function (): void {
+    Event::fake([OrderUpdated::class]);
+    ['variant' => $v] = orderApiMenu();
+    actAs(Role::Waitress);
+    $id = createdId(placeOrder($v));
+    $printer = actAs(Role::Kitchen);
+
+    postJson("/api/orders/{$id}/printed", ['kind' => 'kitchen', 'version' => 1, 'note' => 'impressora 1'])->assertOk()
+        ->assertJson(['printed_version' => 1, 'print_status' => null]);
+    expect(lastAudit())->toMatchArray(['user_id' => $printer->id, 'entity' => 'order', 'entity_id' => (string) $id, 'action' => 'print', 'note' => 'impressora 1'])
+        ->and(lastAudit()['summary'])->toBe(['kind' => 'kitchen', 'version' => 1]);
+    Event::assertDispatched(OrderUpdated::class);
+
+    actAs(Role::Waitress);
+    putJson("/api/orders/{$id}", dineInBody($v, ['note' => 'sem wasabi']))->assertOk()->assertJson(['print_status' => 'changed']);
+    expect(getJson("/api/orders/{$id}/ticket?kind=kitchen")->json('updated_version'))->toBe(2);
+});
+
+it('records a bill print without clearing the kitchen badge', function (): void {
+    actAs(Role::Waitress);
+    ['variant' => $v] = orderApiMenu();
+    $id = createdId(placeOrder($v));
+
+    postJson("/api/orders/{$id}/printed", ['kind' => 'bill', 'version' => 1])->assertOk()
+        ->assertJson(['printed_version' => 0, 'print_status' => 'not_printed']);
+    expect(lastAudit()['summary'])->toBe(['kind' => 'bill', 'version' => 1]);
+});
+
+it('validates a print and refuses a version the order never had', function (): void {
+    actAs(Role::Waitress);
+    ['variant' => $v] = orderApiMenu();
+    $id = createdId(placeOrder($v));
+
+    postJson("/api/orders/{$id}/printed", ['kind' => 'menu', 'version' => 'x'])->assertStatus(422)->assertJsonValidationErrors(['kind', 'version']);
+    postJson("/api/orders/{$id}/printed", ['kind' => 'kitchen', 'version' => 2])->assertStatus(422)->assertJson(['code' => 'order.invalid_print_version']);
+    postJson('/api/orders/999/printed', ['kind' => 'kitchen', 'version' => 1])->assertNotFound();
+});
+
+it('lets a cancelled order print its cancel ticket', function (): void {
+    actAs(Role::Waitress);
+    ['variant' => $v] = orderApiMenu();
+    $id = createdId(placeOrder($v));
+    postJson("/api/orders/{$id}/printed", ['kind' => 'kitchen', 'version' => 1])->assertOk();
+    postJson("/api/orders/{$id}/cancel", ['reason' => 'desistiu'])->assertOk()->assertJson(['print_status' => 'cancel_not_printed']);
+
+    getJson("/api/orders/{$id}/ticket?kind=kitchen")->assertOk()->assertJson(['cancelled' => true, 'cancel_reason' => 'desistiu', 'updated_version' => 2]);
+    postJson("/api/orders/{$id}/printed", ['kind' => 'kitchen', 'version' => 2])->assertOk()->assertJson(['print_status' => null]);
+});
+
+it('snapshots the variant print name on the line and prints it on both tickets', function (): void {
+    actAs(Role::Admin);
+    ['variant' => $v] = orderApiMenu();
+    putJson("/api/variants/{$v}", ['name' => 'Inteiro', 'price_cents' => 3200, 'sort' => 0, 'print_name' => 'Phila lata'])->assertOk();
+    $id = createdId(placeOrder($v));
+    putJson("/api/variants/{$v}", ['name' => 'Inteiro', 'price_cents' => 3200, 'sort' => 0, 'print_name' => 'Outro'])->assertOk();
+
+    expect(getJson("/api/orders/{$id}/ticket?kind=kitchen")->json('lines.0.print_name'))->toBe('Phila lata')
+        ->and(getJson("/api/orders/{$id}/ticket?kind=bill")->json('lines.0.print_name'))->toBe('Phila lata');
 });

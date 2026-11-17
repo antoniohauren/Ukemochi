@@ -31,8 +31,24 @@ const MENU: Menu = {
           active: true,
           sort: 0,
           variants: [
-            { id: 100, item_id: 10, name: 'Inteiro', price_cents: 3200, available: true, sort: 0 },
-            { id: 101, item_id: 10, name: 'Meio', price_cents: 1700, available: false, sort: 1 },
+            {
+              id: 100,
+              item_id: 10,
+              name: 'Inteiro',
+              price_cents: 3200,
+              available: true,
+              sort: 0,
+              print_name: null,
+            },
+            {
+              id: 101,
+              item_id: 10,
+              name: 'Meio',
+              price_cents: 1700,
+              available: false,
+              sort: 1,
+              print_name: null,
+            },
           ],
           addons: [
             {

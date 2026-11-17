@@ -1,7 +1,15 @@
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiClient } from './api-client';
-import type { Order, OrderEditInput, OrderInput, OrderList, OrderStatus } from './order';
+import type {
+  Order,
+  OrderEditInput,
+  OrderInput,
+  OrderList,
+  OrderStatus,
+  Ticket,
+  TicketKind,
+} from './order';
 
 /** Order endpoints. Taking and cancelling orders is admin/waitress; the rest is any staff. */
 @Injectable({ providedIn: 'root' })
@@ -37,5 +45,14 @@ export class OrdersApi {
 
   reopen(id: number, note: string | null = null): Observable<Order> {
     return this.api.post<Order>(`/orders/${id}/reopen`, { note });
+  }
+
+  ticket(id: number, kind: TicketKind): Observable<Ticket> {
+    return this.api.get<Ticket>(`/orders/${id}/ticket`, { kind });
+  }
+
+  /** Records that the ticket showing `version` was printed; only `kitchen` clears `print_status`. */
+  printed(id: number, kind: TicketKind, version: number): Observable<Order> {
+    return this.api.post<Order>(`/orders/${id}/printed`, { kind, version });
   }
 }

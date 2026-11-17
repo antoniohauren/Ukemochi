@@ -75,7 +75,12 @@ export class MenuStore {
   saveVariant(itemId: number, id: number | null, v: MenuForm): Promise<ApiError | null> {
     const variants = this.variantsOf(itemId);
     const sort = id === null ? nextSort(variants) : this.sortOf(variants, id);
-    const body = { name: v.name, price_cents: v.price_cents, sort };
+    const body = {
+      name: v.name,
+      price_cents: v.price_cents,
+      sort,
+      print_name: v.print_name || null,
+    };
     return this.write(
       id === null
         ? this.api.createVariant(itemId, { ...body, available: v.flag })

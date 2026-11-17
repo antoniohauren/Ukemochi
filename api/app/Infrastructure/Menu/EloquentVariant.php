@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $price_cents
  * @property bool $available
  * @property int $sort
+ * @property string|null $print_name
  */
 final class EloquentVariant extends Model
 {
@@ -24,7 +25,7 @@ final class EloquentVariant extends Model
 
     public function toDomain(): Variant
     {
-        return new Variant($this->id, $this->item_id, $this->name, $this->price_cents, $this->available, $this->sort);
+        return new Variant($this->id, $this->item_id, $this->name, $this->price_cents, $this->available, $this->sort, $this->print_name);
     }
 
     /** @return array<string, string> */

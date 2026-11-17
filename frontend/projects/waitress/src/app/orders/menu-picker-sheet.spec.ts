@@ -20,6 +20,7 @@ const item = (id: number, name: string, variants: [number, string, boolean, numb
     price_cents: price,
     available,
     sort: 0,
+    print_name: null,
   })),
 });
 

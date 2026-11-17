@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Order;
 
 use App\Domain\Money\Money;
+use App\Domain\Ticket\TicketKind;
 
 /**
  * Order aggregate. `id` is the order number. `version` grows on every change to what the
@@ -23,7 +24,7 @@ final class Order
         public readonly \DateTimeImmutable $createdAt,
         public private(set) ?\DateTimeImmutable $closedAt = null,
         public private(set) ?string $cancelReason = null,
-        public readonly int $printedVersion = 0,
+        public private(set) int $printedVersion = 0,
         public private(set) int $version = 1,
     ) {
         if ($lines === []) {
@@ -105,6 +106,33 @@ final class Order
         $this->status = OrderStatus::Cancelled;
         $this->cancelReason = trim($reason);
         $this->version++;
+    }
+
+    /**
+     * Records a print of the version the ticket showed. Only the kitchen ticket counts for
+     * "changed since print"; an older print arriving late never moves it back.
+     */
+    public function markPrinted(TicketKind $kind, int $version): void
+    {
+        if ($version < 1 || $version > $this->version) {
+            throw new InvalidPrintVersion;
+        }
+        if ($kind === TicketKind::Kitchen) {
+            $this->printedVersion = max($this->printedVersion, $version);
+        }
+    }
+
+    /** Null when the kitchen has what it needs; a cancel matters only if the kitchen saw the order. */
+    public function printStatus(): ?PrintStatus
+    {
+        $behind = $this->version > $this->printedVersion;
+
+        return match (true) {
+            $this->status === OrderStatus::Cancelled => $this->printedVersion > 0 && $behind ? PrintStatus::CancelNotPrinted : null,
+            $this->printedVersion === 0 => PrintStatus::NotPrinted,
+            $behind => PrintStatus::Changed,
+            default => null,
+        };
     }
 
     private function refuseIfCancelled(): void

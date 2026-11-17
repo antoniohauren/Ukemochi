@@ -75,22 +75,22 @@ final readonly class EditMenu
         ));
     }
 
-    public function createVariant(int $itemId, string $name, int $priceCents, bool $available, int $sort): Variant
+    public function createVariant(int $itemId, string $name, int $priceCents, bool $available, int $sort, ?string $printName = null): Variant
     {
         $this->item($itemId);
-        $variant = new Variant(0, $itemId, $name, $priceCents, $available, $sort);
+        $variant = new Variant(0, $itemId, $name, $priceCents, $available, $sort, $printName);
 
         return $this->transaction->run(fn () => $this->saved($this->menu->saveVariant($variant), 'variant', 'create'));
     }
 
     /** `available` stays as it is: only setVariantAvailable changes it. */
-    public function updateVariant(int $id, string $name, int $priceCents, int $sort): Variant
+    public function updateVariant(int $id, string $name, int $priceCents, int $sort, ?string $printName = null): Variant
     {
-        return $this->transaction->run(function () use ($id, $name, $priceCents, $sort): Variant {
+        return $this->transaction->run(function () use ($id, $name, $priceCents, $sort, $printName): Variant {
             $current = $this->variant($id);
 
             return $this->saved(
-                $this->menu->saveVariant(new Variant($id, $current->itemId, $name, $priceCents, $current->available, $sort)), 'variant', 'update',
+                $this->menu->saveVariant(new Variant($id, $current->itemId, $name, $priceCents, $current->available, $sort, $printName)), 'variant', 'update',
             );
         });
     }

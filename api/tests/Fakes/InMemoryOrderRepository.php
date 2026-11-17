@@ -49,7 +49,7 @@ final class InMemoryOrderRepository implements OrderRepository
     public function save(Order $order): Order
     {
         $lines = array_map(fn (OrderLine $l) => $l->id !== 0 ? $l : new OrderLine(
-            ++$this->lineId, $l->variantId, $l->itemName, $l->variantName, $l->unitPriceCents, $l->qty, $l->note, $l->addons, $l->categoryName,
+            ++$this->lineId, $l->variantId, $l->itemName, $l->variantName, $l->unitPriceCents, $l->qty, $l->note, $l->addons, $l->categoryName, $l->printName,
         ), $order->lines);
         $this->orders[$order->id] = new Order(
             $order->id, $order->details, $order->status, $lines, $order->createdBy, $order->createdAt,

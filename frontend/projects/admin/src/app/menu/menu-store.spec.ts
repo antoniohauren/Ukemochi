@@ -22,7 +22,15 @@ const MENU: Menu = {
           active: true,
           sort: 0,
           variants: [
-            { id: 100, item_id: 10, name: '', price_cents: 1250, available: true, sort: 0 },
+            {
+              id: 100,
+              item_id: 10,
+              name: '',
+              price_cents: 1250,
+              available: true,
+              sort: 0,
+              print_name: null,
+            },
           ],
           addons: [],
         },
@@ -42,7 +50,15 @@ const TWO: Menu = {
           ...CARNE,
           variants: [
             ...CARNE.variants,
-            { id: 101, item_id: 10, name: 'G', price_cents: 1500, available: true, sort: 1 },
+            {
+              id: 101,
+              item_id: 10,
+              name: 'G',
+              price_cents: 1500,
+              available: true,
+              sort: 1,
+              print_name: null,
+            },
           ],
         },
         { ...CARNE, id: 11, name: 'Queijo', sort: 1, variants: [] },
@@ -52,7 +68,13 @@ const TWO: Menu = {
   ],
 };
 
-const FORM: MenuForm = { name: 'Queijo', note: '', price_cents: 900, flag: false };
+const FORM: MenuForm = {
+  name: 'Queijo',
+  note: '',
+  price_cents: 900,
+  print_name: 'Queijo lata',
+  flag: false,
+};
 
 describe('MenuStore', () => {
   let api: Record<string, ReturnType<typeof vi.fn>>;
@@ -130,6 +152,7 @@ describe('MenuStore', () => {
       name: 'Queijo',
       price_cents: 900,
       sort: 1,
+      print_name: 'Queijo lata',
       available: false,
     });
     await store.saveVariant(10, 100, FORM);
@@ -137,6 +160,7 @@ describe('MenuStore', () => {
       name: 'Queijo',
       price_cents: 900,
       sort: 0,
+      print_name: 'Queijo lata',
     });
   });
 

@@ -1,7 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { of, Subject, throwError } from 'rxjs';
-import { type Order, OrdersApi, type OrderUpdated, RealtimeService } from 'shared';
+import type { Order, OrderUpdated } from '../api/order';
+import { OrdersApi } from '../api/orders-api';
+import { RealtimeService } from '../api/realtime';
 import { OrderStore, OrdersStore } from './orders-store';
 
 const order = (id: number, status: Order['status'] = 'open') => ({ id, status }) as Order;

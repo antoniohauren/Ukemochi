@@ -33,6 +33,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::put('/orders/{id}', [OrderController::class, 'update']);
     Route::put('/orders/{id}/status', [OrderController::class, 'status']);
     Route::post('/orders/{id}/reopen', [OrderController::class, 'reopen']);
+    Route::get('/orders/{id}/ticket', [OrderController::class, 'ticket']);
+    Route::post('/orders/{id}/printed', [OrderController::class, 'printed']);
 
     // Taking and cancelling orders is front-of-house work; the kitchen only follows them.
     Route::middleware('role:admin,waitress')->group(function (): void {

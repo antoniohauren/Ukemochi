@@ -13,16 +13,13 @@ import {
   Subject,
   switchMap,
 } from 'rxjs';
-import {
-  type ApiError,
-  errorKey,
-  LanguageService,
-  type Order,
-  OrdersApi,
-  type OrderUpdated,
-  RealtimeService,
-  type TranslationKey,
-} from 'shared';
+import type { ApiError } from '../api/api-client';
+import type { Order, OrderUpdated } from '../api/order';
+import { OrdersApi } from '../api/orders-api';
+import { RealtimeService } from '../api/realtime';
+import { errorKey } from '../i18n/error-key';
+import { LanguageService } from '../i18n/language';
+import type { TranslationKey } from '../i18n/pt-br';
 
 type Loaded<T> = { ok: true; value: T } | { ok: false; error: TranslationKey };
 
