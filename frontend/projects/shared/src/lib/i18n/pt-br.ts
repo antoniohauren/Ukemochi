@@ -181,7 +181,7 @@ export const ptBR = {
   'ticket.updated': 'ATUALIZADO',
   'ticket.cancelled': 'CANCELADO',
   'ticket.change': 'Troco',
-  'ticket.not_fiscal': 'Não é documento fiscal',
+  'ticket.thanks': 'Obrigado pela preferência',
   'print.status.not_printed': 'Não impresso',
   'print.status.changed': 'Alterado após impressão',
   'print.status.cancel_not_printed': 'Cancelamento não impresso',

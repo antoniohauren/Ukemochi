@@ -182,7 +182,7 @@ export const en: Dictionary = {
   'ticket.updated': 'UPDATED',
   'ticket.cancelled': 'CANCELLED',
   'ticket.change': 'Change',
-  'ticket.not_fiscal': 'Not a tax receipt',
+  'ticket.thanks': 'Thank you for choosing us',
   'print.status.not_printed': 'Not printed',
   'print.status.changed': 'Changed since print',
   'print.status.cancel_not_printed': 'Cancel not printed',

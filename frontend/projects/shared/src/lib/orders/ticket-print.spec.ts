@@ -98,7 +98,7 @@ describe('TicketPrint', () => {
     expect(el.querySelector('.lib-ticket-price')).toBeNull();
     expect(preview).toMatch(/Total\s?R\$\s?70,00/);
     expect(preview).toContain('Comanda da cozinha');
-    expect(preview).not.toContain('Não é documento fiscal');
+    expect(preview).not.toContain('Obrigado pela preferência');
   });
 
   it('prints a cancel ticket with its reason', () => {
@@ -127,7 +127,7 @@ describe('TicketPrint', () => {
     expect(preview).toMatch(/Total\s?R\$\s?39,00/);
     expect(preview).toMatch(/Troco para\s?R\$\s?50,00/);
     expect(preview).toMatch(/Troco\s?R\$\s?11,00/);
-    expect(preview).toContain('Não é documento fiscal');
+    expect(preview).toContain('Obrigado pela preferência');
   });
 
   it('puts a copy of the ticket under body for printing and removes it on destroy', () => {
