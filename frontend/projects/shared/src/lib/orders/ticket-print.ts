@@ -107,7 +107,7 @@ const FEED_MM = 10;
           <p>{{ 'order.note' | t }}: {{ t.note }}</p>
         }
         <p class="lib-ticket-center">
-          {{ 'ticket.thanks' | t }}
+          {{ (t.kind === 'bill' ? 'ticket.thanks' : 'ticket.kitchen') | t }}
         </p>
       </div>
     </ng-template>

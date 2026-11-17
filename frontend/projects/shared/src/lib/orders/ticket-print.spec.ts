@@ -102,7 +102,8 @@ describe('TicketPrint', () => {
     expect(preview).toContain('mesa da janela');
     expect(preview).toMatch(/sem cebolinha\s?R\$\s?70,00/);
     expect(preview).toMatch(/Total\s?R\$\s?70,00/);
-    expect(preview).toContain('Obrigado pela preferência');
+    expect(preview).toContain('Comanda da cozinha');
+    expect(preview).not.toContain('Obrigado pela preferência');
   });
 
   it('prints a cancel ticket with its reason', () => {
