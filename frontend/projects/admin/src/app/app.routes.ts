@@ -24,6 +24,11 @@ export const routes: Routes = [
         data: { title: 'nav.orders' },
       },
       {
+        path: 'orders/:id/edit',
+        loadComponent: () => import('shared/order-editor').then((m) => m.OrderEditorPage),
+        data: { title: 'order.edit', back: '/orders', afterSave: '/orders' },
+      },
+      {
         path: 'orders/:id/print/kitchen',
         component: TicketPage,
         data: { title: 'ticket.kitchen', back: '/orders', kind: 'kitchen' },
@@ -39,14 +44,27 @@ export const routes: Routes = [
         data: { title: 'nav.menu' },
       },
       { path: 'kitchen', component: PlaceholderPage, data: { title: 'nav.kitchen' } },
-      { path: 'cash', component: PlaceholderPage, data: { title: 'nav.cash' } },
+      {
+        path: 'cash',
+        loadComponent: () => import('./cash/cash-page').then((m) => m.CashPage),
+        data: { title: 'nav.cash' },
+      },
+      {
+        path: 'cash/:id',
+        loadComponent: () => import('./cash/shift-page').then((m) => m.ShiftPage),
+        data: { title: 'cash.shift', back: '/cash' },
+      },
       { path: 'reports', component: PlaceholderPage, data: { title: 'nav.reports' } },
       {
         path: 'staff',
         loadComponent: () => import('./staff/staff-page').then((m) => m.StaffPage),
         data: { title: 'nav.staff' },
       },
-      { path: 'audit', component: PlaceholderPage, data: { title: 'nav.audit' } },
+      {
+        path: 'audit',
+        loadComponent: () => import('./audit/audit-page').then((m) => m.AuditPage),
+        data: { title: 'nav.audit' },
+      },
       {
         path: 'settings',
         loadComponent: () => import('./settings-page').then((m) => m.SettingsPage),

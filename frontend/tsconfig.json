@@ -13,7 +13,8 @@
     "experimentalDecorators": true,
     "importHelpers": true,
     "paths": {
-      "shared": ["./projects/shared/src/public-api.ts"]
+      "shared": ["./projects/shared/src/public-api.ts"],
+      "shared/order-editor": ["./projects/shared/src/lib/orders/editor/order-editor-page.ts"]
     },
     "target": "ES2022",
     "module": "preserve"

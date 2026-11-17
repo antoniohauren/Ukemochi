@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\AuditController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\MenuController;
@@ -80,5 +81,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::put('/settings', [SettingsController::class, 'update']);
         Route::get('/shifts', [ShiftController::class, 'index']);
         Route::get('/shifts/{id}', [ShiftController::class, 'show']);
+        Route::get('/audit', AuditController::class);
     });
 });

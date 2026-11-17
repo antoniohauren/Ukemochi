@@ -3,6 +3,8 @@
  */
 
 export * from './lib/api/api-client';
+export * from './lib/api/audit';
+export * from './lib/api/audit-api';
 export * from './lib/api/cash';
 export * from './lib/api/cash-api';
 export * from './lib/api/menu';
@@ -21,6 +23,7 @@ export * from './lib/auth/auth';
 export * from './lib/auth/auth.guard';
 export * from './lib/auth/auth.interceptor';
 export * from './lib/auth/login-page';
+export * from './lib/i18n/date';
 export * from './lib/i18n/en';
 export * from './lib/i18n/error-key';
 export * from './lib/i18n/lang-switch';

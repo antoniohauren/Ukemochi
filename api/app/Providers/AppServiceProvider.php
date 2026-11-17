@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Application\Audit\AuditLog;
+use App\Application\Audit\AuditReader;
 use App\Application\Auth\LoginThrottle;
 use App\Application\Auth\PinHasher;
 use App\Application\Auth\SessionAuth;
@@ -20,6 +21,7 @@ use App\Application\Payment\PaymentRepository;
 use App\Application\Settings\SettingsRepository;
 use App\Application\Transaction;
 use App\Infrastructure\Audit\DatabaseAuditLog;
+use App\Infrastructure\Audit\DatabaseAuditReader;
 use App\Infrastructure\Auth\CacheLoginThrottle;
 use App\Infrastructure\Auth\DatabaseSessionRevoker;
 use App\Infrastructure\Auth\EloquentUserRepository;
@@ -48,6 +50,7 @@ class AppServiceProvider extends ServiceProvider
     /** @var array<class-string, class-string> */
     public array $bindings = [
         AuditLog::class => DatabaseAuditLog::class,
+        AuditReader::class => DatabaseAuditReader::class,
         Clock::class => SystemClock::class,
         DatabaseProbe::class => ConnectionDatabaseProbe::class,
         LoginThrottle::class => CacheLoginThrottle::class,

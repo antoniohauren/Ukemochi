@@ -1,24 +1,24 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom, of } from 'rxjs';
+import { type ApiError } from '../../api/api-client';
+import { type Menu } from '../../api/menu';
+import { MenuApi } from '../../api/menu-api';
+import { type Order } from '../../api/order';
+import { OrdersApi } from '../../api/orders-api';
+import { SettingsApi } from '../../api/settings-api';
+import { errorKey } from '../../i18n/error-key';
+import { LanguageService } from '../../i18n/language';
+import { type TranslationKey } from '../../i18n/pt-br';
 import {
-  type ApiError,
   type DraftLine,
   draftLines,
-  errorKey,
   findVariant,
-  LanguageService,
   lineView,
-  type Menu,
-  MenuApi,
   type MenuEntry,
-  type Order,
   orderableMenu,
-  OrdersApi,
-  SettingsApi,
-  type TranslationKey,
-} from 'shared';
+} from '../../orders/order-draft';
 import { orderBody, type OrderFormValue } from './order-form';
 
 /** Draft lines of a new or edited order, plus what the editor needs from the API (menu, fee default). */
@@ -28,6 +28,10 @@ export class OrderEditorStore {
   private readonly menuApi = inject(MenuApi);
   private readonly settingsApi = inject(SettingsApi);
   private readonly router = inject(Router);
+  /** Route data `afterSave` sends the app elsewhere after saving (admin: the list); default the order page. */
+  private readonly afterSave = inject(ActivatedRoute, { optional: true })?.snapshot.data?.[
+    'afterSave'
+  ] as string | undefined;
   private readonly snackBar = inject(MatSnackBar);
   private readonly language = inject(LanguageService);
   private editId: number | null = null;
@@ -106,7 +110,7 @@ export class OrderEditorStore {
     }
     const done = this.editId === null ? 'order.sent' : 'order.saved';
     this.snackBar.open(this.language.t(done), undefined, { duration: 3000 });
-    await this.router.navigateByUrl(`/orders/${saved.id}`);
+    await this.router.navigateByUrl(this.afterSave ?? `/orders/${saved.id}`);
     return null;
   }
 }

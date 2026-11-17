@@ -156,7 +156,7 @@ Each step is one TDD vertical slice. Done = tests green + `make check` clean + r
 - [x] **15. Payments** — cash/credit/debit/pix, mixed, change calc, void, auto-close when paid, pay upfront or on delivery (`troco para`), payment requires open shift.
 - [x] **16. Split math** — equal N, by amount, by item units (fractions), by goods; remainder visible; preview endpoint.
 - [x] **17. Waitress payment UI** — pay screen, split flows, change display, bill print.
-- [ ] **18. Admin cash + audit** — shift screens, movement entry, order status board (ready / out for delivery), audit log viewer, edit closed orders.
+- [x] **18. Admin cash + audit** — shift screens, movement entry, order status board (ready / out for delivery), audit log viewer, edit closed orders.
 
 ### Phase 6 — Customers
 - [ ] **19. Customers** — profile (name, phone key, addresses, note), phone lookup while creating phone orders, order history.
