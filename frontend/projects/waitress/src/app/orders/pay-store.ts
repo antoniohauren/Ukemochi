@@ -13,8 +13,8 @@ import {
   type TranslationKey,
 } from 'shared';
 
-/** How this payer's amount is found: typed in, an equal share, picked line units, or whole lines. */
-export type PayMode = 'amount' | 'equal' | 'units' | 'goods';
+/** How this payer's amount is found: typed in, an equal share, or the units of each line they had. */
+export type PayMode = 'amount' | 'equal' | 'items';
 
 export interface Suggestion {
   amount_cents: number;
@@ -39,10 +39,8 @@ export class PayStore {
   readonly mode = signal<PayMode>('amount');
   /** Payers left for an equal split. */
   readonly n = signal(2);
-  /** Units this payer takes per line id ("1/2", "1"); missing = none. */
-  readonly picks = signal<Record<number, string>>({});
-  /** Whole lines this payer takes. */
-  readonly goods = signal<number[]>([]);
+  /** Units this payer takes per line id; missing = none. */
+  readonly picks = signal<Record<number, number>>({});
   readonly preview = signal<SplitResult | null>(null);
   readonly previewError = signal<TranslationKey | null>(null);
   readonly saving = signal(false);
@@ -100,18 +98,14 @@ export class PayStore {
     this.refreshPreview();
   }
 
-  setPick(lineId: number, qty: string): void {
+  /** Sets the units this payer takes of a line, from 0 to the line quantity. */
+  setPick(lineId: number, qty: number): void {
+    const max = this.data()?.order.lines.find((l) => l.id === lineId)?.qty ?? 0;
+    const units = Math.min(max, Math.max(0, qty));
     this.picks.update((p) => {
       const rest = Object.fromEntries(Object.entries(p).filter(([id]) => Number(id) !== lineId));
-      return qty === '0' ? rest : { ...rest, [lineId]: qty };
+      return units === 0 ? rest : { ...rest, [lineId]: units };
     });
-    this.refreshPreview();
-  }
-
-  toggleGood(lineId: number): void {
-    this.goods.update((g) =>
-      g.includes(lineId) ? g.filter((id) => id !== lineId) : [...g, lineId],
-    );
     this.refreshPreview();
   }
 
@@ -125,7 +119,6 @@ export class PayStore {
         this.n.update((n) => n - 1);
       }
       this.picks.set({});
-      this.goods.set([]);
       this.refreshPreview();
       const payment = result.payments[result.payments.length - 1];
       return {
@@ -161,15 +154,13 @@ export class PayStore {
         return null;
       case 'equal':
         return { mode: 'equal', n: this.n() };
-      case 'units': {
+      case 'items': {
         const picks = Object.entries(this.picks()).map(([line, qty]) => ({
           line_id: Number(line),
-          qty,
+          qty: String(qty),
         }));
         return picks.length ? { mode: 'units', payers: [{ picks }] } : null;
       }
-      case 'goods':
-        return this.goods().length ? { mode: 'goods', payers: [{ line_ids: this.goods() }] } : null;
     }
   }
 }

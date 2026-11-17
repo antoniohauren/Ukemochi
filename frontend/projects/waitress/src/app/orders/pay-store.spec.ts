@@ -3,7 +3,15 @@ import { of, throwError } from 'rxjs';
 import { type Order, type OrderPayments, type Payment, PaymentsApi } from 'shared';
 import { PayStore } from './pay-store';
 
-const ORDER = { id: 42, status: 'open', balance_cents: 11300 } as unknown as Order;
+const ORDER = {
+  id: 42,
+  status: 'open',
+  balance_cents: 11300,
+  lines: [
+    { id: 5, qty: 2 },
+    { id: 6, qty: 1 },
+  ],
+} as unknown as Order;
 const DATA: OrderPayments = { order: ORDER, payments: [] };
 const CASH = { id: 1, method: 'cash', change_cents: 3000 } as unknown as Payment;
 
@@ -45,31 +53,29 @@ describe('PayStore', () => {
     expect(store.suggestion()?.amount_cents).toBe(3767);
   });
 
-  it('sends this payer picks as one payer, dropping zero quantities', () => {
-    store.setMode('units');
-    store.setPick(5, '1/2');
-    store.setPick(6, '1');
-    store.setPick(6, '0');
+  it('sends this payer units as one payer, kept within each line quantity', () => {
+    store.setMode('items');
+    store.setPick(5, 1);
+    store.setPick(6, 1);
+    store.setPick(6, 0);
 
     expect(api['split']).toHaveBeenLastCalledWith(42, {
       mode: 'units',
-      payers: [{ picks: [{ line_id: 5, qty: '1/2' }] }],
+      payers: [{ picks: [{ line_id: 5, qty: '1' }] }],
     });
 
-    store.setMode('goods');
-    store.toggleGood(7);
-    expect(api['split']).toHaveBeenLastCalledWith(42, {
-      mode: 'goods',
-      payers: [{ line_ids: [7] }],
-    });
+    store.setPick(5, 9);
+    expect(store.picks()).toEqual({ 5: 2 });
+    store.setPick(5, -1);
+    expect(store.picks()).toEqual({});
   });
 
   it('keeps no suggestion when nothing is picked or the split is refused', () => {
-    store.setMode('goods');
+    store.setMode('items');
     expect(store.suggestion()).toBeNull();
 
     api['split'].mockReturnValue(throwError(() => ({ code: 'split.invalid', message: '' })));
-    store.toggleGood(7);
+    store.setPick(5, 1);
     expect(store.previewError()).toBe('error.split.invalid');
     expect(store.suggestion()).toBeNull();
   });

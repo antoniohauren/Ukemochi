@@ -54,6 +54,7 @@ const ACTIVE: OrderStatus[] = ['open', 'ready', 'out_for_delivery'];
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mat-button-toggle-group
+      hideSingleSelectionIndicator
       class="view"
       [value]="view()"
       (change)="show($event.value)"

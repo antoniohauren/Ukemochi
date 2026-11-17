@@ -11,12 +11,10 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatButtonToggle, MatButtonToggleGroup } from '@angular/material/button-toggle';
-import { MatCheckbox } from '@angular/material/checkbox';
 import { MatDialog } from '@angular/material/dialog';
 import { MatError, MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
-import { MatOption, MatSelect } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom, startWith } from 'rxjs';
@@ -25,7 +23,6 @@ import {
   ConfirmDialog,
   formatMoney,
   LanguageService,
-  type OrderLine,
   parseMoney,
   type Payment,
   PaymentList,
@@ -37,7 +34,7 @@ import { payForm, paymentInput } from './pay-form';
 import { type PayMode, PayStore } from './pay-store';
 
 const METHODS: PaymentMethod[] = ['cash', 'pix', 'credit', 'debit'];
-const MODES: PayMode[] = ['amount', 'equal', 'units', 'goods'];
+const MODES: PayMode[] = ['amount', 'equal', 'items'];
 
 /**
  * Pagar: one payment at a time. The split mode only suggests this payer's amount (from the API);
@@ -50,7 +47,6 @@ const MODES: PayMode[] = ['amount', 'equal', 'units', 'goods'];
     MatButton,
     MatButtonToggle,
     MatButtonToggleGroup,
-    MatCheckbox,
     MatError,
     MatFormField,
     MatHint,
@@ -58,8 +54,6 @@ const MODES: PayMode[] = ['amount', 'equal', 'units', 'goods'];
     MatIconButton,
     MatInput,
     MatLabel,
-    MatOption,
-    MatSelect,
     PaymentList,
     ReactiveFormsModule,
     TPipe,
@@ -80,6 +74,7 @@ const MODES: PayMode[] = ['amount', 'equal', 'units', 'goods'];
       </header>
 
       <mat-button-toggle-group
+        hideSingleSelectionIndicator
         class="modes"
         [value]="store.mode()"
         (change)="store.setMode($event.value)"
@@ -114,35 +109,35 @@ const MODES: PayMode[] = ['amount', 'equal', 'units', 'goods'];
             </button>
           </div>
         }
-        @case ('units') {
+        @case ('items') {
           <p class="hint">{{ 'payment.pick_hint' | t }}</p>
           @for (l of d.order.lines; track l.id) {
+            @let taken = store.picks()[l.id] ?? 0;
             <div class="line">
-              <span class="line-name">{{ l.qty }}x {{ l.item_name }} · {{ l.variant_name }}</span>
-              <mat-form-field class="qty" subscriptSizing="dynamic">
-                <mat-label>{{ 'payment.qty' | t }}</mat-label>
-                <mat-select
-                  [value]="store.picks()[l.id] ?? '0'"
-                  (selectionChange)="store.setPick(l.id, $event.value)"
-                >
-                  @for (q of qtyOptions(l); track q) {
-                    <mat-option [value]="q">{{ q }}</mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
+              <span class="line-name">
+                {{ l.qty }}x {{ l.item_name }} · {{ l.variant_name }}
+                <span class="meta">{{ money(l.total_cents) }}</span>
+              </span>
+              <button
+                mat-icon-button
+                type="button"
+                [disabled]="taken === 0"
+                [attr.aria-label]="'payment.unit.less' | t"
+                (click)="store.setPick(l.id, taken - 1)"
+              >
+                <mat-icon aria-hidden="true">remove</mat-icon>
+              </button>
+              <span class="taken" aria-live="polite">{{ taken }}</span>
+              <button
+                mat-icon-button
+                type="button"
+                [disabled]="taken >= l.qty"
+                [attr.aria-label]="'payment.unit.more' | t"
+                (click)="store.setPick(l.id, taken + 1)"
+              >
+                <mat-icon aria-hidden="true">add</mat-icon>
+              </button>
             </div>
-          }
-        }
-        @case ('goods') {
-          <p class="hint">{{ 'payment.pick_hint' | t }}</p>
-          @for (l of d.order.lines; track l.id) {
-            <mat-checkbox
-              class="good"
-              [checked]="store.goods().includes(l.id)"
-              (change)="store.toggleGood(l.id)"
-            >
-              {{ l.qty }}x {{ l.item_name }} · {{ l.variant_name }} · {{ money(l.total_cents) }}
-            </mat-checkbox>
           }
         }
       }
@@ -160,6 +155,7 @@ const MODES: PayMode[] = ['amount', 'equal', 'units', 'goods'];
 
       <form class="form" [formGroup]="form" (ngSubmit)="pay()">
         <mat-button-toggle-group
+          hideSingleSelectionIndicator
           formControlName="method"
           class="methods"
           [attr.aria-label]="'order.pay_method' | t"
@@ -262,11 +258,14 @@ const MODES: PayMode[] = ['amount', 'equal', 'units', 'goods'];
       flex: 1;
       min-width: 0;
     }
-    .qty {
-      width: 112px;
+    .line-name {
+      display: flex;
+      flex-direction: column;
     }
-    .good {
-      display: block;
+    .taken {
+      min-width: 24px;
+      text-align: center;
+      font: var(--mat-sys-title-medium);
     }
     .form {
       display: flex;
@@ -375,11 +374,6 @@ export class PayPage {
     this.snackBar.open(this.language.t(key ?? 'payment.voided.done'), undefined, {
       duration: 3000,
     });
-  }
-
-  /** None, common fractions of one unit, then whole units up to the line quantity. */
-  protected qtyOptions(line: OrderLine): string[] {
-    return ['0', '1/4', '1/3', '1/2', ...Array.from({ length: line.qty }, (_, i) => String(i + 1))];
   }
 
   protected modeKey(m: PayMode) {

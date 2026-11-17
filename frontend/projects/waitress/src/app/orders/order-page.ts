@@ -16,7 +16,7 @@ import {
 } from 'shared';
 import { CancelDialog, type CancelDialogData } from './cancel-dialog';
 
-/** One order as the API computed it. Main action: pay the balance (edit once paid); the rest sits in the overflow menu. */
+/** One order as the API computed it. Bottom bar: edit, and pay while a balance is due; the rest sits in the overflow menu. */
 @Component({
   selector: 'app-order-page',
   providers: [OrderStore],
@@ -50,12 +50,6 @@ import { CancelDialog, type CancelDialogData } from './cancel-dialog';
           <mat-icon aria-hidden="true">more_vert</mat-icon>
         </button>
         <mat-menu #options="matMenu">
-          @if (o.status !== 'cancelled') {
-            <a mat-menu-item [routerLink]="['/orders', o.id, 'edit']">
-              <mat-icon aria-hidden="true">edit</mat-icon>
-              <span>{{ 'order.edit' | t }}</span>
-            </a>
-          }
           <a mat-menu-item [routerLink]="['/orders', o.id, 'pay']">
             <mat-icon aria-hidden="true">payments</mat-icon>
             <span>{{ 'payment.list' | t }}</span>
@@ -115,13 +109,10 @@ import { CancelDialog, type CancelDialogData } from './cancel-dialog';
       </dl>
       @if (o.status !== 'cancelled') {
         <div class="action-bar">
+          <a matButton="tonal" [routerLink]="['/orders', o.id, 'edit']">{{ 'order.edit' | t }}</a>
           @if (o.balance_cents > 0) {
-            <a matButton="filled" [routerLink]="['/orders', o.id, 'pay']">
-              {{ 'payment.pay' | t }} {{ money(o.balance_cents) }}
-            </a>
-          } @else {
-            <a matButton="filled" [routerLink]="['/orders', o.id, 'edit']">{{
-              'order.edit' | t
+            <a matButton="filled" [routerLink]="['/orders', o.id, 'pay']">{{
+              'payment.pay' | t
             }}</a>
           }
         </div>
@@ -188,9 +179,11 @@ import { CancelDialog, type CancelDialogData } from './cancel-dialog';
       bottom: 0;
       margin-top: auto;
       padding: 8px 0;
+      display: flex;
+      gap: 8px;
       background: var(--mat-sys-surface);
       a {
-        width: 100%;
+        flex: 1;
         min-height: 48px;
       }
     }
