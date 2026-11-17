@@ -171,7 +171,16 @@ const FEED_MM = 10;
     .lib-ticket-row {
       display: flex;
       justify-content: space-between;
+      align-items: flex-end;
       gap: 1ch;
+      > :first-child {
+        min-width: 0;
+      }
+      /* The name wraps; the amount never splits ("R$ 36 / ,00"). */
+      > :last-child {
+        flex-shrink: 0;
+        white-space: nowrap;
+      }
     }
     .lib-ticket-preview {
       display: flex;
