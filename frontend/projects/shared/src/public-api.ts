@@ -3,6 +3,8 @@
  */
 
 export * from './lib/api/api-client';
+export * from './lib/api/cash';
+export * from './lib/api/cash-api';
 export * from './lib/api/menu';
 export * from './lib/api/menu-api';
 export * from './lib/api/order';

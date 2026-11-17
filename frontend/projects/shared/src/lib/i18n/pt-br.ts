@@ -185,6 +185,12 @@ export const ptBR = {
   'print.status.not_printed': 'Não impresso',
   'print.status.changed': 'Alterado após impressão',
   'print.status.cancel_not_printed': 'Cancelamento não impresso',
+  'error.cash.invalid_amount': 'Valor inválido.',
+  'error.cash.staff_name_required': 'Informe o nome de quem comeu.',
+  'error.cash.shift_closed': 'Este caixa já foi fechado.',
+  'error.cash.shift_already_open': 'Já existe um caixa aberto.',
+  'error.cash.no_open_shift': 'Nenhum caixa aberto. Abra o caixa primeiro.',
+  'error.cash.shift_not_found': 'Caixa não encontrado.',
 };
 
 export type TranslationKey = keyof typeof ptBR;

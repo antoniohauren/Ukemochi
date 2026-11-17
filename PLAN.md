@@ -151,7 +151,7 @@ Each step is one TDD vertical slice. Done = tests green + `make check` clean + r
 - [x] **13. Browser print** — `TicketPrint` view (58/80mm `@page`), "Imprimir" in waitress + admin, `POST /api/orders/{id}/printed`, print badges.
 
 ### Phase 5 — Money
-- [ ] **14. Cash shifts** — open with float, movements (withdrawal, deposit, staff_meal + staff name), close with count, expected cash + difference, totals per method.
+- [x] **14. Cash shifts** — open with float, movements (withdrawal, deposit, staff_meal + staff name), close with count, expected cash + difference, totals per method.
 - [ ] **15. Payments** — cash/credit/debit/pix, mixed, change calc, void, auto-close when paid, pay upfront or on delivery (`troco para`), payment requires open shift.
 - [ ] **16. Split math** — equal N, by amount, by item units (fractions), by goods; remainder visible; preview endpoint.
 - [ ] **17. Waitress payment UI** — pay screen, split flows, change display, bill print.

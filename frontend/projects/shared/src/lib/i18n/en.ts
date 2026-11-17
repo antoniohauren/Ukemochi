@@ -186,4 +186,10 @@ export const en: Dictionary = {
   'print.status.not_printed': 'Not printed',
   'print.status.changed': 'Changed since print',
   'print.status.cancel_not_printed': 'Cancel not printed',
+  'error.cash.invalid_amount': 'Invalid amount.',
+  'error.cash.staff_name_required': 'Enter the staff name.',
+  'error.cash.shift_closed': 'This shift is already closed.',
+  'error.cash.shift_already_open': 'A shift is already open.',
+  'error.cash.no_open_shift': 'No shift is open. Open the cash shift first.',
+  'error.cash.shift_not_found': 'Shift not found.',
 };

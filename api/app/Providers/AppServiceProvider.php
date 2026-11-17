@@ -10,6 +10,7 @@ use App\Application\Auth\PinHasher;
 use App\Application\Auth\SessionAuth;
 use App\Application\Auth\SessionRevoker;
 use App\Application\Auth\UserRepository;
+use App\Application\Cash\ShiftRepository;
 use App\Application\Clock;
 use App\Application\Health\DatabaseProbe;
 use App\Application\Menu\MenuRepository;
@@ -23,6 +24,7 @@ use App\Infrastructure\Auth\DatabaseSessionRevoker;
 use App\Infrastructure\Auth\EloquentUserRepository;
 use App\Infrastructure\Auth\GuardSessionAuth;
 use App\Infrastructure\Auth\HashPinHasher;
+use App\Infrastructure\Cash\DatabaseShiftRepository;
 use App\Infrastructure\DatabaseTransaction;
 use App\Infrastructure\Health\ConnectionDatabaseProbe;
 use App\Infrastructure\Menu\EloquentMenuRepository;
@@ -54,6 +56,7 @@ class AppServiceProvider extends ServiceProvider
         SessionAuth::class => GuardSessionAuth::class,
         SessionRevoker::class => DatabaseSessionRevoker::class,
         SettingsRepository::class => DatabaseSettingsRepository::class,
+        ShiftRepository::class => DatabaseShiftRepository::class,
         Transaction::class => DatabaseTransaction::class,
         UserRepository::class => EloquentUserRepository::class,
     ];
