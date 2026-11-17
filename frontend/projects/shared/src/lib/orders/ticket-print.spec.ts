@@ -137,6 +137,36 @@ describe('TicketPrint', () => {
     expect(preview).toContain('Obrigado pela preferência');
   });
 
+  it('lists the bill payments with change and the balance left', () => {
+    const preview = text(
+      setup({
+        ...BILL,
+        payments: [
+          {
+            method: 'pix',
+            amount_cents: 900,
+            tendered_cents: null,
+            change_cents: null,
+            payer_label: 'Ana',
+          },
+          {
+            method: 'cash',
+            amount_cents: 2000,
+            tendered_cents: 5000,
+            change_cents: 3000,
+            payer_label: null,
+          },
+        ],
+        paid_cents: 2900,
+        balance_cents: 1000,
+      }).nativeElement.querySelector('.lib-ticket'),
+    );
+
+    expect(preview).toMatch(/Total\s?R\$\s?39,00\s*Pix · Ana\s?R\$\s?9,00/);
+    expect(preview).toMatch(/Dinheiro\s?R\$\s?20,00\s*Troco\s?R\$\s?30,00/);
+    expect(preview).toMatch(/A pagar\s?R\$\s?10,00/);
+  });
+
   it('puts a copy of the ticket under body for printing and removes it on destroy', () => {
     const fixture = setup(KITCHEN, 58);
     const sheet = document.body.querySelector(':scope > .lib-ticket-sheet .lib-ticket');

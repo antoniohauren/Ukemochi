@@ -25,6 +25,11 @@ export const routes: Routes = [
         data: { title: 'order.edit', back: '/orders' },
       },
       {
+        path: 'orders/:id/pay',
+        loadComponent: () => import('./orders/pay-page').then((m) => m.PayPage),
+        data: { title: 'payment.pay', back: '/orders' },
+      },
+      {
         path: 'orders/:id/print/kitchen',
         component: TicketPage,
         data: { title: 'ticket.kitchen', back: '/orders', kind: 'kitchen' },

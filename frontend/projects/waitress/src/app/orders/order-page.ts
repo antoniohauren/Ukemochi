@@ -16,7 +16,7 @@ import {
 } from 'shared';
 import { CancelDialog, type CancelDialogData } from './cancel-dialog';
 
-/** One order as the API computed it. Main action: edit; cancel sits in the overflow menu. */
+/** One order as the API computed it. Main action: pay the balance (edit once paid); the rest sits in the overflow menu. */
 @Component({
   selector: 'app-order-page',
   providers: [OrderStore],
@@ -50,6 +50,16 @@ import { CancelDialog, type CancelDialogData } from './cancel-dialog';
           <mat-icon aria-hidden="true">more_vert</mat-icon>
         </button>
         <mat-menu #options="matMenu">
+          @if (o.status !== 'cancelled') {
+            <a mat-menu-item [routerLink]="['/orders', o.id, 'edit']">
+              <mat-icon aria-hidden="true">edit</mat-icon>
+              <span>{{ 'order.edit' | t }}</span>
+            </a>
+          }
+          <a mat-menu-item [routerLink]="['/orders', o.id, 'pay']">
+            <mat-icon aria-hidden="true">payments</mat-icon>
+            <span>{{ 'payment.list' | t }}</span>
+          </a>
           <a mat-menu-item [routerLink]="['/orders', o.id, 'print', 'kitchen']">
             <mat-icon aria-hidden="true">print</mat-icon>
             <span>{{ 'ticket.print.kitchen' | t }}</span>
@@ -96,10 +106,24 @@ import { CancelDialog, type CancelDialogData } from './cancel-dialog';
         }
         <dt class="total">{{ 'order.total' | t }}</dt>
         <dd class="total">{{ money(o.total_cents) }}</dd>
+        @if (o.paid_cents !== 0) {
+          <dt>{{ 'payment.paid' | t }}</dt>
+          <dd>{{ money(o.paid_cents) }}</dd>
+          <dt>{{ (o.balance_cents < 0 ? 'payment.overpaid' : 'payment.balance') | t }}</dt>
+          <dd>{{ money(abs(o.balance_cents)) }}</dd>
+        }
       </dl>
       @if (o.status !== 'cancelled') {
         <div class="action-bar">
-          <a matButton="filled" [routerLink]="['/orders', o.id, 'edit']">{{ 'order.edit' | t }}</a>
+          @if (o.balance_cents > 0) {
+            <a matButton="filled" [routerLink]="['/orders', o.id, 'pay']">
+              {{ 'payment.pay' | t }} {{ money(o.balance_cents) }}
+            </a>
+          } @else {
+            <a matButton="filled" [routerLink]="['/orders', o.id, 'edit']">{{
+              'order.edit' | t
+            }}</a>
+          }
         </div>
       }
     } @else if (store.loadError(); as key) {
@@ -210,6 +234,10 @@ export class OrderPage {
 
   protected statusKey(o: Order) {
     return `order.status.${o.status}` as const;
+  }
+
+  protected abs(cents: number): number {
+    return Math.abs(cents);
   }
 
   protected money(cents: number): string {
