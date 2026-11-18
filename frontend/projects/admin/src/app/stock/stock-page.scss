@@ -1,0 +1,68 @@
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 4px;
+  font: var(--mat-sys-title-small);
+}
+
+.alert {
+  color: var(--mat-sys-error);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 56px;
+}
+
+// Full-width tap target that reads as a list row, not a button.
+.row-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 56px;
+  padding: 4px 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--mat-sys-corner-small);
+  background: none;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--mat-sys-surface-container-high);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mat-sys-primary);
+  }
+}
+
+.name {
+  font: var(--mat-sys-body-large);
+}
+
+.muted,
+.hint {
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.hint {
+  padding: 12px 0;
+}
+
+.error {
+  color: var(--mat-sys-error);
+}

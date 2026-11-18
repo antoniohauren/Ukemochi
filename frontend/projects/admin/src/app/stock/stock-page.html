@@ -1,0 +1,74 @@
+@if (store.levels(); as levels) {
+  @if (store.alerts().length) {
+    <h2 class="heading alert">
+      <mat-icon aria-hidden="true">warning</mat-icon>
+      {{ 'stock.alerts' | t }}
+    </h2>
+    <ul class="list">
+      @for (l of store.alerts(); track l.variant_id) {
+        <ng-container *ngTemplateOutlet="row; context: { $implicit: l }" />
+      }
+    </ul>
+    <h2 class="heading">{{ 'nav.stock' | t }}</h2>
+  }
+  <ul class="list">
+    @for (l of levels; track l.variant_id) {
+      <ng-container *ngTemplateOutlet="row; context: { $implicit: l }" />
+    } @empty {
+      <li class="hint">{{ 'stock.empty' | t }}</li>
+    }
+  </ul>
+  <ng-template #row let-l>
+    <li class="row">
+      <button
+        class="row-main"
+        type="button"
+        (click)="open(l.track_stock ? 'count' : 'settings', l)"
+      >
+        <span class="name">{{ name(l) }}</span>
+        @if (l.track_stock) {
+          <span class="muted">
+            {{ 'stock.qty' | t }}
+            <strong [class.alert]="l.status !== 'ok'">{{ l.qty }}</strong>
+            · {{ 'stock.sold_today' | t }} {{ l.sold_today }} ·
+            @if (l.stock_min === null) {
+              {{ 'stock.min.none' | t }}
+            } @else {
+              {{ 'stock.min' | t }} {{ l.stock_min }}
+            }
+          </span>
+        } @else {
+          <span class="muted">{{ 'stock.untracked' | t }}</span>
+        }
+      </button>
+      <button
+        mat-icon-button
+        type="button"
+        [matMenuTriggerFor]="levelMenu"
+        [matMenuTriggerData]="{ $implicit: l }"
+        [attr.aria-label]="'nav.options' | t"
+      >
+        <mat-icon aria-hidden="true">more_vert</mat-icon>
+      </button>
+    </li>
+  </ng-template>
+  <mat-menu #levelMenu="matMenu">
+    <ng-template matMenuContent let-l>
+      <button mat-menu-item type="button" (click)="open('purchase', l)">
+        <mat-icon aria-hidden="true">add_shopping_cart</mat-icon>
+        <span>{{ 'stock.purchase' | t }}</span>
+      </button>
+      <button mat-menu-item type="button" (click)="open('count', l)">
+        <mat-icon aria-hidden="true">inventory</mat-icon>
+        <span>{{ 'stock.count' | t }}</span>
+      </button>
+      <button mat-menu-item type="button" (click)="open('settings', l)">
+        <mat-icon aria-hidden="true">tune</mat-icon>
+        <span>{{ 'stock.settings' | t }}</span>
+      </button>
+    </ng-template>
+  </mat-menu>
+} @else if (store.loadError(); as key) {
+  <p class="error" role="alert">{{ key | t }}</p>
+  <button matButton="tonal" type="button" (click)="store.load()">{{ 'common.retry' | t }}</button>
+}

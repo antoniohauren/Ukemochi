@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { MAT_BOTTOM_SHEET_DATA, MatBottomSheetRef } from '@angular/material/bottom-sheet';
 import { MatActionListItemHarness } from '@angular/material/list/testing';
 import type { Menu } from 'shared';
-import { MenuPickerSheet } from './menu-picker-sheet';
+import { type MenuPickerData, MenuPickerSheet } from './menu-picker-sheet';
 
 const item = (id: number, name: string, variants: [number, string, boolean, number?][]) => ({
   id,
@@ -50,12 +50,12 @@ const MENU: Menu = {
 describe('MenuPickerSheet', () => {
   let dismiss: ReturnType<typeof vi.fn>;
 
-  function setup() {
+  function setup(stock: MenuPickerData['stock'] = {}) {
     localStorage.clear();
     dismiss = vi.fn();
     TestBed.configureTestingModule({
       providers: [
-        { provide: MAT_BOTTOM_SHEET_DATA, useValue: { menu: MENU } },
+        { provide: MAT_BOTTOM_SHEET_DATA, useValue: { menu: MENU, stock } },
         { provide: MatBottomSheetRef, useValue: { dismiss } },
       ],
     });
@@ -91,5 +91,27 @@ describe('MenuPickerSheet', () => {
       (await loader.getHarness(MatActionListItemHarness.with({ text: name }))).getText();
     expect(await text(/Philadelphia/)).toMatch(/10,00/);
     expect(await text(/Hot roll/)).not.toMatch(/R\$/);
+  });
+
+  it('badges low and out tracked variants but still lets them be picked', async () => {
+    const level = {
+      item_name: '',
+      variant_name: '',
+      track_stock: true,
+      stock_min: 5,
+      sold_today: 0,
+    };
+    const loader = setup({
+      110: { ...level, variant_id: 110, qty: 3, status: 'low' },
+      120: { ...level, variant_id: 120, qty: 0, status: 'out' },
+    });
+    await tap(loader, /Uramaki/);
+    const text = async (name: RegExp) =>
+      (await loader.getHarness(MatActionListItemHarness.with({ text: name }))).getText();
+    expect(await text(/Coca Zero/)).toContain('Restam 3');
+    await tap(loader, /Hot roll/);
+    expect(await text(/Inteiro/)).toContain('Esgotado?');
+    await tap(loader, /Inteiro/);
+    expect(dismiss).toHaveBeenCalledWith(120);
   });
 });

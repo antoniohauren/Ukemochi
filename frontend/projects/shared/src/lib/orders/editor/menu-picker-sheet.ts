@@ -10,6 +10,7 @@ import {
   MatListItemTitle,
 } from '@angular/material/list';
 import { type Menu } from '../../api/menu';
+import { type StockLevel } from '../../api/stock';
 import { LanguageService } from '../../i18n/language';
 import { TPipe } from '../../i18n/t.pipe';
 import { formatMoney } from '../../money/money';
@@ -17,9 +18,15 @@ import { formatMoney } from '../../money/money';
 type Category = Menu['categories'][number];
 type Item = Category['items'][number];
 
+export interface MenuPickerData {
+  menu: Menu;
+  /** Low/out tracked variants by id; see stockAlerts(). */
+  stock?: Record<number, StockLevel>;
+}
+
 /**
  * Category → item → variant picker. Dismisses with the variant id; an item with one variant skips
- * that step. Unavailable variants stay pickable (staff are never blocked), with a hint.
+ * that step. Unavailable and low/out-of-stock variants stay pickable (staff are never blocked), with a hint.
  */
 @Component({
   selector: 'lib-menu-picker-sheet',
@@ -51,6 +58,9 @@ type Item = Category['items'][number];
             @if (!v.available) {
               <span matListItemLine class="hint">{{ 'menu.unavailable' | t }}</span>
             }
+            @if (stock(v.id); as s) {
+              <span matListItemLine class="hint">{{ s }}</span>
+            }
             <span matListItemMeta>{{ money(v.price_cents) }}</span>
           </button>
         }
@@ -58,6 +68,9 @@ type Item = Category['items'][number];
         @for (i of c.items; track i.id) {
           <button mat-list-item type="button" (click)="openItem(i)">
             <span matListItemTitle>{{ i.name }}</span>
+            @if (i.variants.length === 1 && stock(i.variants[0].id); as s) {
+              <span matListItemLine class="hint">{{ s }}</span>
+            }
             @if (samePrice(i)) {
               <span matListItemMeta>{{ money(i.variants[0].price_cents) }}</span>
             }
@@ -94,9 +107,10 @@ type Item = Category['items'][number];
   `,
 })
 export class MenuPickerSheet {
-  protected readonly data = inject<{ menu: Menu }>(MAT_BOTTOM_SHEET_DATA);
+  protected readonly data = inject<MenuPickerData>(MAT_BOTTOM_SHEET_DATA);
   private readonly ref = inject<MatBottomSheetRef<MenuPickerSheet, number>>(MatBottomSheetRef);
-  private readonly lang = inject(LanguageService).lang;
+  private readonly language = inject(LanguageService);
+  private readonly lang = this.language.lang;
 
   protected readonly category = signal<Category | null>(null);
   protected readonly item = signal<Item | null>(null);
@@ -130,6 +144,17 @@ export class MenuPickerSheet {
 
   protected pick(variantId: number): void {
     this.ref.dismiss(variantId);
+  }
+
+  /** "Restam 3" / "Esgotado?" for a low or out tracked variant. */
+  protected stock(variantId: number): string | null {
+    const s = this.data.stock?.[variantId];
+    if (!s) {
+      return null;
+    }
+    return s.status === 'out'
+      ? this.language.t('stock.out')
+      : `${this.language.t('stock.left')} ${s.qty}`;
   }
 
   protected money(cents: number): string {

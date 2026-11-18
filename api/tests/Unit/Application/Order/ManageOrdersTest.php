@@ -21,6 +21,7 @@ use App\Domain\Order\OrderNotFound;
 use App\Domain\Order\OrderStatus;
 use App\Domain\Order\OrderType;
 use App\Domain\Order\PrintStatus;
+use App\Domain\Stock\MovementKind;
 use App\Domain\Ticket\TicketKind;
 use Tests\Fakes\FixedClock;
 use Tests\Fakes\ImmediateTransaction;
@@ -29,12 +30,15 @@ use Tests\Fakes\InMemoryMenuRepository;
 use Tests\Fakes\InMemoryOrderEvents;
 use Tests\Fakes\InMemoryOrderRepository;
 use Tests\Fakes\InMemorySessionAuth;
+use Tests\Fakes\InMemoryStockRepository;
 
 /**
  * Menu: category 1 > item 10 "Philadelphia" > variant 100 "Inteiro" R$32; add-on 1000 on the item (R$3),
  * add-on 1001 on the category (R$1.50), add-on 1002 on another item, add-on 1003 inactive.
  *
- * @return array{ManageOrders, InMemoryOrderRepository, InMemoryAuditLog, InMemoryMenuRepository, InMemorySessionAuth, InMemoryOrderEvents}
+ * Stock: variant 100 tracked, 101 not.
+ *
+ * @return array{ManageOrders, InMemoryOrderRepository, InMemoryAuditLog, InMemoryMenuRepository, InMemorySessionAuth, InMemoryOrderEvents, InMemoryStockRepository}
  */
 function manageOrders(): array
 {
@@ -54,8 +58,11 @@ function manageOrders(): array
     $session->login(7);
 
     $events = new InMemoryOrderEvents;
+    $stock = new InMemoryStockRepository;
+    $stock->configure(100, true, 5);
+    $stock->configure(101, false, null);
 
-    return [new ManageOrders($orders, $menu, new ImmediateTransaction, $audit, $session, new FixedClock, $events), $orders, $audit, $menu, $session, $events];
+    return [new ManageOrders($orders, $menu, new ImmediateTransaction, $audit, $session, new FixedClock, $events, $stock), $orders, $audit, $menu, $session, $events, $stock];
 }
 
 function dineIn(?string $note = null): OrderDetails
@@ -294,4 +301,36 @@ it('announces nothing when a change fails', function (): void {
     expect(fn () => $manage->changeStatus($order->id, OrderStatus::OutForDelivery, null))->toThrow(InvalidTransition::class)
         ->and(fn () => $manage->create(dineIn(), [new LineInput(999, 1)]))->toThrow(MenuNotFound::class)
         ->and($events->updated)->toHaveCount(1);
+});
+
+it('takes tracked units on create, the difference on edit and gives them back on cancel', function (): void {
+    [$manage, , , , , , $stock] = manageOrders();
+    $order = $manage->create(dineIn(), [new LineInput(100, 2), new LineInput(101, 1), new LineInput(100, 1)]);
+    $lines = $order->lines;
+
+    $manage->edit($order->id, dineIn(), [new LineInput(100, 1, lineId: $lines[0]->id), new LineInput(101, 4, lineId: $lines[1]->id)], null);
+    $manage->changeStatus($order->id, OrderStatus::Ready, null);
+    $manage->cancel($order->id, 'desistiu', null);
+
+    expect(array_map(fn (array $m) => [$m['variantId'], $m['kind'], $m['delta'], $m['orderId'], $m['userId']], $stock->movements))->toBe([
+        [100, MovementKind::Sale, -3, $order->id, 7],
+        [100, MovementKind::Sale, 2, $order->id, 7],
+        [100, MovementKind::Sale, 1, $order->id, 7],
+    ]);
+});
+
+it('lets tracked stock go negative without blocking the sale', function (): void {
+    [$manage, , , , , , $stock] = manageOrders();
+
+    $manage->create(dineIn(), [new LineInput(100, 3)]);
+
+    expect($stock->level(100, new DateTimeImmutable('2026-11-16'))?->qty)->toBe(-3);
+});
+
+it('writes no stock when an order change fails', function (): void {
+    [$manage, , , , , , $stock] = manageOrders();
+    $order = $manage->create(dineIn(), [new LineInput(100, 1)]);
+
+    expect(fn () => $manage->edit($order->id, dineIn(), [new LineInput(100, 1, lineId: 999)], null))->toThrow(LineNotFound::class)
+        ->and($stock->movements)->toHaveCount(1);
 });

@@ -8,6 +8,7 @@ import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
 import { of } from 'rxjs';
 import { CustomersApi } from '../../api/customers-api';
 import { MenuApi } from '../../api/menu-api';
+import { StockApi } from '../../api/stock-api';
 import { type Order } from '../../api/order';
 import { OrdersApi } from '../../api/orders-api';
 import { SettingsApi } from '../../api/settings-api';
@@ -51,6 +52,7 @@ describe('OrderEditorPage', () => {
         },
         { provide: OrdersApi, useValue: { get: () => of(SAVED) } },
         { provide: CustomersApi, useValue: { list: () => of({ customers: [ANA] }) } },
+        { provide: StockApi, useValue: { levels: () => of([]) } },
         { provide: Router, useValue: { navigateByUrl: vi.fn() } },
         {
           provide: ActivatedRoute,

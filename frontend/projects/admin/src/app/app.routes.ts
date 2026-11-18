@@ -54,6 +54,11 @@ export const routes: Routes = [
         loadComponent: () => import('./cash/shift-page').then((m) => m.ShiftPage),
         data: { title: 'cash.shift', back: '/cash' },
       },
+      {
+        path: 'stock',
+        loadComponent: () => import('./stock/stock-page').then((m) => m.StockPage),
+        data: { title: 'nav.stock' },
+      },
       { path: 'reports', component: PlaceholderPage, data: { title: 'nav.reports' } },
       {
         path: 'staff',

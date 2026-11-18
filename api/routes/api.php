@@ -14,6 +14,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ShiftController;
 use App\Http\Controllers\SplitController;
 use App\Http\Controllers\StaffController;
+use App\Http\Controllers\StockController;
 use Illuminate\Support\Facades\Route;
 
 // Ids fit a bigint: longer ones are 404, not an int overflow.
@@ -32,6 +33,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/settings', [SettingsController::class, 'show']);
     Route::get('/realtime', RealtimeController::class);
     Route::get('/shifts/current', [ShiftController::class, 'current']);
+    Route::get('/stock', [StockController::class, 'index']);
 
     // Orders: any staff reads, edits, moves status and reopens (PLAN: any staff can edit/reopen closed orders).
     Route::get('/orders', [OrderController::class, 'index']);
@@ -69,6 +71,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
     });
 
     Route::middleware('role:admin')->group(function (): void {
+        Route::put('/stock/{id}', [StockController::class, 'configure']);
+        Route::post('/stock/{id}/purchases', [StockController::class, 'purchase']);
+        Route::post('/stock/{id}/adjustments', [StockController::class, 'adjust']);
         Route::post('/categories', [MenuController::class, 'storeCategory']);
         Route::put('/categories/order', [MenuController::class, 'reorderCategories']);
         Route::put('/categories/{id}', [MenuController::class, 'updateCategory']);

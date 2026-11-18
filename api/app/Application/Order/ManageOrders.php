@@ -8,6 +8,7 @@ use App\Application\Audit\AuditLog;
 use App\Application\Auth\SessionAuth;
 use App\Application\Clock;
 use App\Application\Menu\MenuRepository;
+use App\Application\Stock\StockRepository;
 use App\Application\Transaction;
 use App\Domain\Auth\NotAuthenticated;
 use App\Domain\Menu\Item;
@@ -20,11 +21,14 @@ use App\Domain\Order\OrderDetails;
 use App\Domain\Order\OrderLine;
 use App\Domain\Order\OrderNotFound;
 use App\Domain\Order\OrderStatus;
+use App\Domain\Stock\MovementKind;
+use App\Domain\Stock\StockUsage;
 use App\Domain\Ticket\TicketKind;
 
 /**
  * Order mutations. Each one locks the order, writes it and its audit row in one transaction,
- * then tells live screens once it has committed.
+ * then tells live screens once it has committed. Tracked variants get a sale movement for
+ * each change in units (create, edit, cancel); stock may go negative and never blocks.
  */
 final readonly class ManageOrders
 {
@@ -36,6 +40,7 @@ final readonly class ManageOrders
         private SessionAuth $session,
         private Clock $clock,
         private OrderEvents $events,
+        private StockRepository $stock,
     ) {}
 
     /** @param  list<LineInput>  $lines  without `lineId` */
@@ -48,6 +53,7 @@ final readonly class ManageOrders
             // Number taken last and inside the transaction: a failure above or a rollback leaves no gap.
             $order = $this->orders->save(Order::place($this->orders->nextNumber(), $details, $snapshot, $userId, $this->clock->now()));
             $this->record($userId, $order, 'create', $this->summary($order), null);
+            $this->takeStock([], $order, $userId);
 
             return $order;
         }));
@@ -114,12 +120,26 @@ final readonly class ManageOrders
 
         return $this->announced($this->transaction->run(function () use ($id, $action, $change, $note, $userId): Order {
             $order = $this->orders->lock($id) ?? throw new OrderNotFound($id);
+            $before = StockUsage::of($order);
             $summary = $change($order);
             $order = $this->orders->save($order);
             $this->record($userId, $order, $action, $summary, $note);
+            $this->takeStock($before, $order, $userId);
 
             return $order;
         }));
+    }
+
+    /** @param  array<int, int>  $before  usage before the change */
+    private function takeStock(array $before, Order $order, int $userId): void
+    {
+        $deltas = StockUsage::change($before, StockUsage::of($order));
+        $tracked = $this->stock->tracked(array_keys($deltas));
+        foreach ($deltas as $variantId => $delta) {
+            if (in_array($variantId, $tracked, true)) {
+                $this->stock->add($variantId, MovementKind::Sale, $delta, $order->id, $userId, null, $this->clock->now());
+            }
+        }
     }
 
     private function announced(Order $order): Order

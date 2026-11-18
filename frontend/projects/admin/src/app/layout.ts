@@ -17,6 +17,7 @@ const NAV: readonly NavItem[] = [
   { path: '/menu', icon: 'restaurant_menu', label: 'nav.menu' },
   { path: '/kitchen', icon: 'soup_kitchen', label: 'nav.kitchen' },
   { path: '/cash', icon: 'point_of_sale', label: 'nav.cash' },
+  { path: '/stock', icon: 'inventory_2', label: 'nav.stock' },
   { path: '/reports', icon: 'bar_chart', label: 'nav.reports' },
   { path: '/staff', icon: 'badge', label: 'nav.staff' },
   { path: '/audit', icon: 'history', label: 'nav.audit' },
