@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, LoginPage, PlaceholderPage, TicketPage } from 'shared';
+import { authGuard, LoginPage, TicketPage } from 'shared';
 import { Layout } from './layout';
 import { roleGuard } from './role.guard';
 
@@ -43,7 +43,11 @@ export const routes: Routes = [
         loadComponent: () => import('./menu/menu-page').then((m) => m.MenuPage),
         data: { title: 'nav.menu' },
       },
-      { path: 'kitchen', component: PlaceholderPage, data: { title: 'nav.kitchen' } },
+      {
+        path: 'kitchen',
+        loadComponent: () => import('./kitchen/kitchen-page').then((m) => m.KitchenPage),
+        data: { title: 'nav.kitchen' },
+      },
       {
         path: 'cash',
         loadComponent: () => import('./cash/cash-page').then((m) => m.CashPage),
@@ -59,7 +63,11 @@ export const routes: Routes = [
         loadComponent: () => import('./stock/stock-page').then((m) => m.StockPage),
         data: { title: 'nav.stock' },
       },
-      { path: 'reports', component: PlaceholderPage, data: { title: 'nav.reports' } },
+      {
+        path: 'reports',
+        loadComponent: () => import('./reports/reports-page').then((m) => m.ReportsPage),
+        data: { title: 'nav.reports' },
+      },
       {
         path: 'staff',
         loadComponent: () => import('./staff/staff-page').then((m) => m.StaffPage),

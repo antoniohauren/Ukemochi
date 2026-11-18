@@ -7,6 +7,7 @@ use App\Domain\Auth\LoginThrottled;
 use App\Domain\Auth\NameTaken;
 use App\Domain\Auth\NotAuthenticated;
 use App\Domain\Auth\UserNotFound;
+use App\Domain\Backup\BackupNotFound;
 use App\Domain\Cash\NoOpenShift;
 use App\Domain\Cash\ShiftAlreadyOpen;
 use App\Domain\Cash\ShiftClosed;
@@ -69,6 +70,7 @@ return Application::configure(basePath: dirname(__DIR__))
             PhoneTaken::class => 409,
             PaymentVoided::class => 409,
             PaymentShiftClosed::class => 409,
+            BackupNotFound::class => 404,
         ]));
         // Business rule violations are expected outcomes, not errors to log.
         $exceptions->dontReport(DomainException::class);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Application\Backup\ManageBackups;
 use App\Application\Cash\ManageCash;
 use App\Domain\Cash\ShiftReport;
 use App\Http\Requests\CashMovementRequest;
@@ -14,9 +15,11 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+use function Illuminate\Support\defer;
+
 final readonly class ShiftController
 {
-    public function __construct(private ManageCash $cash) {}
+    public function __construct(private ManageCash $cash, private ManageBackups $backups) {}
 
     /** `{shift: null}` while no shift is open. */
     public function current(Request $r): JsonResponse
@@ -50,7 +53,11 @@ final readonly class ShiftController
 
     public function close(CloseShiftRequest $r): ShiftResource
     {
-        return new ShiftResource($this->cash->close($r->integer('counted_cents'), self::note($r)));
+        $report = $this->cash->close($r->integer('counted_cents'), self::note($r));
+        // After the response: the close is committed and never fails on a backup error (that one is logged).
+        defer(fn () => $this->backups->run('shift_close'));
+
+        return new ShiftResource($report);
     }
 
     private static function note(FormRequest $r): ?string
