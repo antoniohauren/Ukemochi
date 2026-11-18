@@ -22,7 +22,8 @@ export interface Suggestion {
 }
 
 export type PayResult =
-  { ok: true; change_cents: number | null; closed: boolean } | { ok: false; error: TranslationKey };
+  | { ok: true; change_cents: number | null; settled: boolean }
+  | { ok: false; error: TranslationKey };
 
 /**
  * Pay screen state: the order with its payments, and the split preview for the next payer.
@@ -124,7 +125,7 @@ export class PayStore {
       return {
         ok: true,
         change_cents: payment?.change_cents ?? null,
-        closed: result.order.status === 'closed',
+        settled: result.order.balance_cents <= 0,
       };
     } catch (e) {
       return { ok: false, error: errorKey(e as ApiError) };

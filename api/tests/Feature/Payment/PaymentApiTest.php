@@ -46,16 +46,17 @@ it('takes a cash payment with change and answers order + payments in the exact s
     expect(getJson("/api/orders/{$id}/payments")->assertOk()->json())->toBe($response->json());
 });
 
-it('closes the order once mixed payments cover it, and counts them on the shift', function (): void {
+it('keeps the order open once mixed payments cover it until the waitress closes it, and counts them on the shift', function (): void {
     actAs(Role::Waitress);
     [$id] = payableOrder();
     Event::fake([OrderUpdated::class]);
 
     postJson("/api/orders/{$id}/payments", ['method' => 'pix', 'amount_cents' => 1200])->assertCreated()->assertJsonPath('order.status', 'open');
     postJson("/api/orders/{$id}/payments", ['method' => 'cash', 'amount_cents' => 2000])->assertCreated()
-        ->assertJsonPath('order.status', 'closed')->assertJsonPath('order.balance_cents', 0);
+        ->assertJsonPath('order.status', 'open')->assertJsonPath('order.balance_cents', 0);
+    putJson("/api/orders/{$id}/status", ['status' => 'closed'])->assertOk();
 
-    Event::assertDispatchedTimes(OrderUpdated::class, 2);
+    Event::assertDispatchedTimes(OrderUpdated::class, 3);
     getJson("/api/orders/{$id}")->assertJson(['paid_cents' => 3200, 'balance_cents' => 0, 'status' => 'closed']);
     getJson('/api/shifts/current')->assertJson(['shift' => [
         'totals_by_method' => ['cash' => 2000, 'credit' => 0, 'debit' => 0, 'pix' => 1200], 'expected_cents' => 12000,

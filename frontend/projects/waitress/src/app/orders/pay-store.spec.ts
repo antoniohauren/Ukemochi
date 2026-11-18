@@ -28,9 +28,7 @@ describe('PayStore', () => {
           remainder_cents: 0,
         }),
       ),
-      pay: vi.fn(() =>
-        of({ order: { ...ORDER, status: 'closed', balance_cents: 0 }, payments: [CASH] }),
-      ),
+      pay: vi.fn(() => of({ order: { ...ORDER, balance_cents: 0 }, payments: [CASH] })),
       void: vi.fn(() => of(DATA)),
     };
     TestBed.configureTestingModule({
@@ -86,7 +84,7 @@ describe('PayStore', () => {
 
     const result = await store.pay({ method: 'cash', amount_cents: 3767, tendered_cents: 6767 });
 
-    expect(result).toEqual({ ok: true, change_cents: 3000, closed: true });
+    expect(result).toEqual({ ok: true, change_cents: 3000, settled: true });
     expect(store.n()).toBe(2);
     expect(store.data()?.payments).toEqual([CASH]);
   });

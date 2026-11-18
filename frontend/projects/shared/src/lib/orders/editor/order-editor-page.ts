@@ -160,10 +160,10 @@ const METHODS: readonly PaymentMethod[] = ['cash', 'credit', 'debit', 'pix'];
 
         <h2 class="label">{{ 'order.lines' | t }}</h2>
         <lib-order-lines [lines]="store.views()" selectable (selectLine)="editLine($event)" />
-        <button matButton="tonal" type="button" class="add" (click)="addLine()">
-          <mat-icon aria-hidden="true">add</mat-icon>
-          {{ 'order.add_line' | t }}
-        </button>
+        <div class="total-row">
+          <span>{{ 'order.total' | t }}</span>
+          <span class="total">{{ money(total()) }}</span>
+        </div>
 
         <mat-form-field subscriptSizing="dynamic">
           <mat-label>{{ 'order.note' | t }}</mat-label>
@@ -174,7 +174,10 @@ const METHODS: readonly PaymentMethod[] = ['cash', 'credit', 'debit', 'pix'];
           <p class="error" role="alert">{{ key | t }}</p>
         }
         <div class="action-bar">
-          <span class="total">{{ money(total()) }}</span>
+          <button matButton="tonal" type="button" class="add" (click)="addLine()">
+            <mat-icon aria-hidden="true">add</mat-icon>
+            {{ 'order.add_line' | t }}
+          </button>
           <button matButton="filled" type="submit" [disabled]="busy()">
             {{ (store.order() ? 'order.save' : 'order.send') | t }}
           </button>
@@ -221,9 +224,10 @@ const METHODS: readonly PaymentMethod[] = ['cash', 'credit', 'debit', 'pix'];
       font: var(--mat-sys-label-large);
       color: var(--mat-sys-on-surface-variant);
     }
-    .add {
-      align-self: flex-start;
-      min-height: 48px;
+    .total-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
     }
     .hint {
       margin: 0;
@@ -249,7 +253,9 @@ const METHODS: readonly PaymentMethod[] = ['cash', 'credit', 'debit', 'pix'];
       padding: 8px 0;
       background: var(--mat-sys-surface);
       button {
+        flex: 1;
         min-height: 48px;
+        white-space: nowrap;
       }
     }
     .total {

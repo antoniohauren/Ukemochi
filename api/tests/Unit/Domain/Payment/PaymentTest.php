@@ -46,44 +46,14 @@ it('voids once', function (): void {
         ->and(fn () => $payment->void())->toThrow(PaymentVoided::class);
 });
 
-it('closes a dine-in order once paid in full, with mixed methods', function (): void {
-    $order = toPay();
-    $at = new DateTimeImmutable('2026-11-16 13:00');
-
-    $order->recordPayment(2000, $at);
+it('keeps any order open when paid in full or overpaid; staff close by hand', function (OrderType $type): void {
+    $order = toPay($type);
+    $order->recordPayment(2000, new DateTimeImmutable);
     expect([$order->paidCents, $order->balanceCents(), $order->status])->toBe([2000, 1200, OrderStatus::Open]);
 
-    $order->recordPayment(1200, $at);
-    expect([$order->balanceCents(), $order->status, $order->closedAt])->toEqual([0, OrderStatus::Closed, $at]);
-});
-
-it('keeps an overpaid balance negative and a paid order closed', function (): void {
-    $order = toPay();
-    $order->recordPayment(5000, new DateTimeImmutable);
-    $order->recordPayment(100, new DateTimeImmutable);
-
-    expect([$order->balanceCents(), $order->status])->toBe([-1900, OrderStatus::Closed]);
-});
-
-it('keeps a phone order paid upfront active until it is ready or out for delivery', function (): void {
-    $pickup = toPay(OrderType::Pickup);
-    $pickup->recordPayment(3200, new DateTimeImmutable);
-    expect($pickup->status)->toBe(OrderStatus::Open);
-
-    $delivery = toPay(OrderType::Delivery);
-    $delivery->moveTo(OrderStatus::Ready, new DateTimeImmutable);
-    $delivery->recordPayment(3200, new DateTimeImmutable);
-    expect($delivery->status)->toBe(OrderStatus::Ready);
-
-    $ready = toPay(OrderType::Pickup);
-    $ready->moveTo(OrderStatus::Ready, new DateTimeImmutable);
-    $ready->recordPayment(3200, new DateTimeImmutable);
-    $out = toPay(OrderType::Delivery);
-    $out->moveTo(OrderStatus::Ready, new DateTimeImmutable);
-    $out->moveTo(OrderStatus::OutForDelivery, new DateTimeImmutable);
-    $out->recordPayment(3200, new DateTimeImmutable);
-    expect([$ready->status, $out->status])->toBe([OrderStatus::Closed, OrderStatus::Closed]);
-});
+    $order->recordPayment(3000, new DateTimeImmutable);
+    expect([$order->balanceCents(), $order->status, $order->closedAt])->toBe([-1800, OrderStatus::Open, null]);
+})->with([OrderType::DineIn, OrderType::Pickup, OrderType::Delivery]);
 
 it('refuses payments on a cancelled order', function (): void {
     $order = toPay();
@@ -95,6 +65,7 @@ it('refuses payments on a cancelled order', function (): void {
 it('reopens a closed order when a void leaves a balance, without a new kitchen version', function (): void {
     $order = toPay();
     $order->recordPayment(3200, new DateTimeImmutable);
+    $order->moveTo(OrderStatus::Closed, new DateTimeImmutable);
     $order->voidPayment(3200);
 
     expect([$order->paidCents, $order->status, $order->closedAt, $order->version])->toBe([0, OrderStatus::Open, null, 1]);

@@ -1,32 +1,16 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatButtonToggle, MatButtonToggleGroup } from '@angular/material/button-toggle';
 import { MatIcon } from '@angular/material/icon';
-import {
-  MatList,
-  MatListItem,
-  MatListItemLine,
-  MatListItemMeta,
-  MatListItemTitle,
-} from '@angular/material/list';
+import { MatCard, MatCardActions, MatCardContent } from '@angular/material/card';
 import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
 import { RouterLink } from '@angular/router';
-import {
-  formatMoney,
-  LanguageService,
-  type Order,
-  type OrderStatus,
-  OrdersStore,
-  PrintBadge,
-  TPipe,
-} from 'shared';
+import { formatMoney, LanguageService, type Order, OrderBadges, OrdersStore, TPipe } from 'shared';
 import { type Move, nextStatus, OrderBoard } from './order-board';
 
-const ACTIVE: OrderStatus[] = ['open', 'ready', 'out_for_delivery'];
-
 /**
- * Pedidos: a board of active orders by status (live through Reverb), each moved forward with one tap;
+ * Pedidos: a list of order cards, stage shown as an icon (live through Reverb), each moved forward with one tap;
  * closed orders can be edited (which reopens them) or reopened.
  */
 @Component({
@@ -38,16 +22,14 @@ const ACTIVE: OrderStatus[] = ['open', 'ready', 'out_for_delivery'];
     MatButtonToggleGroup,
     MatIcon,
     MatIconButton,
-    MatList,
-    MatListItem,
-    MatListItemLine,
-    MatListItemMeta,
-    MatListItemTitle,
+    MatCard,
+    MatCardActions,
+    MatCardContent,
     MatMenu,
     MatMenuItem,
     MatMenuTrigger,
     NgTemplateOutlet,
-    PrintBadge,
+    OrderBadges,
     RouterLink,
     TPipe,
   ],
@@ -61,22 +43,25 @@ const ACTIVE: OrderStatus[] = ['open', 'ready', 'out_for_delivery'];
       [attr.aria-label]="'nav.orders' | t"
     >
       <mat-button-toggle value="active">{{ 'order.board.active' | t }}</mat-button-toggle>
-      <mat-button-toggle value="closed">{{ 'order.status.closed' | t }}</mat-button-toggle>
+      <mat-button-toggle value="closed">{{ 'order.stage.done' | t }}</mat-button-toggle>
     </mat-button-toggle-group>
 
-    <ng-template #row let-o>
-      <mat-list-item>
-        <span matListItemTitle>#{{ o.id }} · {{ o.customer_name }}</span>
-        <span matListItemLine>
-          {{ typeKey(o) | t }} · {{ money(o.total_cents) }}
-          @if (o.balance_cents > 0 && o.paid_cents > 0) {
-            · {{ 'payment.balance' | t }} {{ money(o.balance_cents) }}
-          }
-        </span>
-        @if (o.print_status) {
-          <span matListItemLine><lib-print-badge [status]="o.print_status" /></span>
-        }
-        <span matListItemMeta class="actions">
+    <ng-template #card let-o>
+      <mat-card appearance="outlined" class="card">
+        <mat-card-content>
+          <div class="head">
+            <span class="id">#{{ o.id }}</span>
+            <lib-order-badges class="icons" [order]="o" />
+          </div>
+          <div class="name">{{ o.customer_name }}</div>
+          <div class="meta">
+            {{ typeKey(o) | t }} · {{ money(o.total_cents) }}
+            @if (o.balance_cents > 0 && o.paid_cents > 0) {
+              · {{ 'payment.balance' | t }} {{ money(o.balance_cents) }}
+            }
+          </div>
+        </mat-card-content>
+        <mat-card-actions align="end">
           @if (next(o); as to) {
             <button matButton="tonal" type="button" (click)="board.advance(o)">
               {{ moveKey(to) | t }}
@@ -110,8 +95,8 @@ const ACTIVE: OrderStatus[] = ['open', 'ready', 'out_for_delivery'];
               <span>{{ 'ticket.print.bill' | t }}</span>
             </a>
           </mat-menu>
-        </span>
-      </mat-list-item>
+        </mat-card-actions>
+      </mat-card>
     </ng-template>
 
     @if (view() === 'active') {
@@ -121,19 +106,12 @@ const ACTIVE: OrderStatus[] = ['open', 'ready', 'out_for_delivery'];
           {{ 'common.retry' | t }}
         </button>
       }
-      @if (byStatus(); as groups) {
-        <div class="board">
-          @for (g of groups; track g.status) {
-            <section class="column">
-              <h3 class="title">{{ statusKey(g.status) | t }} ({{ g.orders.length }})</h3>
-              <mat-list>
-                @for (o of g.orders; track o.id) {
-                  <ng-container *ngTemplateOutlet="row; context: { $implicit: o }" />
-                } @empty {
-                  <p class="empty">{{ 'order.empty' | t }}</p>
-                }
-              </mat-list>
-            </section>
+      @if (store.orders(); as orders) {
+        <div class="cards">
+          @for (o of orders; track o.id) {
+            <ng-container *ngTemplateOutlet="card; context: { $implicit: o }" />
+          } @empty {
+            <p class="empty">{{ 'order.empty' | t }}</p>
           }
         </div>
       } @else if (!store.loadError()) {
@@ -148,13 +126,13 @@ const ACTIVE: OrderStatus[] = ['open', 'ready', 'out_for_delivery'];
         <p class="error" role="alert">{{ key | t }}</p>
       }
       @if (board.closed(); as closed) {
-        <mat-list>
+        <div class="cards">
           @for (o of closed; track o.id) {
-            <ng-container *ngTemplateOutlet="row; context: { $implicit: o }" />
+            <ng-container *ngTemplateOutlet="card; context: { $implicit: o }" />
           } @empty {
             <p class="empty">{{ 'order.empty' | t }}</p>
           }
-        </mat-list>
+        </div>
       }
     }
   `,
@@ -162,25 +140,29 @@ const ACTIVE: OrderStatus[] = ['open', 'ready', 'out_for_delivery'];
     .view {
       margin-bottom: 16px;
     }
-    .board {
+    .cards {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 8px;
     }
-    .title {
-      margin: 0;
-      font: var(--mat-sys-title-small);
-      color: var(--mat-sys-on-surface-variant);
-    }
-    .mat-mdc-list-item {
-      height: auto;
-      min-height: 72px;
-    }
-    .actions {
+    .head {
       display: flex;
       align-items: center;
-      align-self: center;
-      gap: 4px;
+      gap: 8px;
+    }
+    .id {
+      font: var(--mat-sys-title-medium);
+    }
+    .icons {
+      margin-left: auto;
+    }
+    .name {
+      margin-top: 4px;
+      font: var(--mat-sys-body-large);
+    }
+    .meta {
+      font: var(--mat-sys-body-medium);
+      color: var(--mat-sys-on-surface-variant);
     }
     .empty {
       color: var(--mat-sys-on-surface-variant);
@@ -207,13 +189,6 @@ export class OrdersPage {
   protected readonly view = signal<'active' | 'closed'>('active');
   protected readonly next = nextStatus;
 
-  protected readonly byStatus = computed(() => {
-    const orders = this.store.orders();
-    return orders === null
-      ? null
-      : ACTIVE.map((status) => ({ status, orders: orders.filter((o) => o.status === status) }));
-  });
-
   constructor() {
     this.store.load();
   }
@@ -227,10 +202,6 @@ export class OrdersPage {
 
   protected typeKey(o: Order) {
     return `order.type.${o.type}` as const;
-  }
-
-  protected statusKey(s: OrderStatus) {
-    return `order.status.${s}` as const;
   }
 
   protected moveKey(to: Move) {

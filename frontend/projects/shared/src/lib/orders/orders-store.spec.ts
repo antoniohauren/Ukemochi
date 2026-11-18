@@ -19,6 +19,7 @@ describe('order stores', () => {
       list: vi.fn(() => of({ orders: [order(1)] })),
       get: vi.fn((id: number) => of(order(id))),
       cancel: vi.fn((id: number) => of(order(id, 'cancelled'))),
+      setStatus: vi.fn((id: number) => of(order(id, 'closed'))),
     };
     TestBed.configureTestingModule({
       providers: [
@@ -93,6 +94,21 @@ describe('order stores', () => {
 
       api['cancel'].mockReturnValue(throwError(() => ({ code: 'order.not_found', message: '' })));
       expect(await store.cancel('x')).toBe('error.order.not_found');
+    });
+
+    it('closes by hand, or shows the error', async () => {
+      const store = TestBed.inject(OrderStore);
+      const snack = vi.spyOn(TestBed.inject(MatSnackBar), 'open');
+      store.open(7);
+      await store.close();
+      expect(api['setStatus']).toHaveBeenCalledWith(7, 'closed');
+      expect(store.order()?.status).toBe('closed');
+
+      api['setStatus'].mockReturnValue(
+        throwError(() => ({ code: 'order.not_found', message: '' })),
+      );
+      await store.close();
+      expect(snack).toHaveBeenCalledWith(expect.any(String), undefined, { duration: 4000 });
     });
   });
 });

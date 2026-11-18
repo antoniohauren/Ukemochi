@@ -17,6 +17,7 @@ import {
   type Lang,
   LANGS,
   LangSwitch,
+  ThemeSwitch,
   LanguageService,
   maxMoney,
   moneyValidator,
@@ -35,6 +36,7 @@ const PAPER_WIDTHS: readonly PaperWidth[] = [58, 80];
   providers: [SettingsStore],
   imports: [
     LangSwitch,
+    ThemeSwitch,
     MatButton,
     MatError,
     MatFormField,
@@ -99,6 +101,8 @@ const PAPER_WIDTHS: readonly PaperWidth[] = [58, 80];
     <h2 class="label">{{ 'settings.device' | t }}</h2>
     <p class="muted">{{ 'lang.label' | t }}</p>
     <lib-lang-switch />
+    <p class="muted theme">{{ 'theme.label' | t }}</p>
+    <lib-theme-switch />
   `,
   styles: `
     .label {
@@ -118,6 +122,9 @@ const PAPER_WIDTHS: readonly PaperWidth[] = [58, 80];
     .muted {
       margin: 0 0 8px;
       color: var(--mat-sys-on-surface-variant);
+    }
+    .theme {
+      margin-top: 16px;
     }
     .error {
       margin: 0;

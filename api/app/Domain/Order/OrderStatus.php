@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Domain\Order;
 
 /**
- * `open → ready → out_for_delivery (delivery only) → closed`. Any active order can close
- * (paid in full or closed by hand). Back to `open` only through reopen/edit; `cancelled` only through cancel.
+ * `open → ready → out_for_delivery (delivery only) → closed`. Any active order can close,
+ * only by hand (payment never closes it). Back to `open` only through reopen/edit; `cancelled` only through cancel.
  */
 enum OrderStatus: string
 {

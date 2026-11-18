@@ -100,7 +100,7 @@ Money columns `bigint` cents. Timestamps `timestamptz`. Enum-like columns `text`
 - `settings(key, value)`; `audit_log(id, user_id, at, entity, entity_id, action, summary jsonb, note)`
 
 Rules:
-- Order total = Σ(line qty × (unit + addons)) + delivery fee. Paid = Σ non-voided payments. Order closes when paid ≥ total (or manually); a pickup closes on payment only once ready, a delivery only once out for delivery.
+- Order total = Σ(line qty × (unit + addons)) + delivery fee. Paid = Σ non-voided payments. Orders close only by hand (admin or waitress); payment never closes an order.
 - Voiding a payment reopens a closed order left with a balance. Void only while the payment's shift is open.
 - Editing a closed order reopens it (status → open), bumps `version`, writes audit. Over/under payment shown as balance.
 - Cash change = tendered − amount (cash only). Payment stored at the amount applied, not tendered.
@@ -153,7 +153,7 @@ Each step is one TDD vertical slice. Done = tests green + `make check` clean + r
 
 ### Phase 5 — Money
 - [x] **14. Cash shifts** — open with float, movements (withdrawal, deposit, staff_meal + staff name), close with count, expected cash + difference, totals per method.
-- [x] **15. Payments** — cash/credit/debit/pix, mixed, change calc, void, auto-close when paid, pay upfront or on delivery (`troco para`), payment requires open shift.
+- [x] **15. Payments** — cash/credit/debit/pix, mixed, change calc, void, pay upfront or on delivery (`troco para`), payment requires open shift.
 - [x] **16. Split math** — equal N, by amount, by item units (fractions), by goods; remainder visible; preview endpoint.
 - [x] **17. Waitress payment UI** — pay screen, split flows, change display, bill print.
 - [x] **18. Admin cash + audit** — shift screens, movement entry, order status board (ready / out for delivery), audit log viewer, edit closed orders.

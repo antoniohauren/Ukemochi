@@ -57,22 +57,11 @@ final class Order
         return Money::fromCents($this->totalCents())->subtract(Money::fromCents($this->paidCents))->cents;
     }
 
-    /**
-     * Paid in full closes the order, except a phone order the customer does not have yet:
-     * pickup closes once ready, delivery once out for delivery; until then it stays active for the kitchen.
-     */
+    /** Payment never closes the order; staff close it by hand (PUT status). */
     public function recordPayment(int $cents, \DateTimeImmutable $at): void
     {
         $this->refuseIfCancelled();
         $this->paidCents += $cents;
-        $handedOver = match ($this->details->type) {
-            OrderType::DineIn => true,
-            OrderType::Pickup => $this->status === OrderStatus::Ready,
-            OrderType::Delivery => $this->status === OrderStatus::OutForDelivery,
-        };
-        if ($this->balanceCents() <= 0 && $handedOver && $this->status !== OrderStatus::Closed) {
-            $this->moveTo(OrderStatus::Closed, $at);
-        }
     }
 
     /** A void that leaves a balance reopens a closed order. The kitchen ticket is unchanged, so no new version. */

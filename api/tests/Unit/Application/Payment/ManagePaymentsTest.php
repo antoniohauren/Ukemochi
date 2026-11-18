@@ -43,7 +43,7 @@ function managePayments(): array
     return [new ManagePayments($orders, new InMemoryPaymentRepository, $shifts, new ImmediateTransaction, $audit, $session, new FixedClock, $events), $orders, $shifts, $audit, $events];
 }
 
-it('takes a payment on the open shift, closes the order when paid, audits and announces', function (): void {
+it('takes a payment on the open shift, keeps the order open when paid, audits and announces', function (): void {
     [$manage, $orders, , $audit, $events] = managePayments();
 
     $first = $manage->pay(42, PaymentMethod::Pix, 1200, null, 'Ana', null);
@@ -51,13 +51,13 @@ it('takes a payment on the open shift, closes the order when paid, audits and an
 
     $result = $manage->pay(42, PaymentMethod::Cash, 2000, 5000, null, 'troco');
 
-    expect($result->order->status)->toBe(OrderStatus::Closed)
+    expect($result->order->status)->toBe(OrderStatus::Open)
         ->and(array_map(fn ($p) => [$p->id, $p->shiftId, $p->method, $p->changeCents()], $result->payments))
         ->toBe([[1, 1, PaymentMethod::Pix, null], [2, 1, PaymentMethod::Cash, 3000]])
         ->and($orders->locked)->toBe([42, 42])
         ->and($audit->entries[1])->toMatchArray(['entity' => 'order', 'entityId' => 42, 'action' => 'payment', 'note' => 'troco'])
         ->and($audit->entries[1]['summary'])->toBe([
-            'payment_id' => 2, 'method' => 'cash', 'amount_cents' => 2000, 'tendered_cents' => 5000, 'payer_label' => null, 'status' => 'closed',
+            'payment_id' => 2, 'method' => 'cash', 'amount_cents' => 2000, 'tendered_cents' => 5000, 'payer_label' => null, 'status' => 'open',
         ])
         ->and($events->updated)->toHaveCount(2)
         ->and($manage->get(42)->payments)->toHaveCount(2);

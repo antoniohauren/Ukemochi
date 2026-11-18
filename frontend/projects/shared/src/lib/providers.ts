@@ -10,6 +10,7 @@ import { MatIconRegistry } from '@angular/material/icon';
 import { SettingsApi } from './api/settings-api';
 import { AuthService } from './auth/auth';
 import { LanguageService } from './i18n/language';
+import { ThemeService } from './theme/theme';
 import { authInterceptor } from './auth/auth.interceptor';
 
 /** App-wide providers both apps share: HTTP with Sanctum XSRF, session restore, icon font. */
@@ -23,6 +24,7 @@ export function provideUkemochi(): EnvironmentProviders {
     provideAppInitializer(() => {
       inject(MatIconRegistry).setDefaultFontSetClass('material-symbols-outlined');
       const language = inject(LanguageService); // sets <html lang> before first render
+      inject(ThemeService); // sets <html data-theme> before first render
       const auth = inject(AuthService);
       const settings = inject(SettingsApi);
       // Once signed in (restore or login): the restaurant's default language, unless the device chose one.

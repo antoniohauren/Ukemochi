@@ -354,7 +354,7 @@ export class PayPage {
     this.snackBar.open(`${t('payment.recorded')}${change}`, undefined, {
       duration: change ? 10000 : 3000,
     });
-    if (result.closed) {
+    if (result.settled) {
       await this.router.navigate(['/orders', this.id]);
     }
   }

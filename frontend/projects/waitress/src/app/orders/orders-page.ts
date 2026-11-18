@@ -1,30 +1,14 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { MatButton } from '@angular/material/button';
-import {
-  MatListItem,
-  MatListItemLine,
-  MatListItemMeta,
-  MatListItemTitle,
-  MatNavList,
-} from '@angular/material/list';
+import { MatCard, MatCardContent } from '@angular/material/card';
 import { RouterLink } from '@angular/router';
-import { formatMoney, LanguageService, type Order, OrdersStore, PrintBadge, TPipe } from 'shared';
+import { formatMoney, LanguageService, type Order, OrderBadges, OrdersStore, TPipe } from 'shared';
 
 /** Pedidos: active orders, newest first, live through Reverb. */
 @Component({
   selector: 'app-orders-page',
   providers: [OrdersStore],
-  imports: [
-    MatButton,
-    MatListItem,
-    MatListItemLine,
-    MatListItemMeta,
-    MatListItemTitle,
-    MatNavList,
-    PrintBadge,
-    RouterLink,
-    TPipe,
-  ],
+  imports: [MatButton, MatCard, MatCardContent, OrderBadges, RouterLink, TPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.loadError(); as key) {
@@ -34,22 +18,29 @@ import { formatMoney, LanguageService, type Order, OrdersStore, PrintBadge, TPip
       </button>
     }
     @if (store.orders(); as orders) {
-      <mat-nav-list>
+      <div class="cards">
         @for (o of orders; track o.id) {
-          <a mat-list-item [routerLink]="['/orders', o.id]">
-            <span matListItemTitle>#{{ o.id }} · {{ o.customer_name }}</span>
-            <span matListItemLine>
-              {{ typeKey(o) | t }} · {{ statusKey(o) | t }} · {{ time(o.created_at) }}
-            </span>
-            @if (o.print_status) {
-              <span matListItemLine><lib-print-badge [status]="o.print_status" /></span>
-            }
-            <span matListItemMeta class="total">{{ money(o.total_cents) }}</span>
+          <a class="link" [routerLink]="['/orders', o.id]">
+            <mat-card appearance="outlined">
+              <mat-card-content>
+                <div class="head">
+                  <span class="id">#{{ o.id }}</span>
+                  <lib-order-badges class="icons" [order]="o" />
+                </div>
+                <div class="name">{{ o.customer_name }}</div>
+                <div class="meta">
+                  {{ typeKey(o) | t }} · {{ time(o.created_at) }} · {{ money(o.total_cents) }}
+                  @if (o.balance_cents > 0 && o.paid_cents > 0) {
+                    · {{ 'payment.balance' | t }} {{ money(o.balance_cents) }}
+                  }
+                </div>
+              </mat-card-content>
+            </mat-card>
           </a>
         } @empty {
           <p class="empty">{{ 'order.empty' | t }}</p>
         }
-      </mat-nav-list>
+      </div>
     } @else if (!store.loadError()) {
       <div class="skeleton" aria-hidden="true">
         @for (row of [1, 2, 3, 4]; track row) {
@@ -59,13 +50,39 @@ import { formatMoney, LanguageService, type Order, OrdersStore, PrintBadge, TPip
     }
   `,
   styles: `
-    .mat-mdc-list-item {
-      height: auto;
-      min-height: 64px;
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 8px;
     }
-    .total {
-      align-self: center;
-      color: var(--mat-sys-on-surface);
+    .link {
+      display: block;
+      color: inherit;
+      text-decoration: none;
+      border-radius: var(--mat-sys-corner-medium);
+    }
+    .link:focus-visible {
+      outline: 2px solid var(--mat-sys-primary);
+      outline-offset: 2px;
+    }
+    .head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .id {
+      font: var(--mat-sys-title-medium);
+    }
+    .icons {
+      margin-left: auto;
+    }
+    .name {
+      margin-top: 4px;
+      font: var(--mat-sys-body-large);
+    }
+    .meta {
+      font: var(--mat-sys-body-medium);
+      color: var(--mat-sys-on-surface-variant);
     }
     .empty {
       color: var(--mat-sys-on-surface-variant);
@@ -95,10 +112,6 @@ export class OrdersPage {
 
   protected typeKey(o: Order) {
     return `order.type.${o.type}` as const;
-  }
-
-  protected statusKey(o: Order) {
-    return `order.status.${o.status}` as const;
   }
 
   protected time(iso: string): string {

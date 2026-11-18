@@ -4,14 +4,17 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatIcon } from '@angular/material/icon';
 import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import {
+  type ConfirmData,
+  ConfirmDialog,
   formatMoney,
   LanguageService,
   type Order,
+  OrderBadges,
   OrderLines,
   OrderStore,
   type PaymentMethod,
-  PrintBadge,
   TPipe,
 } from 'shared';
 import { CancelDialog, type CancelDialogData } from './cancel-dialog';
@@ -27,8 +30,8 @@ import { CancelDialog, type CancelDialogData } from './cancel-dialog';
     MatMenu,
     MatMenuItem,
     MatMenuTrigger,
+    OrderBadges,
     OrderLines,
-    PrintBadge,
     RouterLink,
     TPipe,
   ],
@@ -39,7 +42,7 @@ import { CancelDialog, type CancelDialogData } from './cancel-dialog';
         <div class="who">
           <h2 class="name">#{{ o.id }} · {{ o.customer_name }}</h2>
           <p class="meta">{{ typeKey(o) | t }} · {{ statusKey(o) | t }}</p>
-          <lib-print-badge [status]="o.print_status" />
+          <lib-order-badges [order]="o" />
         </div>
         <button
           mat-icon-button
@@ -62,6 +65,12 @@ import { CancelDialog, type CancelDialogData } from './cancel-dialog';
             <mat-icon aria-hidden="true">receipt_long</mat-icon>
             <span>{{ 'ticket.print.bill' | t }}</span>
           </a>
+          @if (o.status !== 'cancelled' && o.status !== 'closed') {
+            <button mat-menu-item type="button" (click)="close()">
+              <mat-icon aria-hidden="true">check_circle</mat-icon>
+              <span>{{ 'order.move.closed' | t }}</span>
+            </button>
+          }
           @if (o.status !== 'cancelled') {
             <button mat-menu-item type="button" (click)="cancel()">
               <mat-icon aria-hidden="true">cancel</mat-icon>
@@ -215,6 +224,14 @@ export class OrderPage {
       width: '480px',
       maxWidth: 'calc(100vw - 32px)',
     });
+  }
+
+  protected async close(): Promise<void> {
+    const data: ConfirmData = { message: 'order.close.confirm', confirm: 'order.move.closed' };
+    const ref = this.dialog.open<ConfirmDialog, ConfirmData, boolean>(ConfirmDialog, { data });
+    if ((await firstValueFrom(ref.afterClosed())) === true) {
+      await this.store.close();
+    }
   }
 
   protected methodKey(method: PaymentMethod) {

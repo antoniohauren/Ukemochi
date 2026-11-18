@@ -93,6 +93,15 @@ export class OrderStore {
     this.snackBar.open(this.language.t('order.cancelled'), undefined, { duration: 3000 });
     return null;
   }
+
+  /** Closing is always by hand; payment never closes an order. */
+  async close(): Promise<void> {
+    try {
+      this.order.set(await firstValueFrom(this.api.setStatus(this.id, 'closed')));
+    } catch (e) {
+      this.snackBar.open(this.language.t(errorKey(e as ApiError)), undefined, { duration: 4000 });
+    }
+  }
 }
 
 /** Live updates; when they end (signed out), the page keeps working with manual reloads. */
