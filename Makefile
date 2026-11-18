@@ -6,7 +6,7 @@ COMPOSE := docker compose
 PHP     := $(COMPOSE) run --rm --no-deps api
 NODE    := $(COMPOSE) run --rm --no-deps frontend
 
-.PHONY: dev down test check certs
+.PHONY: dev down test check certs reset seed
 
 dev: api/vendor api/.env frontend/node_modules docker/certs/cert.pem
 	$(COMPOSE) up --build
@@ -28,6 +28,20 @@ check: api/vendor api/.env frontend/node_modules
 	$(NODE) npm run format:check
 	$(NODE) npm run typecheck
 	$(NODE) npm run build
+
+# First admin (ADMIN_NAME / ADMIN_PIN) + the menu; the menu seeder skips when categories exist.
+seed: api/vendor api/.env
+	$(COMPOSE) up -d --wait postgres
+	$(PHP) php artisan migrate --force
+	$(PHP) php artisan db:seed --force
+	$(PHP) php artisan db:seed --class=MenuSeeder --force
+
+# Wipes the dev database, then seeds the first admin (ADMIN_NAME / ADMIN_PIN) and the menu.
+reset: api/vendor api/.env
+	$(COMPOSE) up -d --wait postgres
+	$(PHP) php artisan migrate:fresh --force
+	$(PHP) php artisan db:seed --force
+	$(PHP) php artisan db:seed --class=MenuSeeder --force
 
 certs:
 	./docker/certs.sh
