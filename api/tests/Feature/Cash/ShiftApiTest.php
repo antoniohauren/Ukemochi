@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Domain\Auth\Role;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\postJson;
@@ -65,8 +66,9 @@ it('closes with the difference, then lists and shows past shifts to admins', fun
     $closed = $closing->assertJson(['closed_by' => $user->id, 'closed_at' => '2026-11-16T23:00:00+00:00', 'counted_cents' => 6500, 'note' => 'faltou',
         'expected_cents' => 7000, 'difference_cents' => -500])->json();
 
-    expect(lastAudit())->toMatchArray(['action' => 'close'])
-        ->and(lastAudit()['summary'])->toBe(['counted_cents' => 6500, 'expected_cents' => 7000, 'difference_cents' => -500]);
+    // The shift-close backup audits after the close.
+    $close = DB::table('audit_log')->where('action', 'close')->sole();
+    expect(json_decode(is_string($close->summary) ? $close->summary : '', true))->toBe(['counted_cents' => 6500, 'expected_cents' => 7000, 'difference_cents' => -500]);
     getJson('/api/shifts/current')->assertExactJson(['shift' => null]);
     postJson('/api/shifts/current/close', ['counted_cents' => 0])->assertStatus(409)->assertJson(['code' => 'cash.no_open_shift']);
     $second = postJson('/api/shifts', ['opening_float_cents' => 0])->assertCreated()->json();

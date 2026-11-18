@@ -8,6 +8,7 @@ export interface DraftLine {
   category_name: string;
   item_name: string;
   variant_name: string;
+  print_name: string | null;
   unit_price_cents: number;
   qty: number;
   note: string | null;
@@ -17,7 +18,14 @@ export interface DraftLine {
 /** What a line list shows: a saved `OrderLine` or a draft with its preview total. */
 export type LineView = Pick<
   OrderLine,
-  'category_name' | 'item_name' | 'variant_name' | 'qty' | 'note' | 'addons' | 'total_cents'
+  | 'category_name'
+  | 'item_name'
+  | 'variant_name'
+  | 'print_name'
+  | 'qty'
+  | 'note'
+  | 'addons'
+  | 'total_cents'
 >;
 
 export interface MenuEntry {
@@ -47,6 +55,7 @@ export function newLine({ category, item, variant }: MenuEntry): DraftLine {
     category_name: category.name,
     item_name: item.name,
     variant_name: variant.name,
+    print_name: variant.print_name,
     unit_price_cents: variant.price_cents,
     qty: 1,
     note: null,
@@ -62,6 +71,7 @@ export function draftLines(order: Order): DraftLine[] {
     category_name: l.category_name,
     item_name: l.item_name,
     variant_name: l.variant_name,
+    print_name: l.print_name,
     unit_price_cents: l.unit_price_cents,
     qty: l.qty,
     note: l.note,
@@ -108,10 +118,13 @@ export function draftTotal(lines: readonly DraftLine[], deliveryFeeCents: number
   return lines.reduce((sum, line) => sum + lineTotal(line), deliveryFeeCents);
 }
 
-/** "Temaki Dinamite · Meio": the category tells apart items with the same name. */
+/** The variant's print name, else "Temaki Dinamite · Meio": the category tells apart items with the same name. */
 export function lineName(
-  line: Pick<DraftLine, 'category_name' | 'item_name' | 'variant_name'>,
+  line: Pick<DraftLine, 'category_name' | 'item_name' | 'variant_name' | 'print_name'>,
 ): string {
+  if (line.print_name) {
+    return line.print_name;
+  }
   const item = [line.category_name, line.item_name].filter(Boolean).join(' ');
   return line.variant_name ? `${item} · ${line.variant_name}` : item;
 }

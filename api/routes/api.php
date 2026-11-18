@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BackupController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\RealtimeController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ShiftController;
 use App\Http\Controllers\SplitController;
@@ -94,5 +96,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/shifts', [ShiftController::class, 'index']);
         Route::get('/shifts/{id}', [ShiftController::class, 'show']);
         Route::get('/audit', AuditController::class);
+        Route::get('/reports', ReportController::class);
+        Route::get('/backups', [BackupController::class, 'index']);
+        Route::get('/backups/{name}', [BackupController::class, 'download'])->where('name', 'ukemochi-[0-9]{8}-[0-9]{6}\.dump');
     });
 });

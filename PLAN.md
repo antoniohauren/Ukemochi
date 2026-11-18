@@ -166,9 +166,9 @@ Each step is one TDD vertical slice. Done = tests green + `make check` clean + r
 - [x] **21. Stock UI** — admin stock screen (expected qty, sold today, alerts); waitress low/zero badges. Never blocks sales.
 
 ### Phase 8 — Reports & ops
-- [ ] **22. Reports** — by period, item, payment method, waitress; shift report.
-- [ ] **23. Backups** — `pg_dump` on shift close + daily (scheduler), keep last N, admin download.
-- [ ] **24. Kitchen screen** — `/kitchen` in admin, live via Echo, mark ready.
+- [x] **22. Reports** — by period, item, payment method, waitress; shift report.
+- [x] **23. Backups** — `pg_dump` on shift close + daily (scheduler), keep last N, admin download.
+- [x] **24. Kitchen screen** — `/kitchen` in admin, live via Echo, mark ready.
 
 ## Verification
 - `make test`: Pest unit tests (split math, totals, shift expected cash, ticket content), feature tests through HTTP against a Postgres test database, Angular unit tests for services/pipes and components where behavior matters.

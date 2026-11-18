@@ -11,6 +11,8 @@ use App\Application\Auth\PinHasher;
 use App\Application\Auth\SessionAuth;
 use App\Application\Auth\SessionRevoker;
 use App\Application\Auth\UserRepository;
+use App\Application\Backup\Backups;
+use App\Application\Backup\ManageBackups;
 use App\Application\Cash\ShiftRepository;
 use App\Application\Clock;
 use App\Application\Customer\CustomerRepository;
@@ -19,6 +21,7 @@ use App\Application\Menu\MenuRepository;
 use App\Application\Order\OrderEvents;
 use App\Application\Order\OrderRepository;
 use App\Application\Payment\PaymentRepository;
+use App\Application\Report\ReportReader;
 use App\Application\Settings\SettingsRepository;
 use App\Application\Stock\StockRepository;
 use App\Application\Transaction;
@@ -29,6 +32,7 @@ use App\Infrastructure\Auth\DatabaseSessionRevoker;
 use App\Infrastructure\Auth\EloquentUserRepository;
 use App\Infrastructure\Auth\GuardSessionAuth;
 use App\Infrastructure\Auth\HashPinHasher;
+use App\Infrastructure\Backup\PgDumpBackups;
 use App\Infrastructure\Cash\DatabaseShiftRepository;
 use App\Infrastructure\Customer\DatabaseCustomerRepository;
 use App\Infrastructure\DatabaseTransaction;
@@ -37,6 +41,7 @@ use App\Infrastructure\Menu\EloquentMenuRepository;
 use App\Infrastructure\Order\BroadcastOrderEvents;
 use App\Infrastructure\Order\EloquentOrderRepository;
 use App\Infrastructure\Payment\DatabasePaymentRepository;
+use App\Infrastructure\Report\DatabaseReportReader;
 use App\Infrastructure\Settings\DatabaseSettingsRepository;
 use App\Infrastructure\Stock\DatabaseStockRepository;
 use App\Infrastructure\SystemClock;
@@ -55,6 +60,7 @@ class AppServiceProvider extends ServiceProvider
     public array $bindings = [
         AuditLog::class => DatabaseAuditLog::class,
         AuditReader::class => DatabaseAuditReader::class,
+        Backups::class => PgDumpBackups::class,
         Clock::class => SystemClock::class,
         CustomerRepository::class => DatabaseCustomerRepository::class,
         DatabaseProbe::class => ConnectionDatabaseProbe::class,
@@ -64,6 +70,7 @@ class AppServiceProvider extends ServiceProvider
         OrderRepository::class => EloquentOrderRepository::class,
         PaymentRepository::class => DatabasePaymentRepository::class,
         PinHasher::class => HashPinHasher::class,
+        ReportReader::class => DatabaseReportReader::class,
         SessionAuth::class => GuardSessionAuth::class,
         SessionRevoker::class => DatabaseSessionRevoker::class,
         SettingsRepository::class => DatabaseSettingsRepository::class,
@@ -72,6 +79,13 @@ class AppServiceProvider extends ServiceProvider
         Transaction::class => DatabaseTransaction::class,
         UserRepository::class => EloquentUserRepository::class,
     ];
+
+    public function register(): void
+    {
+        $this->app->when(ManageBackups::class)->needs('$keep')->giveConfig('backup.keep');
+        $this->app->when(PgDumpBackups::class)->needs('$dir')->giveConfig('backup.dir');
+        $this->app->when(PgDumpBackups::class)->needs('$db')->giveConfig('database.connections.pgsql');
+    }
 
     public function boot(): void
     {

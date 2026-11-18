@@ -166,7 +166,7 @@ const FEED_MM = 10;
       font-weight: bold;
     }
     .lib-ticket-item {
-      font-size: 10px;
+      font-size: 12px;
       & + & {
         margin-top: 1.5mm;
       }
@@ -285,7 +285,7 @@ export class TicketPrint {
   protected readonly rows = computed(() => {
     const t = this.ticket();
     return t.lines.map((line) => ({
-      title: `${String(line.qty).padStart(2, '0')}x ${line.print_name ?? lineName(line)}`,
+      title: `${String(line.qty).padStart(2, '0')}x ${lineName(line)}`,
       addons: line.addons.map((a) => a.name),
       note: line.note,
       totalCents: line.total_cents,
