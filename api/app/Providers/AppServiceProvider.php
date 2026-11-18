@@ -20,6 +20,7 @@ use App\Application\Order\OrderEvents;
 use App\Application\Order\OrderRepository;
 use App\Application\Payment\PaymentRepository;
 use App\Application\Settings\SettingsRepository;
+use App\Application\Stock\StockRepository;
 use App\Application\Transaction;
 use App\Infrastructure\Audit\DatabaseAuditLog;
 use App\Infrastructure\Audit\DatabaseAuditReader;
@@ -37,6 +38,7 @@ use App\Infrastructure\Order\BroadcastOrderEvents;
 use App\Infrastructure\Order\EloquentOrderRepository;
 use App\Infrastructure\Payment\DatabasePaymentRepository;
 use App\Infrastructure\Settings\DatabaseSettingsRepository;
+use App\Infrastructure\Stock\DatabaseStockRepository;
 use App\Infrastructure\SystemClock;
 use Illuminate\Auth\EloquentUserProvider;
 use Illuminate\Contracts\Foundation\Application;
@@ -66,6 +68,7 @@ class AppServiceProvider extends ServiceProvider
         SessionRevoker::class => DatabaseSessionRevoker::class,
         SettingsRepository::class => DatabaseSettingsRepository::class,
         ShiftRepository::class => DatabaseShiftRepository::class,
+        StockRepository::class => DatabaseStockRepository::class,
         Transaction::class => DatabaseTransaction::class,
         UserRepository::class => EloquentUserRepository::class,
     ];

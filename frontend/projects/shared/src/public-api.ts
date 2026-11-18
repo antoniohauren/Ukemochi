@@ -20,6 +20,8 @@ export * from './lib/api/settings';
 export * from './lib/api/settings-api';
 export * from './lib/api/staff';
 export * from './lib/api/staff-api';
+export * from './lib/api/stock';
+export * from './lib/api/stock-api';
 export * from './lib/api/user';
 export * from './lib/auth/auth';
 export * from './lib/auth/auth.guard';
