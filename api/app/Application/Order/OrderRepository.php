@@ -25,6 +25,13 @@ interface OrderRepository
      */
     public function list(array $statuses, ?int $limit): array;
 
+    /**
+     * The customer's orders in any status, newest first, at most `$limit`.
+     *
+     * @return list<Order>
+     */
+    public function listForCustomer(int $customerId, int $limit): array;
+
     /** Row lock on the order until the transaction ends; null when it does not exist. */
     public function lock(int $id): ?Order;
 

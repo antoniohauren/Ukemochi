@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, LoginPage, PlaceholderPage, TicketPage } from 'shared';
+import { authGuard, LoginPage, TicketPage } from 'shared';
 import { Layout } from './layout';
 import { MorePage } from './more-page';
 import { OrdersPage } from './orders/orders-page';
@@ -44,7 +44,21 @@ export const routes: Routes = [
         loadComponent: () => import('shared/order-editor').then((m) => m.OrderEditorPage),
         data: { title: 'nav.new' },
       },
-      { path: 'customers', component: PlaceholderPage, data: { title: 'nav.customers' } },
+      {
+        path: 'customers',
+        loadComponent: () => import('./customers/customers-page').then((m) => m.CustomersPage),
+        data: { title: 'nav.customers' },
+      },
+      {
+        path: 'customers/new',
+        loadComponent: () => import('./customers/customer-page').then((m) => m.CustomerPage),
+        data: { title: 'customer.new', back: '/customers' },
+      },
+      {
+        path: 'customers/:id',
+        loadComponent: () => import('./customers/customer-page').then((m) => m.CustomerPage),
+        data: { title: 'customer.title', back: '/customers' },
+      },
       {
         path: 'more',
         component: MorePage,

@@ -11,6 +11,8 @@ use App\Domain\Cash\NoOpenShift;
 use App\Domain\Cash\ShiftAlreadyOpen;
 use App\Domain\Cash\ShiftClosed;
 use App\Domain\Cash\ShiftNotFound;
+use App\Domain\Customer\CustomerNotFound;
+use App\Domain\Customer\PhoneTaken;
 use App\Domain\DomainException;
 use App\Domain\Menu\LastVariant;
 use App\Domain\Menu\MenuNotFound;
@@ -63,6 +65,8 @@ return Application::configure(basePath: dirname(__DIR__))
             NoOpenShift::class => 409,
             ShiftClosed::class => 409,
             PaymentNotFound::class => 404,
+            CustomerNotFound::class => 404,
+            PhoneTaken::class => 409,
             PaymentVoided::class => 409,
             PaymentShiftClosed::class => 409,
         ]));

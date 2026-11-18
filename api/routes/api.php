@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\OrderController;
@@ -54,6 +55,12 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/shifts/current/close', [ShiftController::class, 'close']);
         Route::post('/orders/{id}/payments', [PaymentController::class, 'store']);
         Route::post('/payments/{id}/void', [PaymentController::class, 'void']);
+        // Customers are taken on the phone, by the front of house.
+        Route::get('/customers', [CustomerController::class, 'index']);
+        Route::post('/customers', [CustomerController::class, 'store']);
+        Route::get('/customers/{id}', [CustomerController::class, 'show']);
+        Route::put('/customers/{id}', [CustomerController::class, 'update']);
+        Route::get('/customers/{id}/orders', [CustomerController::class, 'orders']);
     });
 
     Route::middleware('role:admin,kitchen')->group(function (): void {

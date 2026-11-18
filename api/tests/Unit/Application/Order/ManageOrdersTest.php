@@ -80,7 +80,7 @@ it('creates an order with the next number, snapshotting names and prices', funct
         ->and($audit->entries)->toBe([[
             'userId' => 7, 'entity' => 'order', 'entityId' => 42, 'action' => 'create',
             'summary' => [
-                'type' => 'dine_in', 'status' => 'open', 'customer_name' => 'Amanda', 'address_text' => null,
+                'type' => 'dine_in', 'status' => 'open', 'customer_id' => null, 'customer_name' => 'Amanda', 'address_text' => null,
                 'delivery_fee_cents' => 0, 'note' => null, 'version' => 1, 'total_cents' => 7300,
                 'lines' => [[
                     'category_name' => 'Uramaki', 'item_name' => 'Philadelphia', 'variant_name' => 'Inteiro', 'qty' => 2, 'unit_price_cents' => 3200,

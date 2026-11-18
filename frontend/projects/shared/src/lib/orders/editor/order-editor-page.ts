@@ -8,16 +8,17 @@ import {
   untracked,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ReactiveFormsModule } from '@angular/forms';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
-import { MatButton } from '@angular/material/button';
+import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatButtonToggle, MatButtonToggleGroup } from '@angular/material/button-toggle';
-import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatError, MatFormField, MatLabel, MatSuffix } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
 import { ActivatedRoute } from '@angular/router';
 import { map } from 'rxjs';
+import { type CustomerAddress, phoneDigits, validPhone } from '../../api/customer';
 import { type OrderType, type PaymentMethod } from '../../api/order';
 import { LanguageService } from '../../i18n/language';
 import { type TranslationKey } from '../../i18n/pt-br';
@@ -25,10 +26,11 @@ import { TPipe } from '../../i18n/t.pipe';
 import { formatMoney } from '../../money/money';
 import { addonOptions, draftTotal, newLine } from '../../orders/order-draft';
 import { OrderLines } from '../../orders/order-lines';
+import { CustomerLookup } from './customer-lookup';
 import { LineSheet, type LineSheetData, type LineSheetResult } from './line-sheet';
 import { MenuPickerSheet } from './menu-picker-sheet';
 import { OrderEditorStore } from './order-editor-store';
-import { feeCents, orderForm, orderFormValue } from './order-form';
+import { applyCustomer, feeCents, orderForm, orderFormValue } from './order-form';
 
 const TYPES: readonly OrderType[] = ['dine_in', 'pickup', 'delivery'];
 const METHODS: readonly PaymentMethod[] = ['cash', 'credit', 'debit', 'pix'];
@@ -36,9 +38,10 @@ const METHODS: readonly PaymentMethod[] = ['cash', 'credit', 'debit', 'pix'];
 /** New order (Novo tab) or edit of a saved one (`/orders/:id/edit`). Lines are picked in bottom sheets. */
 @Component({
   selector: 'lib-order-editor-page',
-  providers: [OrderEditorStore],
+  providers: [OrderEditorStore, CustomerLookup],
   imports: [
     MatButton,
+    MatIconButton,
     MatButtonToggle,
     MatButtonToggleGroup,
     MatError,
@@ -47,6 +50,7 @@ const METHODS: readonly PaymentMethod[] = ['cash', 'credit', 'debit', 'pix'];
     MatInput,
     MatLabel,
     MatSlideToggle,
+    MatSuffix,
     OrderLines,
     ReactiveFormsModule,
     TPipe,
@@ -65,6 +69,39 @@ const METHODS: readonly PaymentMethod[] = ['cash', 'credit', 'debit', 'pix'];
             <mat-button-toggle [value]="type">{{ typeKey(type) | t }}</mat-button-toggle>
           }
         </mat-button-toggle-group>
+        @if (value().type !== 'dine_in') {
+          <mat-form-field subscriptSizing="dynamic">
+            <mat-label>{{ 'customer.phone' | t }}</mat-label>
+            <input
+              matInput
+              [formControl]="phone"
+              type="tel"
+              inputmode="tel"
+              maxlength="30"
+              autocomplete="off"
+              (keydown.enter)="$event.preventDefault(); findCustomer()"
+            />
+            <button
+              matIconButton
+              matSuffix
+              type="button"
+              [attr.aria-label]="'customer.lookup' | t"
+              (click)="findCustomer()"
+            >
+              <mat-icon aria-hidden="true">search</mat-icon>
+            </button>
+            <mat-error>{{ 'customer.phone.invalid' | t }}</mat-error>
+          </mat-form-field>
+          @if (lookup.error(); as key) {
+            <p class="error" role="alert">{{ key | t }}</p>
+          }
+          @if (lookup.missing()) {
+            <p class="hint" role="status">{{ 'customer.not_found' | t }}</p>
+            <button matButton="tonal" type="button" (click)="saveCustomer()">
+              {{ 'customer.save' | t }}
+            </button>
+          }
+        }
         <mat-form-field subscriptSizing="dynamic">
           <mat-label>{{ 'order.customer_name' | t }}</mat-label>
           <input matInput formControlName="customer_name" maxlength="255" autocomplete="off" />
@@ -76,6 +113,15 @@ const METHODS: readonly PaymentMethod[] = ['cash', 'credit', 'debit', 'pix'];
             <textarea matInput formControlName="address_text" rows="2" maxlength="1000"></textarea>
             <mat-error>{{ 'order.address.required' | t }}</mat-error>
           </mat-form-field>
+          @if ((lookup.customer()?.addresses?.length ?? 0) > 1) {
+            <div class="addresses">
+              @for (a of lookup.customer()?.addresses; track $index) {
+                <button matButton="outlined" type="button" (click)="pickAddress(a)">
+                  {{ a.text }}
+                </button>
+              }
+            </div>
+          }
           @if (store.showFee()) {
             <mat-form-field subscriptSizing="dynamic">
               <mat-label>{{ 'order.delivery_fee' | t }}</mat-label>
@@ -179,6 +225,15 @@ const METHODS: readonly PaymentMethod[] = ['cash', 'credit', 'debit', 'pix'];
       align-self: flex-start;
       min-height: 48px;
     }
+    .hint {
+      margin: 0;
+      color: var(--mat-sys-on-surface-variant);
+    }
+    .addresses {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
     .error {
       margin: 0;
       color: var(--mat-sys-error);
@@ -233,6 +288,11 @@ export class OrderEditorPage {
     },
   );
   protected readonly total = computed(() => draftTotal(this.store.lines(), feeCents(this.value())));
+  protected readonly lookup = inject(CustomerLookup);
+  protected readonly phone = new FormControl('', {
+    nonNullable: true,
+    validators: (c) => (validPhone(c.value) ? null : { phone: true }),
+  });
   protected readonly busy = signal(false);
   protected readonly error = signal<TranslationKey | null>(null);
 
@@ -299,6 +359,42 @@ export class OrderEditorPage {
           save(result);
         }
       });
+  }
+
+  protected async findCustomer(): Promise<void> {
+    if (this.phone.invalid) {
+      this.phone.markAsTouched();
+      return;
+    }
+    const customer = await this.lookup.find(this.phone.value);
+    if (customer) {
+      applyCustomer(this.form, customer);
+    }
+  }
+
+  /** Saves the caller with the typed name, phone and (on delivery) address, and links them to the order. */
+  protected async saveCustomer(): Promise<void> {
+    const v = this.form.getRawValue();
+    const name = this.form.controls.customer_name;
+    if (this.phone.invalid || name.invalid) {
+      this.phone.markAsTouched();
+      name.markAsTouched();
+      return;
+    }
+    const address = v.type === 'delivery' ? v.address_text.trim() : '';
+    const customer = await this.lookup.save({
+      name: v.customer_name.trim(),
+      phone: phoneDigits(this.phone.value),
+      note: null,
+      addresses: address ? [{ text: address }] : [],
+    });
+    if (customer) {
+      applyCustomer(this.form, customer);
+    }
+  }
+
+  protected pickAddress(a: CustomerAddress): void {
+    this.form.controls.address_text.setValue(a.text);
   }
 
   async submit(): Promise<void> {
