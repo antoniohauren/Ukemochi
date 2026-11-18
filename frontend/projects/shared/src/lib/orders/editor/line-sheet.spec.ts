@@ -13,6 +13,7 @@ const LINE: DraftLine = {
   category_name: 'Uramaki',
   item_name: 'Philadelphia',
   variant_name: 'Inteiro',
+  print_name: null,
   unit_price_cents: 3200,
   qty: 1,
   note: null,

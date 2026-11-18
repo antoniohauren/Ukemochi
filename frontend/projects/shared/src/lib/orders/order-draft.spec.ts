@@ -6,6 +6,7 @@ import {
   draftTotal,
   findVariant,
   lineInput,
+  lineName,
   lineTotal,
   newLine,
   orderableMenu,
@@ -78,6 +79,12 @@ const MENU: Menu = {
 };
 
 describe('order draft', () => {
+  it('names a line by its print name when the variant has one', () => {
+    const line = { category_name: 'Sushi Dog', item_name: 'Dinamite', variant_name: 'Meio' };
+    expect(lineName({ ...line, print_name: 'Dog Dinamite Meio' })).toBe('Dog Dinamite Meio');
+    expect(lineName({ ...line, print_name: null })).toBe('Sushi Dog Dinamite · Meio');
+  });
+
   it('finds a variant with its item and category', () => {
     const entry = findVariant(MENU, 101);
     expect(entry?.item.name).toBe('Philadelphia');
@@ -92,6 +99,7 @@ describe('order draft', () => {
       category_name: 'Uramaki',
       item_name: 'Philadelphia',
       variant_name: 'Inteiro',
+      print_name: null,
       unit_price_cents: 3200,
       qty: 1,
       note: null,
@@ -139,6 +147,7 @@ describe('order draft', () => {
           category_name: 'Uramaki',
           item_name: 'P',
           variant_name: 'I',
+          print_name: null,
           unit_price_cents: 3200,
           qty: 2,
           note: 'sem cebola',
@@ -154,6 +163,7 @@ describe('order draft', () => {
         category_name: 'Uramaki',
         item_name: 'P',
         variant_name: 'I',
+        print_name: null,
         unit_price_cents: 3200,
         qty: 2,
         note: 'sem cebola',
