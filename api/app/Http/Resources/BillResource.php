@@ -23,7 +23,7 @@ final class BillResource extends JsonResource
         return [
             'kind' => 'bill', 'number' => $b->number, 'type' => $b->type->value, 'customer_name' => $b->customerName,
             'address_text' => $b->addressText, 'created_at' => $b->createdAt->format(DATE_ATOM), 'version' => $b->version,
-            'cancelled' => $b->cancelled, 'note' => $b->note,
+            'cancelled' => $b->cancelled, 'note' => $b->note, 'phone_last4' => $b->phoneLast4,
             'lines' => array_map(fn (OrderLine $l) => (new OrderLineResource($l))->toArray($request), $b->lines),
             ...TotalsJson::of($b->totals),
             'payments' => array_map(fn (Payment $p) => [

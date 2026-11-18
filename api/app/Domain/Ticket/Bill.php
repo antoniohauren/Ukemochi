@@ -31,10 +31,14 @@ final readonly class Bill
         public array $payments,
         public int $paidCents,
         public int $balanceCents,
+        public ?string $phoneLast4 = null,
     ) {}
 
-    /** @param  list<Payment>  $payments  all of the order's payments */
-    public static function of(Order $order, array $payments = []): self
+    /**
+     * @param  list<Payment>  $payments  all of the order's payments
+     * @param  ?string  $phone  the linked customer's, digits only
+     */
+    public static function of(Order $order, array $payments = [], ?string $phone = null): self
     {
         $d = $order->details;
 
@@ -42,6 +46,7 @@ final readonly class Bill
             $order->id, $d->type, $d->customerName, $d->addressText, $order->createdAt, $order->version,
             $order->status === OrderStatus::Cancelled, $d->note, $order->lines, Totals::of($order),
             array_values(array_filter($payments, fn (Payment $p) => ! $p->voided)), $order->paidCents, $order->balanceCents(),
+            $phone === null ? null : substr($phone, -4),
         );
     }
 }

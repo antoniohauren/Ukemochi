@@ -12,6 +12,7 @@ use App\Domain\Order\OrderType;
 use App\Domain\Ticket\Bill;
 use App\Domain\Ticket\KitchenTicket;
 use App\Domain\Ticket\TicketKind;
+use Tests\Fakes\InMemoryCustomerRepository;
 use Tests\Fakes\InMemoryOrderRepository;
 use Tests\Fakes\InMemoryPaymentRepository;
 
@@ -36,7 +37,7 @@ it('lists active orders newest first by default', function (): void {
         storedOrder($repo, $i + 1, $status);
     }
 
-    expect(orderIds((new ReadOrders($repo, new InMemoryPaymentRepository))->list(null)))->toBe([5, 3, 1]);
+    expect(orderIds((new ReadOrders($repo, new InMemoryPaymentRepository, new InMemoryCustomerRepository))->list(null)))->toBe([5, 3, 1]);
 });
 
 it('lists one status, newest first and capped', function (): void {
@@ -46,7 +47,7 @@ it('lists one status, newest first and capped', function (): void {
     }
     storedOrder($repo, 500, OrderStatus::Open);
 
-    $closed = orderIds((new ReadOrders($repo, new InMemoryPaymentRepository))->list(OrderStatus::Closed));
+    $closed = orderIds((new ReadOrders($repo, new InMemoryPaymentRepository, new InMemoryCustomerRepository))->list(OrderStatus::Closed));
 
     expect($closed)->toHaveCount(ReadOrders::LIMIT)->and($closed[0])->toBe(ReadOrders::LIMIT + 2);
 });
@@ -54,7 +55,7 @@ it('lists one status, newest first and capped', function (): void {
 it('gets one order or reports it missing', function (): void {
     $repo = new InMemoryOrderRepository;
     storedOrder($repo, 3, OrderStatus::Open);
-    $read = new ReadOrders($repo, new InMemoryPaymentRepository);
+    $read = new ReadOrders($repo, new InMemoryPaymentRepository, new InMemoryCustomerRepository);
 
     expect($read->get(3)->id)->toBe(3)
         ->and(fn () => $read->get(4))->toThrow(OrderNotFound::class);
@@ -63,7 +64,7 @@ it('gets one order or reports it missing', function (): void {
 it('builds the kitchen ticket or the bill of an order', function (): void {
     $repo = new InMemoryOrderRepository;
     storedOrder($repo, 3, OrderStatus::Open);
-    $read = new ReadOrders($repo, new InMemoryPaymentRepository);
+    $read = new ReadOrders($repo, new InMemoryPaymentRepository, new InMemoryCustomerRepository);
 
     expect($read->ticket(3, TicketKind::Kitchen))->toEqual(KitchenTicket::of($repo->orders[3]))
         ->and($read->ticket(3, TicketKind::Bill))->toEqual(Bill::of($repo->orders[3]));

@@ -50,8 +50,9 @@ const FEED_MM = 10;
         @let t = ticket();
         <header class="lib-ticket-center">
           <p class="lib-ticket-big">{{ restaurantName() }} #{{ t.number }}</p>
-          <!-- shortcut: "0000" stands in for the phone's last 4 digits; print them with customers (PLAN step 19). -->
-          <p class="lib-ticket-big">{{ t.customer_name }} - 0000</p>
+          <p class="lib-ticket-big">
+            {{ t.customer_name }}{{ t.phone_last4 ? ' - ' + t.phone_last4 : '' }}
+          </p>
           <p>{{ typeKey(t.type) | t }}</p>
           <p class="lib-ticket-nowrap">{{ when(t.created_at) }}</p>
         </header>

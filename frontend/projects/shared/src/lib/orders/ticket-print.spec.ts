@@ -14,6 +14,7 @@ const KITCHEN: KitchenTicket = {
   cancelled: false,
   cancel_reason: null,
   note: 'mesa da janela',
+  phone_last4: '4321',
   subtotal_cents: 7000,
   delivery_fee_cents: 0,
   total_cents: 7000,
@@ -48,6 +49,7 @@ const BILL: Bill = {
   version: 1,
   cancelled: false,
   note: null,
+  phone_last4: null,
   lines: [
     {
       id: 1,
@@ -97,7 +99,7 @@ describe('TicketPrint', () => {
 
     expect(preview).toMatch(/Comanda da cozinha\s*ATUALIZADO v2\s*$/);
     expect(preview).toContain('Ukemochi #42');
-    expect(preview).toContain('Amanda - 0000');
+    expect(preview).toContain('Amanda - 4321');
     expect(preview).toContain('No salão');
     expect(preview).toContain('02x Uramaki Philadelphia · Inteiro');
     expect(preview).toContain('+ Cream cheese');
@@ -128,6 +130,7 @@ describe('TicketPrint', () => {
     const preview = text(setup(BILL).nativeElement.querySelector('.lib-ticket'));
 
     expect(preview).toContain('Ukemochi');
+    expect(preview).not.toContain('Ana -');
     expect(preview).toMatch(/01x Phila lata.*Dinheiro\s*Troco para\s?R\$\s?50,00.*Total/);
     expect(preview).not.toContain('Rua A, 1');
     expect(preview).toContain('01x Phila lata');

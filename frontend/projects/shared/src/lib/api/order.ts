@@ -140,6 +140,8 @@ export interface KitchenTicket extends TicketTotals {
   cancelled: boolean;
   cancel_reason: string | null;
   note: string | null;
+  /** Last 4 digits of the linked customer's phone. */
+  phone_last4: string | null;
   /** Same lines as the bill, for now. */
   lines: OrderLine[];
 }
@@ -155,6 +157,8 @@ export interface Bill extends TicketTotals {
   version: number;
   cancelled: boolean;
   note: string | null;
+  /** Last 4 digits of the linked customer's phone. */
+  phone_last4: string | null;
   lines: OrderLine[];
   /** Non-voided payments. */
   payments: BillPayment[];

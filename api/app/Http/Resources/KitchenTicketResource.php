@@ -22,7 +22,7 @@ final class KitchenTicketResource extends JsonResource
         return [
             'kind' => 'kitchen', 'number' => $t->number, 'type' => $t->type->value, 'customer_name' => $t->customerName, 'address_text' => $t->addressText,
             'created_at' => $t->createdAt->format(DATE_ATOM), 'version' => $t->version, 'updated_version' => $t->updatedVersion,
-            'cancelled' => $t->cancelled, 'cancel_reason' => $t->cancelReason, 'note' => $t->note,
+            'cancelled' => $t->cancelled, 'cancel_reason' => $t->cancelReason, 'note' => $t->note, 'phone_last4' => $t->phoneLast4,
             // Same lines as the bill, prices included, for now.
             'lines' => array_map(fn (OrderLine $l) => (new OrderLineResource($l))->toArray($request), $t->lines),
             ...TotalsJson::of($t->totals),

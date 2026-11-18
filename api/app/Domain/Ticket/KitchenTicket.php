@@ -29,16 +29,18 @@ final readonly class KitchenTicket
         public ?string $note,
         public array $lines,
         public Totals $totals,
+        public ?string $phoneLast4 = null,
     ) {}
 
-    public static function of(Order $order): self
+    /** `$phone` is the linked customer's, digits only. */
+    public static function of(Order $order, ?string $phone = null): self
     {
         $updated = $order->printedVersion > 0 && $order->version > $order->printedVersion;
 
         return new self(
             $order->id, $order->details->type, $order->details->customerName, $order->details->addressText, $order->createdAt, $order->version,
             $updated ? $order->version : null, $order->status === OrderStatus::Cancelled, $order->cancelReason,
-            $order->details->note, $order->lines, Totals::of($order),
+            $order->details->note, $order->lines, Totals::of($order), $phone === null ? null : substr($phone, -4),
         );
     }
 }

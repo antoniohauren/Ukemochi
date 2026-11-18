@@ -324,7 +324,7 @@ it('answers the kitchen ticket in the exact shape, same lines as the bill', func
     getJson("/api/orders/{$id}/ticket?kind=kitchen")->assertOk()->assertExactJson([
         'kind' => 'kitchen', 'number' => $id, 'type' => 'dine_in', 'customer_name' => 'Amanda', 'address_text' => null,
         'created_at' => '2026-11-16T12:00:00+00:00', 'version' => 1, 'updated_version' => null,
-        'cancelled' => false, 'cancel_reason' => null, 'note' => 'mesa da janela',
+        'cancelled' => false, 'cancel_reason' => null, 'note' => 'mesa da janela', 'phone_last4' => null,
         'lines' => $placed->json('lines'),
         'subtotal_cents' => 7000, 'delivery_fee_cents' => 0, 'total_cents' => 7000,
         'pay_on_delivery' => false, 'pay_method' => null, 'change_for_cents' => null, 'change_cents' => null,
@@ -343,12 +343,22 @@ it('answers the bill in the exact shape, with totals and the change to take', fu
 
     getJson("/api/orders/{$id}/ticket?kind=bill")->assertOk()->assertExactJson([
         'kind' => 'bill', 'number' => $id, 'type' => 'delivery', 'customer_name' => 'Ana', 'address_text' => 'Rua A, 1',
-        'created_at' => '2026-11-16T12:00:00+00:00', 'version' => 1, 'cancelled' => false, 'note' => null,
+        'created_at' => '2026-11-16T12:00:00+00:00', 'version' => 1, 'cancelled' => false, 'note' => null, 'phone_last4' => null,
         'lines' => $created->json('lines'),
         'subtotal_cents' => 3200, 'delivery_fee_cents' => 700, 'total_cents' => 3900,
         'pay_on_delivery' => true, 'pay_method' => 'cash', 'change_for_cents' => 5000, 'change_cents' => 1100,
         'payments' => [], 'paid_cents' => 0, 'balance_cents' => 3900,
     ]);
+});
+
+it('prints the last 4 phone digits of the linked customer on both tickets', function (): void {
+    actAs(Role::Waitress);
+    ['variant' => $v] = orderApiMenu();
+    $customer = createdId(postJson('/api/customers', ['name' => 'Ana', 'phone' => '(11) 98765-4321', 'addresses' => []])->assertCreated());
+    $id = createdId(placeOrder($v, ['customer_id' => $customer]));
+
+    expect(getJson("/api/orders/{$id}/ticket?kind=kitchen")->json('phone_last4'))->toBe('4321')
+        ->and(getJson("/api/orders/{$id}/ticket?kind=bill")->json('phone_last4'))->toBe('4321');
 });
 
 it('validates the ticket kind and answers 404 for a missing order', function (): void {
