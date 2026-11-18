@@ -29,6 +29,7 @@ final class OrderRequest extends FormRequest
 
         return [
             'type' => ['required', 'string', Rule::enum(OrderType::class)],
+            'customer_id' => ['nullable', 'integer', 'min:1', self::ID, Rule::exists('customers', 'id')],
             'customer_name' => ['required', 'string', 'max:255'],
             'address_text' => ['nullable', 'string', 'max:1000'],
             'delivery_fee_cents' => ['sometimes', 'integer', 'min:0', self::CENTS],
@@ -53,7 +54,7 @@ final class OrderRequest extends FormRequest
         return new OrderDetails(
             $this->enum('type', OrderType::class) ?? throw new \LogicException('validated'),
             $this->string('customer_name')->toString(),
-            null,
+            $this->filled('customer_id') ? $this->integer('customer_id') : null,
             $this->filled('address_text') ? $this->string('address_text')->toString() : null,
             $this->integer('delivery_fee_cents'),
             $this->boolean('pay_on_delivery'),

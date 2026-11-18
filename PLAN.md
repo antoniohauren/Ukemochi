@@ -159,7 +159,7 @@ Each step is one TDD vertical slice. Done = tests green + `make check` clean + r
 - [x] **18. Admin cash + audit** — shift screens, movement entry, order status board (ready / out for delivery), audit log viewer, edit closed orders.
 
 ### Phase 6 — Customers
-- [ ] **19. Customers** — profile (name, phone key, addresses, note), phone lookup while creating phone orders, order history.
+- [x] **19. Customers** — profile (name, phone key, addresses, note), phone lookup while creating phone orders, order history.
 
 ### Phase 7 — Stock
 - [ ] **20. Stock domain + API** — opt-in per variant, movements (sale auto, purchase, adjust), edit/cancel restore, optional minimum.

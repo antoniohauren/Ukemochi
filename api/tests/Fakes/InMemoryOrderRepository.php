@@ -39,6 +39,14 @@ final class InMemoryOrderRepository implements OrderRepository
         return array_slice(array_map(fn (Order $o) => clone $o, array_values($found)), 0, $limit);
     }
 
+    public function listForCustomer(int $customerId, int $limit): array
+    {
+        $found = array_filter($this->orders, fn (Order $o) => $o->details->customerId === $customerId);
+        krsort($found);
+
+        return array_slice(array_map(fn (Order $o) => clone $o, array_values($found)), 0, $limit);
+    }
+
     public function lock(int $id): ?Order
     {
         $this->locked[] = $id;

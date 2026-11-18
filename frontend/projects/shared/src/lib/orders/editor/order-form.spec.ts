@@ -1,5 +1,5 @@
 import type { DraftLine, Order } from 'shared';
-import { feeCents, orderBody, orderForm, orderFormValue } from './order-form';
+import { applyCustomer, feeCents, orderBody, orderForm, orderFormValue } from './order-form';
 
 const LINE: DraftLine = {
   id: 9,
@@ -15,6 +15,7 @@ const LINE: DraftLine = {
 
 const PICKUP = {
   type: 'pickup',
+  customer_id: null,
   customer_name: 'Ana',
   address_text: null,
   delivery_fee_cents: 0,
@@ -81,6 +82,7 @@ describe('order form', () => {
     const form = orderForm();
     form.setValue({
       type: 'delivery',
+      customer_id: null,
       customer_name: ' Ana ',
       address_text: ' Rua A, 10 ',
       delivery_fee: '7,00',
@@ -91,6 +93,7 @@ describe('order form', () => {
     });
     expect(orderBody(form.getRawValue(), [LINE])).toEqual({
       type: 'delivery',
+      customer_id: null,
       customer_name: 'Ana',
       address_text: 'Rua A, 10',
       delivery_fee_cents: 700,
@@ -106,6 +109,7 @@ describe('order form', () => {
     const form = orderForm();
     form.setValue({
       type: 'delivery',
+      customer_id: null,
       customer_name: 'Ana',
       address_text: 'Rua A',
       delivery_fee: '0',
@@ -126,6 +130,7 @@ describe('order form', () => {
     const form = orderForm();
     form.setValue({
       type: 'dine_in',
+      customer_id: null,
       customer_name: 'Ana',
       address_text: 'Rua A',
       delivery_fee: '7,00',
@@ -159,5 +164,29 @@ describe('order form', () => {
     const v = orderFormValue(order, 'pt-BR');
     expect(v).toMatchObject({ address_text: 'Rua A', change_for: '', note: '' });
     expect(feeCents(v)).toBe(700);
+  });
+
+  it('links a found customer, taking the first address only on an empty delivery address', () => {
+    const form = orderForm();
+    const ana = {
+      id: 3,
+      name: 'Ana',
+      phone: '11987654321',
+      note: null,
+      addresses: [{ text: 'Rua A', note: null }],
+    };
+    applyCustomer(form, ana);
+    expect(form.getRawValue()).toMatchObject({
+      customer_id: 3,
+      customer_name: 'Ana',
+      address_text: '',
+    });
+    form.controls.type.setValue('delivery');
+    applyCustomer(form, ana);
+    expect(form.controls.address_text.value).toBe('Rua A');
+    form.controls.address_text.setValue('Rua B');
+    applyCustomer(form, ana);
+    expect(form.controls.address_text.value).toBe('Rua B');
+    expect(orderBody(form.getRawValue(), []).customer_id).toBe(3);
   });
 });

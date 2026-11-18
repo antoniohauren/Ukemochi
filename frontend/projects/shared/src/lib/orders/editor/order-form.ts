@@ -6,6 +6,7 @@ import {
   type ValidatorFn,
   Validators,
 } from '@angular/forms';
+import { type Customer } from '../../api/customer';
 import { type Order, type OrderInput, type OrderType, type PaymentMethod } from '../../api/order';
 import { type Lang } from '../../i18n/language';
 import { formatMoney, maxMoney, moneyValidator, parseMoney } from '../../money/money';
@@ -43,6 +44,7 @@ export function orderForm(defaultFee: () => string = () => '') {
     new FormControl('', { nonNullable: true, validators });
   const form = new FormGroup({
     type: new FormControl<OrderType>('dine_in', { nonNullable: true }),
+    customer_id: new FormControl<number | null>(null),
     customer_name: text([Validators.required, Validators.pattern(/\S/), Validators.maxLength(255)]),
     address_text: text([
       onDelivery(Validators.required),
@@ -78,6 +80,7 @@ export type OrderFormValue = ReturnType<OrderForm['getRawValue']>;
 export function orderFormValue(order: Order, lang: Lang): OrderFormValue {
   return {
     type: order.type,
+    customer_id: order.customer_id,
     customer_name: order.customer_name,
     address_text: order.address_text ?? '',
     delivery_fee: formatMoney(order.delivery_fee_cents, lang),
@@ -86,6 +89,22 @@ export function orderFormValue(order: Order, lang: Lang): OrderFormValue {
     change_for: order.change_for_cents === null ? '' : formatMoney(order.change_for_cents, lang),
     note: order.note ?? '',
   };
+}
+
+/**
+ * Fills the form from a saved customer: links it, takes the name and, on delivery,
+ * the first address unless one is typed already.
+ */
+export function applyCustomer(form: OrderForm, customer: Customer): void {
+  const address = form.controls.address_text;
+  form.patchValue({ customer_id: customer.id, customer_name: customer.name });
+  if (
+    form.controls.type.value === 'delivery' &&
+    !address.value.trim() &&
+    customer.addresses.length
+  ) {
+    address.setValue(customer.addresses[0].text);
+  }
 }
 
 /** The fee that applies: only delivery orders carry one. */
@@ -100,6 +119,7 @@ export function orderBody(v: OrderFormValue, lines: readonly DraftLine[]): Order
   const cash = payOnDelivery && v.pay_method === 'cash';
   return {
     type: v.type,
+    customer_id: v.customer_id,
     customer_name: v.customer_name.trim(),
     address_text: delivery ? v.address_text.trim() : null,
     delivery_fee_cents: feeCents(v),

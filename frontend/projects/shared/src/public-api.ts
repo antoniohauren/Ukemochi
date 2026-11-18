@@ -7,6 +7,8 @@ export * from './lib/api/audit';
 export * from './lib/api/audit-api';
 export * from './lib/api/cash';
 export * from './lib/api/cash-api';
+export * from './lib/api/customer';
+export * from './lib/api/customers-api';
 export * from './lib/api/menu';
 export * from './lib/api/menu-api';
 export * from './lib/api/order';

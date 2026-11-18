@@ -13,6 +13,7 @@ use App\Application\Auth\SessionRevoker;
 use App\Application\Auth\UserRepository;
 use App\Application\Cash\ShiftRepository;
 use App\Application\Clock;
+use App\Application\Customer\CustomerRepository;
 use App\Application\Health\DatabaseProbe;
 use App\Application\Menu\MenuRepository;
 use App\Application\Order\OrderEvents;
@@ -28,6 +29,7 @@ use App\Infrastructure\Auth\EloquentUserRepository;
 use App\Infrastructure\Auth\GuardSessionAuth;
 use App\Infrastructure\Auth\HashPinHasher;
 use App\Infrastructure\Cash\DatabaseShiftRepository;
+use App\Infrastructure\Customer\DatabaseCustomerRepository;
 use App\Infrastructure\DatabaseTransaction;
 use App\Infrastructure\Health\ConnectionDatabaseProbe;
 use App\Infrastructure\Menu\EloquentMenuRepository;
@@ -52,6 +54,7 @@ class AppServiceProvider extends ServiceProvider
         AuditLog::class => DatabaseAuditLog::class,
         AuditReader::class => DatabaseAuditReader::class,
         Clock::class => SystemClock::class,
+        CustomerRepository::class => DatabaseCustomerRepository::class,
         DatabaseProbe::class => ConnectionDatabaseProbe::class,
         LoginThrottle::class => CacheLoginThrottle::class,
         MenuRepository::class => EloquentMenuRepository::class,

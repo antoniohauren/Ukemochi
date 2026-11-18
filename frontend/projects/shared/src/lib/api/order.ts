@@ -91,6 +91,8 @@ export interface LineInput {
  */
 export interface OrderInput {
   type: OrderType;
+  /** A saved customer, see `CustomersApi`. */
+  customer_id?: number | null;
   customer_name: string;
   address_text?: string | null;
   delivery_fee_cents?: number;

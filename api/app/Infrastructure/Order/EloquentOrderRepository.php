@@ -34,6 +34,12 @@ final class EloquentOrderRepository implements OrderRepository
             ->map(fn (EloquentOrder $o) => $o->toDomain())->all());
     }
 
+    public function listForCustomer(int $customerId, int $limit): array
+    {
+        return array_values($this->query()->where('customer_id', $customerId)->orderByDesc('id')->limit($limit)->get()
+            ->map(fn (EloquentOrder $o) => $o->toDomain())->all());
+    }
+
     public function lock(int $id): ?Order
     {
         return $this->query()->lockForUpdate()->find($id)?->toDomain();

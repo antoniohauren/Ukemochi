@@ -204,7 +204,7 @@ final readonly class ManageOrders
         $d = $order->details;
 
         return [
-            'type' => $d->type->value, 'status' => $order->status->value, 'customer_name' => $d->customerName,
+            'type' => $d->type->value, 'status' => $order->status->value, 'customer_id' => $d->customerId, 'customer_name' => $d->customerName,
             'address_text' => $d->addressText, 'delivery_fee_cents' => $d->deliveryFeeCents, 'note' => $d->note,
             'version' => $order->version, 'total_cents' => $order->totalCents(),
             'lines' => array_map(fn (OrderLine $line) => [
