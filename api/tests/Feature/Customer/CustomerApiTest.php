@@ -48,14 +48,14 @@ it('updates the profile and replaces the addresses', function (): void {
 it('finds customers by phone digits or name', function (): void {
     actAs(Role::Waitress);
     $ana = createdId(postJson('/api/customers', customerBody())->assertCreated());
-    $bia = createdId(postJson('/api/customers', customerBody(['name' => 'bia', 'phone' => '21 3333-4444', 'addresses' => []]))->assertCreated());
+    $bia = createdId(postJson('/api/customers', customerBody(['name' => 'bia', 'phone' => '(21) 9.3333-4444', 'addresses' => []]))->assertCreated());
 
     expect(getJson('/api/customers?q=98765-4321')->assertOk()->json('customers.*.id'))->toBe([$ana])
         ->and(getJson('/api/customers?q=BI')->json('customers.*.id'))->toBe([$bia])
         ->and(getJson('/api/customers?q=50%25')->json('customers'))->toBe([])
         ->and(getJson('/api/customers')->json('customers.*.id'))->toBe([$ana, $bia]);
     getJson('/api/customers?q=bia')->assertExactJson(['customers' => [
-        ['id' => $bia, 'name' => 'bia', 'phone' => '2133334444', 'note' => 'VIP', 'addresses' => []],
+        ['id' => $bia, 'name' => 'bia', 'phone' => '21933334444', 'note' => 'VIP', 'addresses' => []],
     ]]);
 });
 
@@ -65,7 +65,7 @@ it('rejects a taken phone with 409 and a bad one with 422', function (): void {
 
     postJson('/api/customers', customerBody(['name' => 'Bia', 'phone' => '11987654321']))
         ->assertStatus(409)->assertJson(['code' => 'customer.phone_taken']);
-    postJson('/api/customers', customerBody(['phone' => '123']))
+    postJson('/api/customers', customerBody(['phone' => '(11) 8765-4321']))
         ->assertStatus(422)->assertJson(['code' => 'customer.invalid_phone']);
     postJson('/api/customers', customerBody(['addresses' => [['text' => '']]]))
         ->assertStatus(422)->assertJson(['code' => 'validation']);

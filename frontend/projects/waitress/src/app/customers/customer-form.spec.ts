@@ -1,14 +1,17 @@
 import { addressGroup, customerBody, customerForm } from './customer-form';
 
 describe('customer form', () => {
-  it('needs a name and accepts no phone or one with 8 to 15 digits', () => {
+  it('needs a name and accepts no phone or one with 11 digits, masked', () => {
     const form = customerForm();
     expect(form.valid).toBe(false);
     form.controls.name.setValue('Ana');
     expect(form.valid).toBe(true);
     form.controls.phone.setValue('123');
     expect(form.valid).toBe(false);
-    form.controls.phone.setValue('(11) 98765-4321');
+    form.controls.phone.setValue('1187654321');
+    expect(form.valid).toBe(false);
+    form.controls.phone.setValue('11987654321');
+    expect(form.controls.phone.value).toBe('(11) 9.8765-4321');
     expect(form.valid).toBe(true);
   });
 
@@ -23,10 +26,10 @@ describe('customer form', () => {
     form.controls.addresses.push(addressGroup());
     expect(form.valid).toBe(false); // the new address is empty
     form.controls.addresses.at(1).controls.text.setValue(' Rua B ');
-    form.controls.phone.setValue('(11) 2222-3333');
+    form.controls.phone.setValue('(11) 9.2222-3333');
     expect(customerBody(form.getRawValue())).toEqual({
       name: 'Ana',
-      phone: '1122223333',
+      phone: '11922223333',
       note: null,
       addresses: [
         { text: 'Rua A', note: 'portão' },

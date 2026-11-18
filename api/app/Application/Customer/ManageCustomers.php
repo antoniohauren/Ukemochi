@@ -63,6 +63,7 @@ final readonly class ManageCustomers
 
     private function save(Customer $customer, string $action): Customer
     {
+        $customer->assertPhone();
         if ($customer->phone !== null) {
             $other = $this->customers->findByPhone($customer->phone);
             if ($other !== null && $other->id !== $customer->id) {

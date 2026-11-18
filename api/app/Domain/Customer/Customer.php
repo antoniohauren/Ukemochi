@@ -33,4 +33,12 @@ final readonly class Customer
 
         return $digits;
     }
+
+    /** New and edited phones are a mobile with area code, "(88) 8.8888-8888"; older stored ones still load. */
+    public function assertPhone(): void
+    {
+        if ($this->phone !== null && strlen($this->phone) !== 11) {
+            throw new InvalidPhone;
+        }
+    }
 }

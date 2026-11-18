@@ -18,7 +18,7 @@ import { MatInput } from '@angular/material/input';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
 import { ActivatedRoute } from '@angular/router';
 import { map } from 'rxjs';
-import { type CustomerAddress, phoneDigits, validPhone } from '../../api/customer';
+import { type CustomerAddress, maskPhone, phoneDigits, validPhone } from '../../api/customer';
 import { type OrderType, type PaymentMethod } from '../../api/order';
 import { LanguageService } from '../../i18n/language';
 import { type TranslationKey } from '../../i18n/pt-br';
@@ -289,10 +289,12 @@ export class OrderEditorPage {
   );
   protected readonly total = computed(() => draftTotal(this.store.lines(), feeCents(this.value())));
   protected readonly lookup = inject(CustomerLookup);
-  protected readonly phone = new FormControl('', {
-    nonNullable: true,
-    validators: (c) => (validPhone(c.value) ? null : { phone: true }),
-  });
+  protected readonly phone = maskPhone(
+    new FormControl('', {
+      nonNullable: true,
+      validators: (c) => (validPhone(c.value) ? null : { phone: true }),
+    }),
+  );
   protected readonly busy = signal(false);
   protected readonly error = signal<TranslationKey | null>(null);
 

@@ -3,11 +3,12 @@ import {
   type Customer,
   type CustomerAddress,
   type CustomerInput,
+  maskPhone,
   phoneDigits,
   validPhone,
 } from 'shared';
 
-// CustomerRequest: name max:255, phone 8–15 digits (max:30 typed), text max:1000, at most 20 addresses.
+// CustomerRequest: name max:255, phone 11 digits (max:30 typed), text max:1000, at most 20 addresses.
 export const MAX_ADDRESSES = 20;
 
 const text = (validators = [Validators.maxLength(1000)]) =>
@@ -24,14 +25,16 @@ export function addressGroup(a?: CustomerAddress) {
   return group;
 }
 
-/** Customer profile form; rules mirror CustomerRequest + Customer (phone optional, 8–15 digits). */
+/** Customer profile form; rules mirror CustomerRequest + Customer (phone optional, 11 digits, masked). */
 export function customerForm(c?: Customer) {
   const form = new FormGroup({
     name: text([Validators.required, Validators.pattern(/\S/), Validators.maxLength(255)]),
-    phone: new FormControl('', {
-      nonNullable: true,
-      validators: (ctl) => (ctl.value === '' || validPhone(ctl.value) ? null : { phone: true }),
-    }),
+    phone: maskPhone(
+      new FormControl('', {
+        nonNullable: true,
+        validators: (ctl) => (ctl.value === '' || validPhone(ctl.value) ? null : { phone: true }),
+      }),
+    ),
     note: text(),
     addresses: new FormArray((c?.addresses ?? []).map(addressGroup)),
   });

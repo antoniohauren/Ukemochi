@@ -21,6 +21,13 @@ it('accepts 8 and 15 digit phones', function (string $phone): void {
     expect((new Customer(0, 'Ana', $phone))->phone)->toBe($phone);
 })->with(['12345678', '123456789012345']);
 
+it('asks new phones for exactly 11 digits', function (): void {
+    expect(fn () => (new Customer(0, 'Ana', '(88) 8888-8888'))->assertPhone())->toThrow(InvalidPhone::class)
+        ->and(fn () => (new Customer(0, 'Ana', '(88) 8.8888-88880'))->assertPhone())->toThrow(InvalidPhone::class);
+    (new Customer(0, 'Ana', '(88) 8.8888-8888'))->assertPhone();
+    (new Customer(0, 'Ana', null))->assertPhone();
+});
+
 it('needs a name', function (): void {
     expect(fn () => new Customer(0, '  ', null))->toThrow(NameRequired::class);
 });

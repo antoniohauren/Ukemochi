@@ -7,7 +7,7 @@ import { MatInput } from '@angular/material/input';
 import { MatListItem, MatListItemLine, MatListItemTitle, MatNavList } from '@angular/material/list';
 import { RouterLink } from '@angular/router';
 import { debounceTime } from 'rxjs';
-import { TPipe } from 'shared';
+import { formatPhone, TPipe } from 'shared';
 import { CustomersStore } from './customers-store';
 
 /** Clientes: search by name or phone; opens a profile or a new one. */
@@ -45,7 +45,7 @@ import { CustomersStore } from './customers-store';
           <a mat-list-item [routerLink]="['/customers', c.id]">
             <span matListItemTitle>{{ c.name }}</span>
             @if (c.phone) {
-              <span matListItemLine>{{ c.phone }}</span>
+              <span matListItemLine>{{ formatPhone(c.phone) }}</span>
             }
           </a>
         } @empty {
@@ -107,6 +107,7 @@ import { CustomersStore } from './customers-store';
 })
 export class CustomersPage {
   protected readonly store = inject(CustomersStore);
+  protected readonly formatPhone = formatPhone;
   protected readonly query = new FormControl('', { nonNullable: true });
 
   constructor() {

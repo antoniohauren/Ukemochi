@@ -26,12 +26,12 @@ function manageCustomers(): array
 
 it('creates a customer and audits the profile', function (): void {
     [$manage, $customers, $audit] = manageCustomers();
-    $c = $manage->create(new Customer(0, 'Ana', '11 9999-8888', [new Address('Rua A, 1', 'portão azul')], 'VIP'));
+    $c = $manage->create(new Customer(0, 'Ana', '(11) 9.9999-8888', [new Address('Rua A, 1', 'portão azul')], 'VIP'));
 
     expect($customers->find($c->id))->toEqual($c)
         ->and($audit->entries)->toBe([[
             'userId' => 7, 'entity' => 'customer', 'entityId' => 1, 'action' => 'create',
-            'summary' => ['name' => 'Ana', 'phone' => '1199998888', 'note' => 'VIP', 'addresses' => ['Rua A, 1']], 'note' => null,
+            'summary' => ['name' => 'Ana', 'phone' => '11999998888', 'note' => 'VIP', 'addresses' => ['Rua A, 1']], 'note' => null,
         ]]);
 });
 

@@ -10,6 +10,6 @@ final class InvalidPhone extends DomainException
 {
     public function __construct()
     {
-        parent::__construct('customer.invalid_phone', 'A phone has 8 to 15 digits.');
+        parent::__construct('customer.invalid_phone', 'A phone has 11 digits: (88) 8.8888-8888.');
     }
 }
