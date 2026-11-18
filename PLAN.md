@@ -163,7 +163,7 @@ Each step is one TDD vertical slice. Done = tests green + `make check` clean + r
 
 ### Phase 7 — Stock
 - [x] **20. Stock domain + API** — opt-in per variant, movements (sale auto, purchase, adjust), edit/cancel restore, optional minimum.
-- [ ] **21. Stock UI** — admin stock screen (expected qty, sold today, alerts); waitress low/zero badges. Never blocks sales.
+- [x] **21. Stock UI** — admin stock screen (expected qty, sold today, alerts); waitress low/zero badges. Never blocks sales.
 
 ### Phase 8 — Reports & ops
 - [ ] **22. Reports** — by period, item, payment method, waitress; shift report.

@@ -47,6 +47,7 @@ describe('admin routes', () => {
       '/menu',
       '/staff',
       '/cash',
+      '/stock',
       '/reports',
       '/settings',
       '/audit',
@@ -55,7 +56,7 @@ describe('admin routes', () => {
       expect((await visit(path)).url).toBe(path);
     }
     const { el } = await visit('/');
-    expect(el.querySelectorAll('.rail-item').length).toBe(8);
+    expect(el.querySelectorAll('.rail-item').length).toBe(9);
   });
 
   it('keeps kitchen staff on /kitchen, without nav', async () => {

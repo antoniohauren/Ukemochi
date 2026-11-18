@@ -1,13 +1,15 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router } from '@angular/router';
-import { firstValueFrom, of } from 'rxjs';
+import { catchError, firstValueFrom, of } from 'rxjs';
 import { type ApiError } from '../../api/api-client';
 import { type Menu } from '../../api/menu';
 import { MenuApi } from '../../api/menu-api';
 import { type Order } from '../../api/order';
 import { OrdersApi } from '../../api/orders-api';
 import { SettingsApi } from '../../api/settings-api';
+import { stockAlerts, type StockLevel } from '../../api/stock';
+import { StockApi } from '../../api/stock-api';
 import { errorKey } from '../../i18n/error-key';
 import { LanguageService } from '../../i18n/language';
 import { type TranslationKey } from '../../i18n/pt-br';
@@ -27,6 +29,7 @@ export class OrderEditorStore {
   private readonly orders = inject(OrdersApi);
   private readonly menuApi = inject(MenuApi);
   private readonly settingsApi = inject(SettingsApi);
+  private readonly stockApi = inject(StockApi);
   private readonly router = inject(Router);
   /** Route data `afterSave` sends the app elsewhere after saving (admin: the list); default the order page. */
   private readonly afterSave = inject(ActivatedRoute, { optional: true })?.snapshot.data?.[
@@ -55,15 +58,19 @@ export class OrderEditorStore {
   readonly lines = signal<DraftLine[]>([]);
   readonly views = computed(() => this.lines().map(lineView));
   readonly loadError = signal<TranslationKey | null>(null);
+  /** Low/out tracked variants for the picker badges; empty when stock fails to load (never blocks). */
+  readonly stock = signal<Record<number, StockLevel>>({});
 
   async load(id: number | null): Promise<void> {
     this.editId = id;
     try {
-      const [menu, settings, order] = await Promise.all([
+      const [menu, settings, order, stock] = await Promise.all([
         firstValueFrom(this.menuApi.menu()),
         firstValueFrom(this.settingsApi.get()),
         firstValueFrom(id === null ? of(null) : this.orders.get(id)),
+        firstValueFrom(this.stockApi.levels().pipe(catchError(() => of([])))),
       ]);
+      this.stock.set(stockAlerts(stock));
       this.feeEnabled.set(settings.delivery_fee_enabled);
       this.defaultFeeCents.set(settings.delivery_fee_enabled ? settings.delivery_fee_cents : 0);
       if (order) {

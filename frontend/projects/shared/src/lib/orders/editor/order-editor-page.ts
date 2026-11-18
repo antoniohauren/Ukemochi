@@ -28,7 +28,7 @@ import { addonOptions, draftTotal, newLine } from '../../orders/order-draft';
 import { OrderLines } from '../../orders/order-lines';
 import { CustomerLookup } from './customer-lookup';
 import { LineSheet, type LineSheetData, type LineSheetResult } from './line-sheet';
-import { MenuPickerSheet } from './menu-picker-sheet';
+import { type MenuPickerData, MenuPickerSheet } from './menu-picker-sheet';
 import { OrderEditorStore } from './order-editor-store';
 import { applyCustomer, feeCents, orderForm, orderFormValue } from './order-form';
 
@@ -321,7 +321,9 @@ export class OrderEditorPage {
       return;
     }
     this.sheet
-      .open<MenuPickerSheet, { menu: typeof menu }, number>(MenuPickerSheet, { data: { menu } })
+      .open<MenuPickerSheet, MenuPickerData, number>(MenuPickerSheet, {
+        data: { menu, stock: this.store.stock() },
+      })
       .afterDismissed()
       .subscribe((variantId) => {
         const entry = variantId === undefined ? null : this.store.entry(variantId);

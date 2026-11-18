@@ -1,9 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { type Observable, of, throwError } from 'rxjs';
 import { type Menu } from '../../api/menu';
 import { MenuApi } from '../../api/menu-api';
+import { type StockLevel } from '../../api/stock';
+import { StockApi } from '../../api/stock-api';
 import { type Order } from '../../api/order';
 import { OrdersApi } from '../../api/orders-api';
 import { SettingsApi } from '../../api/settings-api';
@@ -33,6 +35,7 @@ describe('OrderEditorStore', () => {
   let settings: { delivery_fee_enabled: boolean; delivery_fee_cents: number };
   let navigate: ReturnType<typeof vi.fn>;
   let store: OrderEditorStore;
+  let stockLevels: () => Observable<StockLevel[]>;
 
   beforeEach(() => {
     localStorage.clear();
@@ -43,12 +46,14 @@ describe('OrderEditorStore', () => {
       update: vi.fn(() => of(SAVED)),
     };
     navigate = vi.fn(async () => true);
+    stockLevels = () => of([]);
     TestBed.configureTestingModule({
       providers: [
         OrderEditorStore,
         { provide: OrdersApi, useValue: orders },
         { provide: MenuApi, useValue: { menu: () => of(MENU) } },
         { provide: SettingsApi, useValue: { get: () => of(settings) } },
+        { provide: StockApi, useValue: { levels: () => stockLevels() } },
         { provide: Router, useValue: { navigateByUrl: navigate } },
       ],
     });
@@ -60,6 +65,28 @@ describe('OrderEditorStore', () => {
     form.controls.customer_name.setValue('Ana');
     return form.getRawValue();
   };
+
+  it('keeps low and out tracked variants for the picker, and loads without stock on failure', async () => {
+    const low: StockLevel = {
+      variant_id: 100,
+      item_name: 'Coca',
+      variant_name: 'Zero',
+      track_stock: true,
+      stock_min: 5,
+      qty: 3,
+      sold_today: 17,
+      status: 'low',
+    };
+    stockLevels = () => of([low, { ...low, variant_id: 101, qty: 9, status: 'ok' }]);
+    await store.load(null);
+    expect(store.stock()).toEqual({ 100: low });
+
+    stockLevels = () => throwError(() => new Error('offline'));
+    await store.load(null);
+    expect(store.loadError()).toBeNull();
+    expect(store.menu()).not.toBeNull();
+    expect(store.stock()).toEqual({});
+  });
 
   it('defaults the delivery fee from settings only when it is on', async () => {
     await store.load(null);
